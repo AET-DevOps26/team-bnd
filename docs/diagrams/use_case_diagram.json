@@ -1,0 +1,427 @@
+{
+  "id": "playgroundModelId",
+  "version": "4.0.0",
+  "title": "Class Diagram",
+  "type": "UseCaseDiagram",
+  "nodes": [
+    {
+      "id": "7e5fff73-dcdc-409f-a019-e2e7497e5284",
+      "width": 280,
+      "height": 430,
+      "type": "useCaseSystem",
+      "position": {
+        "x": -210,
+        "y": 140
+      },
+      "data": {
+        "name": "Document Management"
+      },
+      "measured": {
+        "width": 280,
+        "height": 430
+      }
+    },
+    {
+      "id": "7bb0cd80-c3af-45fd-be2b-278f3d70c34c",
+      "width": 130,
+      "height": 180,
+      "type": "useCaseActor",
+      "position": {
+        "x": 120,
+        "y": 270
+      },
+      "data": {
+        "name": "User"
+      },
+      "measured": {
+        "width": 130,
+        "height": 180
+      }
+    },
+    {
+      "id": "7ce0c3a6-1af1-4a75-9d49-1ce6be99241b",
+      "width": 200,
+      "height": 70,
+      "type": "useCase",
+      "position": {
+        "x": 40,
+        "y": 60
+      },
+      "parentId": "7e5fff73-dcdc-409f-a019-e2e7497e5284",
+      "data": {
+        "name": "Upload document"
+      },
+      "measured": {
+        "width": 200,
+        "height": 70
+      }
+    },
+    {
+      "id": "8771db47-e446-4bb8-bad8-40b9468805e2",
+      "width": 200,
+      "height": 70,
+      "type": "useCase",
+      "position": {
+        "x": 40,
+        "y": 150
+      },
+      "parentId": "7e5fff73-dcdc-409f-a019-e2e7497e5284",
+      "data": {
+        "name": "View document details"
+      },
+      "measured": {
+        "width": 200,
+        "height": 70
+      }
+    },
+    {
+      "id": "548a719b-8229-4d32-8ac3-094a557aec40",
+      "width": 210,
+      "height": 70,
+      "type": "useCase",
+      "position": {
+        "x": 40,
+        "y": 240
+      },
+      "parentId": "7e5fff73-dcdc-409f-a019-e2e7497e5284",
+      "data": {
+        "name": "Manage tags"
+      },
+      "measured": {
+        "width": 210,
+        "height": 70
+      }
+    },
+    {
+      "id": "ebd07d88-e277-4a16-8c86-32186f897508",
+      "width": 210,
+      "height": 70,
+      "type": "useCase",
+      "position": {
+        "x": 40,
+        "y": 330
+      },
+      "parentId": "7e5fff73-dcdc-409f-a019-e2e7497e5284",
+      "data": {
+        "name": "Delete document"
+      },
+      "measured": {
+        "width": 210,
+        "height": 70
+      }
+    },
+    {
+      "id": "a57a1862-1f90-42c7-9be7-6355bf3af822",
+      "width": 280,
+      "height": 430,
+      "type": "useCaseSystem",
+      "position": {
+        "x": 300,
+        "y": 380
+      },
+      "data": {
+        "name": "GenAI Processing"
+      },
+      "measured": {
+        "width": 280,
+        "height": 430
+      }
+    },
+    {
+      "id": "f1fdafc6-1b14-41ea-a46d-4ad0dbc9c428",
+      "width": 200,
+      "height": 70,
+      "type": "useCase",
+      "position": {
+        "x": 40,
+        "y": 60
+      },
+      "parentId": "a57a1862-1f90-42c7-9be7-6355bf3af822",
+      "data": {
+        "name": "Generate summary"
+      },
+      "measured": {
+        "width": 200,
+        "height": 70
+      }
+    },
+    {
+      "id": "d517c51d-c337-4767-9f32-17a2b2a9a799",
+      "width": 200,
+      "height": 70,
+      "type": "useCase",
+      "position": {
+        "x": 40,
+        "y": 150
+      },
+      "parentId": "a57a1862-1f90-42c7-9be7-6355bf3af822",
+      "data": {
+        "name": "Extract entities"
+      },
+      "measured": {
+        "width": 200,
+        "height": 70
+      }
+    },
+    {
+      "id": "38c57b78-a3b3-4cc8-91cc-44281304eedc",
+      "width": 210,
+      "height": 70,
+      "type": "useCase",
+      "position": {
+        "x": 40,
+        "y": 240
+      },
+      "parentId": "a57a1862-1f90-42c7-9be7-6355bf3af822",
+      "data": {
+        "name": "Ask questions"
+      },
+      "measured": {
+        "width": 210,
+        "height": 70
+      }
+    },
+    {
+      "id": "404330a5-ba1e-422f-ba51-dc659e8c0ba1",
+      "width": 210,
+      "height": 70,
+      "type": "useCase",
+      "position": {
+        "x": 40,
+        "y": 330
+      },
+      "parentId": "a57a1862-1f90-42c7-9be7-6355bf3af822",
+      "data": {
+        "name": "..."
+      },
+      "measured": {
+        "width": 210,
+        "height": 70
+      }
+    },
+    {
+      "id": "7d8e0940-bf7a-41f9-a66f-15df0e2caf1b",
+      "width": 280,
+      "height": 430,
+      "type": "useCaseSystem",
+      "position": {
+        "x": 300,
+        "y": -70
+      },
+      "data": {
+        "name": "Knowledge base"
+      },
+      "measured": {
+        "width": 280,
+        "height": 430
+      }
+    },
+    {
+      "id": "fec4f150-9ea4-47ab-b806-42ba0e537be5",
+      "width": 200,
+      "height": 70,
+      "type": "useCase",
+      "position": {
+        "x": 40,
+        "y": 60
+      },
+      "parentId": "7d8e0940-bf7a-41f9-a66f-15df0e2caf1b",
+      "data": {
+        "name": "Search document"
+      },
+      "measured": {
+        "width": 200,
+        "height": 70
+      }
+    },
+    {
+      "id": "5e01f010-d09d-4741-9470-e7b7066b70a8",
+      "width": 200,
+      "height": 70,
+      "type": "useCase",
+      "position": {
+        "x": 40,
+        "y": 150
+      },
+      "parentId": "7d8e0940-bf7a-41f9-a66f-15df0e2caf1b",
+      "data": {
+        "name": "View summary"
+      },
+      "measured": {
+        "width": 200,
+        "height": 70
+      }
+    },
+    {
+      "id": "577d5a18-d011-4919-9dee-bac9839bf6e3",
+      "width": 210,
+      "height": 70,
+      "type": "useCase",
+      "position": {
+        "x": 40,
+        "y": 240
+      },
+      "parentId": "7d8e0940-bf7a-41f9-a66f-15df0e2caf1b",
+      "data": {
+        "name": "Filter by tags"
+      },
+      "measured": {
+        "width": 210,
+        "height": 70
+      }
+    },
+    {
+      "id": "f074983c-48ff-49c9-80f0-cdcaedd6cf56",
+      "width": 210,
+      "height": 70,
+      "type": "useCase",
+      "position": {
+        "x": 40,
+        "y": 330
+      },
+      "parentId": "7d8e0940-bf7a-41f9-a66f-15df0e2caf1b",
+      "data": {
+        "name": "..."
+      },
+      "measured": {
+        "width": 210,
+        "height": 70
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "643dc70f-6120-4d5f-8c33-96f58abe1c0f",
+      "source": "7bb0cd80-c3af-45fd-be2b-278f3d70c34c",
+      "target": "fec4f150-9ea4-47ab-b806-42ba0e537be5",
+      "type": "UseCaseAssociation",
+      "sourceHandle": "right",
+      "targetHandle": "left",
+      "data": {
+        "points": []
+      }
+    },
+    {
+      "id": "dd3c6cb9-6a65-4d5a-a170-662a7505825e",
+      "source": "7bb0cd80-c3af-45fd-be2b-278f3d70c34c",
+      "target": "5e01f010-d09d-4741-9470-e7b7066b70a8",
+      "type": "UseCaseAssociation",
+      "sourceHandle": "right",
+      "targetHandle": "left",
+      "data": {
+        "points": []
+      }
+    },
+    {
+      "id": "fd4aab61-10cf-4ab3-a37a-a1b7bb51fc4c",
+      "source": "7bb0cd80-c3af-45fd-be2b-278f3d70c34c",
+      "target": "577d5a18-d011-4919-9dee-bac9839bf6e3",
+      "type": "UseCaseAssociation",
+      "sourceHandle": "right",
+      "targetHandle": "left",
+      "data": {
+        "points": []
+      }
+    },
+    {
+      "id": "82152f9f-ad9e-417e-87f3-91931dac48bc",
+      "source": "7bb0cd80-c3af-45fd-be2b-278f3d70c34c",
+      "target": "f074983c-48ff-49c9-80f0-cdcaedd6cf56",
+      "type": "UseCaseAssociation",
+      "sourceHandle": "right",
+      "targetHandle": "left",
+      "data": {
+        "points": []
+      }
+    },
+    {
+      "id": "7e9ceff1-fde5-48db-8c12-7f82b4fe093c",
+      "source": "7bb0cd80-c3af-45fd-be2b-278f3d70c34c",
+      "target": "f1fdafc6-1b14-41ea-a46d-4ad0dbc9c428",
+      "type": "UseCaseAssociation",
+      "sourceHandle": "right",
+      "targetHandle": "left",
+      "data": {
+        "points": []
+      }
+    },
+    {
+      "id": "844efd44-473b-4665-b700-38a0e204a2c4",
+      "source": "d517c51d-c337-4767-9f32-17a2b2a9a799",
+      "target": "7bb0cd80-c3af-45fd-be2b-278f3d70c34c",
+      "type": "UseCaseAssociation",
+      "sourceHandle": "left",
+      "targetHandle": "right",
+      "data": {
+        "points": []
+      }
+    },
+    {
+      "id": "330d7f4e-ac4f-4f7e-93fb-e09bfa66a337",
+      "source": "38c57b78-a3b3-4cc8-91cc-44281304eedc",
+      "target": "7bb0cd80-c3af-45fd-be2b-278f3d70c34c",
+      "type": "UseCaseAssociation",
+      "sourceHandle": "left",
+      "targetHandle": "right",
+      "data": {
+        "points": []
+      }
+    },
+    {
+      "id": "ac10657c-ef08-40ce-878f-45c5cc8f9033",
+      "source": "404330a5-ba1e-422f-ba51-dc659e8c0ba1",
+      "target": "7bb0cd80-c3af-45fd-be2b-278f3d70c34c",
+      "type": "UseCaseAssociation",
+      "sourceHandle": "left",
+      "targetHandle": "right",
+      "data": {
+        "points": []
+      }
+    },
+    {
+      "id": "fa26e6c3-389d-4f0d-ab66-026b28bf0cd3",
+      "source": "7ce0c3a6-1af1-4a75-9d49-1ce6be99241b",
+      "target": "7bb0cd80-c3af-45fd-be2b-278f3d70c34c",
+      "type": "UseCaseAssociation",
+      "sourceHandle": "right",
+      "targetHandle": "left",
+      "data": {
+        "points": []
+      }
+    },
+    {
+      "id": "4f3c18d5-cb6e-4570-85e1-da51dffbf1e8",
+      "source": "8771db47-e446-4bb8-bad8-40b9468805e2",
+      "target": "7bb0cd80-c3af-45fd-be2b-278f3d70c34c",
+      "type": "UseCaseAssociation",
+      "sourceHandle": "right",
+      "targetHandle": "left",
+      "data": {
+        "points": []
+      }
+    },
+    {
+      "id": "bebaf781-80a1-4954-a363-b0f18eddef4a",
+      "source": "548a719b-8229-4d32-8ac3-094a557aec40",
+      "target": "7bb0cd80-c3af-45fd-be2b-278f3d70c34c",
+      "type": "UseCaseAssociation",
+      "sourceHandle": "right",
+      "targetHandle": "left",
+      "data": {
+        "points": []
+      }
+    },
+    {
+      "id": "898ec44f-343c-46d2-9c29-baf18826aa3d",
+      "source": "ebd07d88-e277-4a16-8c86-32186f897508",
+      "target": "7bb0cd80-c3af-45fd-be2b-278f3d70c34c",
+      "type": "UseCaseAssociation",
+      "sourceHandle": "right",
+      "targetHandle": "left",
+      "data": {
+        "points": []
+      }
+    }
+  ],
+  "assessments": {}
+}
