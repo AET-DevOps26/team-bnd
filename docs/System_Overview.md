@@ -83,7 +83,7 @@ For monitoring the microservices, Prometheus is used to scrape metrics. These ar
 ![Use Case Diagram](diagrams/use_case_diagram.png)
 
 ### Top-Level Architecture (UML Component Diagram)
-TODO
+![Component Diagram](diagrams/component_diagram.png)
 
 ## 2. First Product Backlog
 
