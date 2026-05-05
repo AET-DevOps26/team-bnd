@@ -23,6 +23,8 @@ To start up the spring-boot service, a Dockerfile is provided. To use it:
 4. Perform API calls: e.g. `curl http://localhost:8080/hello`
 5. Enjoy!
 
+Alternatively, you can just use docker compose: `docker compose up -d`
+
 ### Client
 TODO
 
