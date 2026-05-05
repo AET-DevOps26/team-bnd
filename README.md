@@ -18,8 +18,8 @@ This repository uses pre-commit hooks. Install [pre-commit](https://pre-commit.c
 ### Server
 To start up the spring-boot service, a Dockerfile is provided. To use it:
 1. Navigate to `services/spring/`
-2. Build the image: `docker build -t alexandria`
-3. Run the container: `docker run -p 8080:8080 alexandria`
+2. Build the image: `docker build -t spring`
+3. Run the container: `docker run -p 8080:8080 spring`
 4. Perform API calls: e.g. `curl http://localhost:8080/hello`
 5. Enjoy!
 
