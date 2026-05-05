@@ -23,7 +23,7 @@ To start up the spring-boot service, a Dockerfile is provided. To use it:
 4. Perform API calls: e.g. `curl http://localhost:8080/hello`
 5. Enjoy!
 
-Alternatively, you can just use docker compose: `docker compose up -d`
+Alternatively, you can just use docker compose: `docker compose up -d`. To force a fresh gradle build, run `docker compose up --build --force-recreate --no-deps`.
 
 ### Client
 TODO
