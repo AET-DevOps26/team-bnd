@@ -1,0 +1,5 @@
+services:
+  spring:
+    build: services/spring/
+    ports:
+      - 8080:8080

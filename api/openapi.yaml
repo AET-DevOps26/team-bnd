@@ -1,0 +1,23 @@
+openapi: 3.2.0
+info:
+  title: Alexandria - OpenAPI 3.2
+  description: This is the OpenAPI 3.2 specification for the Alexandria project.
+  version: 0.0.1
+tags:
+  - name: hello
+    summary: Hello World 
+    description: A simple hello world endpoint.
+paths:
+  /hello:
+    get:
+      tags: 
+        - hello
+      summary: Returns Hello World
+      responses:
+        '200':
+          description: Successful response
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: Hello World!
