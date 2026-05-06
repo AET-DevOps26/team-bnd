@@ -1,0 +1,15 @@
+# hadolint config. Tweak as we add more services.
+failure-threshold: warning
+
+# DL3008: pin apt versions - too noisy on slim images we don't fully control.
+# DL3018: pin apk versions in Alpine - same reason.
+# Reconsider both once we standardise on a hardened base image.
+ignored:
+  - DL3008
+  - DL3018
+
+trustedRegistries:
+  - docker.io
+  - ghcr.io
+  - registry.access.redhat.com
+  - mcr.microsoft.com
