@@ -5,12 +5,18 @@ info:
   version: 0.0.1
 tags:
   - name: hello
-    summary: Hello World 
+    summary: Hello World
     description: A simple hello world endpoint.
+  - name: genai
+    summary: GenAI service
+    description: Endpoints served by the Python/LangChain GenAI microservice.
+  - name: health
+    summary: Health checks
+    description: Liveness and readiness probes.
 paths:
   /hello:
     get:
-      tags: 
+      tags:
         - hello
       summary: Returns Hello World
       responses:
@@ -21,3 +27,51 @@ paths:
               schema:
                 type: string
                 example: Hello World!
+  /genai/hello:
+    get:
+      tags:
+        - genai
+        - hello
+      summary: GenAI service sanity check
+      description: Plain-text greeting so we can confirm the GenAI pod is reachable.
+      responses:
+        '200':
+          description: Successful response
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: Hello from Alexandria GenAI!
+  /genai/health:
+    get:
+      tags:
+        - genai
+        - health
+      summary: GenAI service health
+      description: Liveness/readiness probe. Returns service name and build version for easier debugging in k8s.
+      responses:
+        '200':
+          description: Service is up
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthStatus'
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      required:
+        - status
+        - service
+        - version
+      properties:
+        status:
+          type: string
+          enum: [ok]
+          example: ok
+        service:
+          type: string
+          example: alexandria-genai
+        version:
+          type: string
+          example: 0.0.1

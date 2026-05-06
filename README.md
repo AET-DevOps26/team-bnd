@@ -29,4 +29,10 @@ Alternatively, you can just use docker compose: `docker compose up -d`. To force
 TODO
 
 ### GenAI
-TODO
+Python/FastAPI under `services/genai/`.
+
+Quickest way:
+1. `docker compose up --build genai`
+2. `curl http://localhost:8000/genai/hello`
+
+For local Python dev (tests, autoreload), see [`services/genai/README.md`](services/genai/README.md).
