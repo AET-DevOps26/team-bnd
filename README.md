@@ -12,8 +12,22 @@ TODO
 ## Setup
 
 ### Git Repository
-This repository uses pre-commit hooks. Install [pre-commit](https://pre-commit.com/) and run `pre-commit install`. This will automatically run these scripts on each `git commit`:
-- TODO
+This repository uses pre-commit hooks. Install [pre-commit](https://pre-commit.com/) and run `pre-commit install` after cloning.
+
+On every `git commit`, these checks run automatically:
+- `trailing-whitespace`
+- `end-of-file-fixer`
+- `check-yaml` (except GitHub workflow files)
+- `check-added-large-files` (max 1024 KB)
+- `check-merge-conflict`
+- `mixed-line-ending`
+- `yamllint` with `.yamllint.yaml`
+- `hadolint-docker` with `.hadolint.yaml`
+- `actionlint`
+- `redocly-lint` via `npx --yes @redocly/cli@2.30.3 lint api/openapi.yaml` for files under `api/`
+
+To run the full hook set manually:
+`pre-commit run --all-files`
 
 ### Server
 To start up the spring-boot service, a Dockerfile is provided. To use it:
