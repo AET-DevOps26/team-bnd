@@ -1,18 +1,25 @@
 openapi: 3.2.0
 info:
-  title: Alexandria - OpenAPI 3.2
-  description: This is the OpenAPI 3.2 specification for the Alexandria project.
+  title: Alexandria
+  description: API specification for the Alexandria document management and knowledge extraction platform.
   version: 0.0.1
+  license:
+    name: MIT
+    identifier: MIT
+servers:
+  - url: http://localhost:8080
+    description: Local dev server
 tags:
   - name: hello
-    summary: Hello World 
-    description: A simple hello world endpoint.
+    description: Liveness / smoke endpoints used during early bring-up.
 paths:
   /hello:
     get:
-      tags: 
+      tags:
         - hello
+      operationId: getHello
       summary: Returns Hello World
+      security: []
       responses:
         '200':
           description: Successful response
@@ -21,3 +28,27 @@ paths:
               schema:
                 type: string
                 example: Hello World!
+        '500':
+          description: Unexpected server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+components:
+  schemas:
+    ApiError:
+      type: object
+      description: Unified error envelope used across all services.
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          example: INTERNAL_ERROR
+        message:
+          type: string
+          example: Something went wrong while processing the request.
+        details:
+          type: object
+          additionalProperties: true

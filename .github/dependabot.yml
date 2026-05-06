@@ -1,0 +1,29 @@
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      gha-minor:
+        update-types: [minor, patch]
+
+  - package-ecosystem: gradle
+    directory: "/services/spring/app"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      spring-boot:
+        patterns:
+          - "org.springframework.boot:*"
+          - "org.springframework:*"
+      misc-minor:
+        update-types: [minor, patch]
+
+  - package-ecosystem: docker
+    directory: "/services/spring"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 3

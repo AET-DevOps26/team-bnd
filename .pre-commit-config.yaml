@@ -1,0 +1,42 @@
+# Local guardrails. Run `pre-commit install` after cloning.
+# CI runs the same checks, so local hooks just speed up the feedback loop.
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+        args: [--allow-multiple-documents]
+        exclude: '\.github/workflows/.*\.ya?ml$'
+      - id: check-added-large-files
+        args: [--maxkb=1024]
+      - id: check-merge-conflict
+      - id: mixed-line-ending
+
+  - repo: https://github.com/adrienverge/yamllint
+    rev: v1.38.0
+    hooks:
+      - id: yamllint
+        args: [-c=.yamllint.yaml]
+
+  - repo: https://github.com/hadolint/hadolint
+    rev: v2.14.0
+    hooks:
+      - id: hadolint-docker
+        args: [--config, .hadolint.yaml]
+
+  - repo: https://github.com/rhysd/actionlint
+    rev: v1.7.12
+    hooks:
+      - id: actionlint
+
+  - repo: local
+    hooks:
+      - id: redocly-lint
+        name: redocly-lint
+        entry: npx --yes @redocly/cli@2.30.3 lint api/openapi.yaml
+        language: system
+        files: '^api/.*\.ya?ml$'
+        pass_filenames: false

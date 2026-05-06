@@ -1,0 +1,62 @@
+# Static security analysis via GitHub CodeQL. Runs on PRs touching
+# code, on every push to main, and weekly so we catch advisories on
+# dependencies that didn't change in our code.
+
+name: codeql
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'services/spring/**'
+      - '.github/workflows/codeql.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'services/spring/**'
+  schedule:
+    - cron: '17 4 * * 1'
+
+concurrency:
+  group: codeql-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  analyze:
+    name: analyze ${{ matrix.language }}
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      packages: read
+      actions: read
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [java-kotlin]
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: setup java
+        uses: actions/setup-java@v5
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: init codeql
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          queries: security-and-quality
+
+      - name: build (manual mode for reliability)
+        working-directory: services/spring/app
+        run: ./gradlew --no-daemon assemble
+
+      - name: analyze
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: /language:${{ matrix.language }}
