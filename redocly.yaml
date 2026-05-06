@@ -1,0 +1,17 @@
+# Redocly config used by both pre-commit and CI to lint api/openapi.yaml.
+extends:
+  - recommended
+
+apis:
+  alexandria@v1:
+    root: api/openapi.yaml
+
+rules:
+  # Relaxed until we have a real hosted URL. Localhost still trips this rule;
+  # flip back to error once we have a staging server in the spec.
+  no-server-example.com: warn
+  no-empty-servers: warn
+  operation-operationId: warn
+  operation-summary: warn
+  operation-4xx-response: warn
+  tags-alphabetical: off

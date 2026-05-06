@@ -1,0 +1,11 @@
+# Default owners for everything in the repo. Adjust per subsystem
+# once each team member's GitHub handle is wired up here.
+*               @AET-DevOps26/team-bnd
+
+# Subsystem ownership (uncomment and fill in once roles are final)
+# /services/spring/    @teammate-server
+# /services/genai/     @teammate-genai
+# /web-client/         @teammate-client
+# /api/                @AET-DevOps26/team-bnd
+# /.github/            @AET-DevOps26/team-bnd
+# /infra/              @AET-DevOps26/team-bnd
