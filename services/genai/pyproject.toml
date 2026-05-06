@@ -1,0 +1,36 @@
+[project]
+name = "alexandria-genai"
+version = "0.0.1"
+description = "GenAI microservice for Alexandria"
+requires-python = "~=3.14.0"
+dependencies = [
+    "fastapi~=0.136.1",
+    "uvicorn[standard]~=0.46.0",
+    "pydantic~=2.13.3",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest~=9.0.3",
+    "httpx~=0.28.1",
+    "ruff~=0.15.12",
+]
+
+[build-system]
+requires = ["uv_build>=0.11.9,<0.12"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-name = "app"
+module-root = ""
+
+[tool.ruff]
+line-length = 160
+target-version = "py314"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W", "UP", "B"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

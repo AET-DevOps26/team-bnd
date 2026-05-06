@@ -3,3 +3,9 @@ services:
     build: services/spring/
     ports:
       - 8080:8080
+  genai:
+    build: services/genai/
+    ports:
+      - 8000:8000
+    environment:
+      - GENAI_LOG_LEVEL=info
