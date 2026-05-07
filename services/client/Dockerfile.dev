@@ -1,0 +1,17 @@
+# Development Dockerfile for running the Vite dev server inside a container
+FROM node:18-alpine
+
+WORKDIR /app
+ENV PORT=5173
+
+# Install dependencies (prefer npm ci when lockfile present)
+COPY package.json ./
+COPY package-lock.json* ./ || true
+RUN npm ci --silent || npm install --no-audit --no-fund --silent
+
+# Copy source and expose dev port
+COPY . .
+EXPOSE 5173
+
+# Start Vite dev server and bind to 0.0.0.0 so the container is reachable
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "5173"]
