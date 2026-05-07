@@ -6,7 +6,7 @@ ENV PORT=5173
 
 # Install dependencies (prefer npm ci when lockfile present)
 COPY package.json ./
-COPY package-lock.json* ./ || true
+COPY package-lock.json* ./
 RUN npm ci --silent || npm install --no-audit --no-fund --silent
 
 # Copy source and expose dev port

@@ -30,7 +30,7 @@ A development image is provided which runs the Vite dev server inside the contai
 docker build -f services/client/Dockerfile.dev -t team-bnd-client-dev ./services/client
 
 # run the dev container (mount the source for live edits)
-docker run -p 5173:5173 -v $(pwd)/services/client:/app -w /app team-bnd-client-dev
+docker run -p 5173:5173 -v $(pwd)/services/client:/app -v /app/node_modules -w /app team-bnd-client-dev
 # then open http://localhost:5173
 ```
 
