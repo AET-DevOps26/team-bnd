@@ -40,7 +40,21 @@ To start up the spring-boot service, a Dockerfile is provided. To use it:
 Alternatively, you can just use docker compose: `docker compose up -d`. To force a fresh gradle build, run `docker compose up --build --force-recreate --no-deps`.
 
 ### Client
-TODO
+Client assets live under `services/client/` and are served as a static frontend.
+
+Quickest way:
+1. `docker compose up --build client`
+2. Open http://localhost:8082 or run `curl http://localhost:8082` to verify the site is up.
+
+To force a fresh build: `docker compose up --build --force-recreate --no-deps client`.
+
+For local frontend development (hot-reload, tests, linting), see `services/client/README.md`.
+
+Troubleshooting:
+- If the port 8082 is already in use, stop the conflicting process or change the port mapping in `docker-compose.yml`.
+- If assets don't update, rebuild the image or clear the browser cache.
+
+Health check example: `curl -I http://localhost:8082/` should return HTTP 200.
 
 ### GenAI
 Python/FastAPI under `services/genai/`.
