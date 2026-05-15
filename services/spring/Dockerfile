@@ -4,13 +4,6 @@
 ARG JDK_IMAGE=eclipse-temurin:21-jdk-alpine@sha256:4fb80de7aeb277ad949cfbe89b4f504e50bb34c57fd908c5825236473d71e986
 ARG JRE_IMAGE=eclipse-temurin:21-jre-alpine@sha256:704db3c40204a44f471191446ddd9cda5d60dab40f0e15c6507b815ed897238b
 
-# OCI labels, filled by CI
-ARG OCI_SOURCE=""
-ARG OCI_REVISION=""
-ARG OCI_CREATED=""
-ARG OCI_LICENSES="MIT"
-ARG OCI_TITLE="alexandria-spring"
-ARG OCI_DESCRIPTION="Spring Boot backend for Alexandria"
 
 # Build stage
 FROM ${JDK_IMAGE} AS build
