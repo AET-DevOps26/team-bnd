@@ -5,13 +5,41 @@ services:
       dockerfile: Dockerfile
     ports:
       - 8082:80
+    restart: unless-stopped
+    networks:
+      - alexandria
+    deploy:
+      resources:
+        limits:
+          cpus: "0.25"
+          memory: 128M
+
   spring:
     build: services/spring/
     ports:
       - 8080:8080
+    restart: unless-stopped
+    networks:
+      - alexandria
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 512M
+
   genai:
     build: services/genai/
     ports:
       - 8000:8000
-    environment:
-      - GENAI_LOG_LEVEL=info
+    restart: unless-stopped
+    networks:
+      - alexandria
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 512M
+
+networks:
+  alexandria:
+    driver: bridge
