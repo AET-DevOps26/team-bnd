@@ -21,13 +21,6 @@ RUN ./gradlew bootJar --no-daemon
 # Run stage
 FROM ${JRE_IMAGE}
 
-LABEL org.opencontainers.image.source="${OCI_SOURCE}" \
-      org.opencontainers.image.revision="${OCI_REVISION}" \
-      org.opencontainers.image.created="${OCI_CREATED}" \
-      org.opencontainers.image.licenses="${OCI_LICENSES}" \
-      org.opencontainers.image.title="${OCI_TITLE}" \
-      org.opencontainers.image.description="${OCI_DESCRIPTION}"
-
 WORKDIR /app
 
 RUN addgroup -g 1000 appgroup && adduser -u 1000 -G appgroup -D appuser
