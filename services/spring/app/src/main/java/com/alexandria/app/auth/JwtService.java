@@ -12,6 +12,7 @@ import io.jsonwebtoken.security.Keys;
 import java.util.Date;
 import java.util.UUID;
 
+// similar to https://medium.com/@th.chousiadas/spring-security-architecture-of-jwt-authentication-a7967a8ee309
 @Service
 public class JwtService {
     @Value("${jwt.secret}")
@@ -21,6 +22,13 @@ public class JwtService {
     private long expiration;
 
     private SecretKey signingKey;
+
+    private SecretKey getSigningKey() {
+        if (signingKey == null) {
+            signingKey = Keys.hmacShaKeyFor(secret.getBytes());
+        }
+        return signingKey;
+    }
 
     public String generateToken(User user) {
         return Jwts.builder()
@@ -38,11 +46,15 @@ public class JwtService {
                 .getPayload().getSubject());
     }
 
-    private SecretKey getSigningKey() {
-        if (signingKey == null) {
-            signingKey = Keys.hmacShaKeyFor(secret.getBytes());
-        }
+    public Date extractExpiration(String token) {
+        return Jwts.parser().verifyWith(getSigningKey())
+                .build()
+                .parseSignedClaims(token).getPayload().getExpiration();
+    }
 
-        return signingKey;
+    public Boolean validateToken(String token, User user) {
+        final UUID userId = extractUserId(token);
+        final Date expiration = extractExpiration(token);
+        return userId.equals(user.getId()) && !expiration.before(new Date());
     }
 }
