@@ -1,13 +1,15 @@
 package com.alexandria.app.user;
 
-import com.alexandria.app.user.UserRepository;
 import com.alexandria.app.dto.RegisterRequest;
-import jakarta.persistence.EntityNotFoundException;
+import com.alexandria.app.exception.UserNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.UUID;
 
+/**
+ * @brief Manages user registration and account operations.
+ */
 @Service
 public class UserService {
     private final UserRepository repository;
@@ -18,6 +20,13 @@ public class UserService {
         this.encoder = encoder;
     }
 
+    /**
+     * Registers new user.
+     *
+     * @param request Registration data (username, email, password).
+     * @return Created user entity.
+     * @throws IllegalArgumentException If username or email already exists.
+     */
     public User register(RegisterRequest request) {
         if (repository.existsByUsername(request.username())) {
             throw new IllegalArgumentException("Username already taken.");
@@ -31,9 +40,15 @@ public class UserService {
         return repository.save(user);
     }
 
+    /**
+     * Deletes user account by ID.
+     *
+     * @param id User UUID.
+     * @throws UserNotFoundException If user does not exist.
+     */
     public void deleteUser(UUID id) {
         if (!repository.existsById(id)) {
-            throw new IllegalArgumentException("User with given id does not exist.");
+            throw new UserNotFoundException(id);
         }
 
         repository.deleteById(id);

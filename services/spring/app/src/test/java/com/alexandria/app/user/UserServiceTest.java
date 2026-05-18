@@ -1,6 +1,7 @@
 package com.alexandria.app.user;
 
 import com.alexandria.app.dto.RegisterRequest;
+import com.alexandria.app.exception.UserNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -13,7 +14,6 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -89,8 +89,8 @@ class UserServiceTest {
         when(userRepository.existsById(userId)).thenReturn(false);
 
         assertThatThrownBy(() -> userService.deleteUser(userId))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("User with given id does not exist.");
+                .isInstanceOf(UserNotFoundException.class)
+                .hasMessageContaining(userId.toString());
 
         verify(userRepository, never()).deleteById(any());
     }

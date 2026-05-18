@@ -2,6 +2,7 @@ package com.alexandria.app.auth;
 
 import com.alexandria.app.dto.AuthResponse;
 import com.alexandria.app.dto.LoginRequest;
+import com.alexandria.app.exception.InvalidCredentialsException;
 import com.alexandria.app.user.User;
 import com.alexandria.app.user.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -71,8 +72,7 @@ class AuthServiceTest {
         when(userRepository.findByUsername("nonexistent")).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> authService.login(request))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("Invalid credentials.");
+                .isInstanceOf(InvalidCredentialsException.class);
     }
 
     @Test
@@ -84,8 +84,7 @@ class AuthServiceTest {
         when(passwordEncoder.matches("wrong_password", "hashed_password")).thenReturn(false);
 
         assertThatThrownBy(() -> authService.login(request))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("Invalid credentials.");
+                .isInstanceOf(InvalidCredentialsException.class);
     }
 
     @Test
