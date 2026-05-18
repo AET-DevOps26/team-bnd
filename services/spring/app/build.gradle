@@ -2,6 +2,16 @@ plugins {
 	id 'java'
 	id 'org.springframework.boot' version '4.0.6'
 	id 'io.spring.dependency-management' version '1.1.7'
+	id 'org.springdoc.openapi-gradle-plugin' version '1.9.0'
+}
+
+openApi {
+	apiDocsUrl = "http://localhost:8080/v3/api-docs.yaml"
+	outputDir = file("$projectDir/../../../api")
+	outputFileName = "openapi.yaml"
+	customBootRun {
+		args = ["--spring.profiles.active=openapi"]
+	}
 }
 
 group = 'com.alexandria'
@@ -29,6 +39,7 @@ dependencies {
 	runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.6'
 	runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.6'
 	runtimeOnly 'org.postgresql:postgresql'
+	runtimeOnly 'com.h2database:h2'
 
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'org.springframework.boot:spring-boot-starter-data-jpa-test'

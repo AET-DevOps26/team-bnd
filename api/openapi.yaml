@@ -1,120 +1,111 @@
-openapi: 3.2.0
+openapi: 3.1.0
 info:
-  title: Alexandria
-  description: API specification for the Alexandria document management and knowledge extraction platform.
-  version: 0.0.1
-  license:
-    name: MIT
-    identifier: MIT
+  title: OpenAPI definition
+  version: v0
 servers:
-  - url: http://localhost:8080
-    description: Local dev server
-tags:
-  - name: hello
-    description: Liveness / smoke endpoints used during early bring-up.
-  - name: genai
-    description: Endpoints served by the Python/LangChain GenAI microservice.
-  - name: health
-    description: Liveness and readiness probes.
+- url: http://localhost:8080
+  description: Generated server url
 paths:
+  /api/v1/auth/register:
+    post:
+      tags:
+      - auth-controller
+      operationId: register
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+  /api/v1/auth/login:
+    post:
+      tags:
+      - auth-controller
+      operationId: login
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
   /hello:
     get:
       tags:
-        - hello
-      operationId: getHello
-      summary: Returns Hello World
-      security: []
+      - controller
+      operationId: helloEndpoint
       responses:
-        '200':
-          description: Successful response
+        "200":
+          description: OK
           content:
             text/plain:
               schema:
                 type: string
-                example: Hello World!
-        '500':
-          description: Unexpected server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiError'
-  /genai/hello:
-    get:
+  /api/v1/users/{id}:
+    delete:
       tags:
-        - genai
-        - hello
-      operationId: getGenaiHello
-      summary: GenAI service sanity check
-      description: Plain-text greeting so we can confirm the GenAI pod is reachable.
-      security: []
+      - user-controller
+      operationId: deleteUser
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
       responses:
-        '200':
-          description: Successful response
-          content:
-            text/plain:
-              schema:
-                type: string
-                example: Hello from Alexandria GenAI!
-        '500':
-          description: Unexpected server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiError'
-  /genai/health:
-    get:
-      tags:
-        - genai
-        - health
-      operationId: getGenaiHealth
-      summary: GenAI service health
-      description: Liveness/readiness probe. Returns service name and build version for easier debugging in k8s.
-      security: []
-      responses:
-        '200':
-          description: Service is up
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/HealthStatus'
-        '500':
-          description: Unexpected server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiError'
+        "200":
+          description: OK
 components:
   schemas:
-    ApiError:
+    RegisterRequest:
       type: object
-      description: Unified error envelope used across all services.
-      required:
-        - code
-        - message
       properties:
-        code:
+        username:
           type: string
-          example: INTERNAL_ERROR
-        message:
+          minLength: 1
+        email:
           type: string
-          example: Something went wrong while processing the request.
-        details:
-          type: object
-          additionalProperties: true
-    HealthStatus:
+          format: email
+          minLength: 1
+        password:
+          type: string
+          maxLength: 2147483647
+          minLength: 10
+      required:
+      - email
+      - password
+      - username
+    AuthResponse:
       type: object
-      required:
-        - status
-        - service
-        - version
       properties:
-        status:
+        token:
           type: string
-          enum: [ok]
-          example: ok
-        service:
+        userId:
           type: string
-          example: alexandria-genai
-        version:
+          format: uuid
+    LoginRequest:
+      type: object
+      properties:
+        username:
           type: string
-          example: 0.0.1
+          minLength: 1
+        password:
+          type: string
+          minLength: 1
+      required:
+      - password
+      - username
