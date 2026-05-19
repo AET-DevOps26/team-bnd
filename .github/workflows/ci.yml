@@ -32,6 +32,10 @@ env:
   JAVA_DISTRIBUTION: "temurin"
   REGISTRY: ghcr.io
   IMAGE_NAMESPACE: ${{ github.repository }}
+  JWT_SECRET: ${{ secrets.JWT_SECRET }}
+  POSTGRES_DB: ${{ vars.POSTGRES_DB }}
+  POSTGRES_USER: ${{ vars.POSTGRES_USER }}
+  POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
 
 jobs:
   # ---------------------------------------------------------------------
