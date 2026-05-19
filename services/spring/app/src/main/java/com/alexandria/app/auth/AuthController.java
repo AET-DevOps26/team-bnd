@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.*;
@@ -26,6 +27,7 @@ public class AuthController {
 
     @PostMapping("/register")
     @Operation(summary = "Register new user", description = "Creates account and returns JWT token")
+    @SecurityRequirements
     @ApiResponse(responseCode = "201", description = "User created", content = @Content(schema = @Schema(implementation = AuthResponse.class)))
     @ApiResponse(responseCode = "400", description = "Invalid input or duplicate user")
     public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest request) {
@@ -36,6 +38,7 @@ public class AuthController {
 
     @PostMapping("/login")
     @Operation(summary = "Authenticate user", description = "Returns JWT token for valid credentials")
+    @SecurityRequirements
     @ApiResponse(responseCode = "200", description = "Login successful", content = @Content(schema = @Schema(implementation = AuthResponse.class)))
     @ApiResponse(responseCode = "401", description = "Invalid credentials")
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
