@@ -299,9 +299,7 @@ jobs:
 
       - name: tear stack down
         if: always()
-        run: |
-          docker compose logs
-          docker compose down -v --remove-orphans
+        run: docker compose down -v --remove-orphans
 
   # ---------------------------------------------------------------------
   # Aggregate gate: branch protection should require this single check.
