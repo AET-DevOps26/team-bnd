@@ -1,43 +1,40 @@
 package com.alexandria.app.user;
 
-import com.alexandria.app.dto.RegisterRequest;
 import com.alexandria.app.exception.UserNotFoundException;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.Optional;
 import java.util.UUID;
 
 /**
- * @brief Manages user registration and account operations.
+ * Manages user registration and account operations.
  */
 @Service
 public class UserService {
     private final UserRepository repository;
-    private final PasswordEncoder encoder;
 
-    public UserService(UserRepository repository, PasswordEncoder encoder) {
+    public UserService(UserRepository repository) {
         this.repository = repository;
-        this.encoder = encoder;
     }
 
     /**
-     * Registers new user.
+     * Finds existing user or creates new one if not present
      *
-     * @param request Registration data (username, email, password).
-     * @return Created user entity.
-     * @throws IllegalArgumentException If username or email already exists.
+     * @param oidcSubject OIDC subject of user.
+     * @param username    Username of user.
+     * @param email       E-mail of user.
+     * @return
      */
-    public User register(RegisterRequest request) {
-        if (repository.existsByUsername(request.username())) {
-            throw new IllegalArgumentException("Username already taken.");
+    public User findOrCreateByOidcSubject(String oidcSubject, String username, String email) {
+        Optional<User> existing = repository.findByOidcSubject(oidcSubject);
+        if (existing.isPresent()) {
+            return existing.get();
         }
+        return repository.save(new User(oidcSubject, username, email));
+    }
 
-        if (repository.existsByEmail(request.email())) {
-            throw new IllegalArgumentException("Email already registered.");
-        }
-
-        User user = new User(request.username(), request.email(), encoder.encode(request.password()));
-        return repository.save(user);
+    public Optional<User> findByOidcSubject(String oidcSubject) {
+        return repository.findByOidcSubject(oidcSubject);
     }
 
     /**
@@ -50,7 +47,6 @@ public class UserService {
         if (!repository.existsById(id)) {
             throw new UserNotFoundException(id);
         }
-
         repository.deleteById(id);
     }
 }

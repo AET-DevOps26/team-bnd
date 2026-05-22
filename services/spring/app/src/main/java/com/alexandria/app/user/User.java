@@ -5,7 +5,10 @@ import jakarta.persistence.*;
 import java.time.Instant;
 import java.util.UUID;
 
-
+/**
+ * Users are identified by their OIDC subject claim (oidcSubject). Local user
+ * records are created on first authenticated request.
+ */
 @Entity
 @Table(name = "users")
 public class User {
@@ -14,13 +17,13 @@ public class User {
     private UUID id;
 
     @Column(nullable = false, unique = true)
+    private String oidcSubject;
+
+    @Column(unique = true)
     private String username;
 
-    @Column(nullable = false, unique = true)
+    @Column(unique = true)
     private String email;
-
-    @Column(nullable = false)
-    private String passwordHash;
 
     @Column(nullable = false)
     private Instant createdAt;
@@ -30,10 +33,10 @@ public class User {
     public User() {
     }
 
-    public User(String username, String email, String passwordHash) {
+    public User(String oidcSubject, String username, String email) {
+        this.oidcSubject = oidcSubject;
         this.username = username;
         this.email = email;
-        this.passwordHash = passwordHash;
     }
 
     // PrePersist: JPA lifecycle hook on first insertion of entity
@@ -45,6 +48,14 @@ public class User {
     // Getters & Setters
     public UUID getId() {
         return id;
+    }
+
+    public String getOidcSubject() {
+        return oidcSubject;
+    }
+
+    public void setOidcSubject(String oidcSubject) {
+        this.oidcSubject = oidcSubject;
     }
 
     public String getUsername() {
@@ -61,14 +72,6 @@ public class User {
 
     public void setEmail(String email) {
         this.email = email;
-    }
-
-    public String getPasswordHash() {
-        return passwordHash;
-    }
-
-    public void setPasswordHash(String passwordHash) {
-        this.passwordHash = passwordHash;
     }
 
     public Instant getCreatedAt() {

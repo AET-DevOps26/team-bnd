@@ -12,65 +12,9 @@ servers:
 tags:
 - name: Users
   description: User account management
-- name: Authentication
-  description: User registration and login
 - name: Health
   description: Liveness and smoke endpoints
 paths:
-  /api/v1/auth/register:
-    post:
-      tags:
-      - Authentication
-      summary: Register new user
-      description: Creates account and returns JWT token
-      operationId: register
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/RegisterRequest"
-        required: true
-      responses:
-        "201":
-          description: User created
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/AuthResponse"
-        "400":
-          description: Invalid input or duplicate user
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/AuthResponse"
-      security: []
-  /api/v1/auth/login:
-    post:
-      tags:
-      - Authentication
-      summary: Authenticate user
-      description: Returns JWT token for valid credentials
-      operationId: login
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/LoginRequest"
-        required: true
-      responses:
-        "200":
-          description: Login successful
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/AuthResponse"
-        "401":
-          description: Invalid credentials
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/AuthResponse"
-      security: []
   /hello:
     get:
       tags:
@@ -116,45 +60,6 @@ paths:
       security:
       - bearerAuth: []
 components:
-  schemas:
-    RegisterRequest:
-      type: object
-      properties:
-        username:
-          type: string
-          minLength: 1
-        email:
-          type: string
-          format: email
-          minLength: 1
-        password:
-          type: string
-          maxLength: 2147483647
-          minLength: 10
-      required:
-      - email
-      - password
-      - username
-    AuthResponse:
-      type: object
-      properties:
-        token:
-          type: string
-        userId:
-          type: string
-          format: uuid
-    LoginRequest:
-      type: object
-      properties:
-        username:
-          type: string
-          minLength: 1
-        password:
-          type: string
-          minLength: 1
-      required:
-      - password
-      - username
   securitySchemes:
     bearerAuth:
       type: http
