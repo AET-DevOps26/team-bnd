@@ -1,5 +1,6 @@
 package com.alexandria.app.user;
 
+import com.alexandria.app.exception.UserNotFoundException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -29,9 +30,11 @@ public class UserController {
     @ApiResponse(responseCode = "403", description = "Cannot delete other users")
     @ApiResponse(responseCode = "404", description = "User not found")
     public ResponseEntity<Void> deleteUser(@PathVariable UUID id, Principal principal) {
-        UUID currId = UUID.fromString(principal.getName());
+        String oidcSubject = principal.getName();
+        User currentUser = userService.findByOidcSubject(oidcSubject)
+                .orElseThrow(() -> new UserNotFoundException(oidcSubject));
 
-        if (!currId.equals(id)) {
+        if (!currentUser.getId().equals(id)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
