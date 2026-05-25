@@ -1,0 +1,7 @@
+[azure]
+YOUR_VM_PUBLIC_IP
+
+[azure:vars]
+ansible_user=azureuser
+ansible_ssh_private_key_file=../.keys/azure_vm_rsa
+ansible_python_interpreter=/usr/bin/python3

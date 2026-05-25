@@ -11,6 +11,10 @@ TODO
 
 ## Setup
 
+### Infrastructure (Terraform + Ansible)
+
+Provisioning for Azure VM deployment lives under [`infra/`](infra/README.md).
+
 ### Git Repository
 This repository uses pre-commit hooks. Install [pre-commit](https://pre-commit.com/) and run `pre-commit install` after cloning.
 
