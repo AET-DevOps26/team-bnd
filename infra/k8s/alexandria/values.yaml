@@ -1,0 +1,29 @@
+replicaCount: 1
+
+image:
+  registry: ghcr.io
+  repository: aet-devops26/team-bnd
+  pullPolicy: Always
+  tag: "latest"
+
+client:
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 250m
+      memory: 128Mi
+
+genai:
+  resources:
+    requests:
+      cpu: 250m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+ingress:
+  enabled: true
+  className: nginx

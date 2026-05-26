@@ -18,3 +18,5 @@ ignore: |
   services/spring/app/build/
   **/node_modules/
   **/build/
+  **/templates/
+  **/charts/

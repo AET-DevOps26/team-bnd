@@ -65,3 +65,41 @@ Quickest way:
 2. `curl http://localhost:8000/genai/hello`
 
 For local Python dev (tests, autoreload), see [`services/genai/README.md`](services/genai/README.md).
+
+### Kubernetes Deployment
+
+A Helm chart is provided in `infra/helm/alexandria/`.
+
+Prerequisites:
+- A running Kubernetes cluster (Rancher, Azure AKS, minikube, etc.)
+- `helm` and `kubectl` configured to access the cluster
+
+Deploy:
+```bash
+helm install alexandria infra/helm/alexandria --namespace alexandria --create-namespace
+```
+
+Upgrade after changes:
+```bash
+helm upgrade alexandria infra/helm/alexandria --namespace alexandria
+```
+
+Uninstall:
+```bash
+helm uninstall alexandria --namespace alexandria
+```
+
+Override values (e.g., different image tag):
+```bash
+helm install alexandria infra/helm/alexandria \
+  --namespace alexandria --create-namespace \
+  --set image.tag=sha-abc123 \
+  --set ingress.host=alexandria.example.com
+```
+
+Check status:
+```bash
+kubectl -n alexandria get pods
+kubectl -n alexandria get svc
+kubectl -n alexandria get ingress
+```
