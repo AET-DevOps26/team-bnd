@@ -48,6 +48,8 @@ jobs:
     outputs:
       api: ${{ steps.filter.outputs.api }}
       spring: ${{ steps.filter.outputs.spring }}
+      client: ${{ steps.filter.outputs.client }}
+      genai: ${{ steps.filter.outputs.genai }}
       docker: ${{ steps.filter.outputs.docker }}
       workflows: ${{ steps.filter.outputs.workflows }}
       docs: ${{ steps.filter.outputs.docs }}
@@ -61,6 +63,12 @@ jobs:
               - 'api/**'
             spring:
               - 'services/spring/**'
+              - 'api/openapi.yaml'
+            client:
+              - 'services/client/**'
+              - 'api/openapi.yaml'
+            genai:
+              - 'services/genai/**'
               - 'api/openapi.yaml'
             docker:
               - '**/Dockerfile'
@@ -105,6 +113,8 @@ jobs:
       matrix:
         dockerfile:
           - services/spring/Dockerfile
+          - services/client/Dockerfile
+          - services/genai/Dockerfile
     steps:
       - uses: actions/checkout@v6
       - uses: hadolint/hadolint-action@v3.3.0
@@ -188,17 +198,90 @@ jobs:
           retention-days: 7
 
   # ---------------------------------------------------------------------
+  # Client: build and test the React/Vite frontend.
+  # ---------------------------------------------------------------------
+  build-client:
+    name: build & test client
+    needs: changes
+    if: needs.changes.outputs.client == 'true' || github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: setup node
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: services/client/package-lock.json
+
+      - name: install dependencies
+        working-directory: services/client
+        run: npm ci
+
+      - name: build
+        working-directory: services/client
+        run: npm run build
+
+      - name: upload dist
+        uses: actions/upload-artifact@v7
+        with:
+          name: client-dist
+          path: services/client/dist
+          if-no-files-found: warn
+          retention-days: 7
+
+  # ---------------------------------------------------------------------
+  # GenAI service: lint and test the Python/FastAPI service.
+  # ---------------------------------------------------------------------
+  build-genai:
+    name: build & test genai
+    needs: changes
+    if: needs.changes.outputs.genai == 'true' || github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: setup uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          cache-dependency-glob: services/genai/uv.lock
+
+      - name: setup python
+        working-directory: services/genai
+        run: uv python install
+
+      - name: install dependencies
+        working-directory: services/genai
+        run: uv sync --extra dev
+
+      - name: lint with ruff
+        working-directory: services/genai
+        run: uv run ruff check .
+
+      - name: run tests
+        working-directory: services/genai
+        run: uv run pytest
+
+  # ---------------------------------------------------------------------
   # Build docker images for changed services. Only push on main.
   # Image is also fed into Trivy for vuln scanning.
   # ---------------------------------------------------------------------
   build-image:
     name: build image ${{ matrix.service.name }}
-    needs: [changes, build-spring, lint-dockerfiles]
+    needs: [changes, build-spring, build-client, build-genai, lint-dockerfiles]
     if: |
       always() &&
       (needs.build-spring.result == 'success' || needs.build-spring.result == 'skipped') &&
+      (needs.build-client.result == 'success' || needs.build-client.result == 'skipped') &&
+      (needs.build-genai.result == 'success' || needs.build-genai.result == 'skipped') &&
       (needs.lint-dockerfiles.result == 'success' || needs.lint-dockerfiles.result == 'skipped') &&
-      (needs.changes.outputs.spring == 'true' || needs.changes.outputs.docker == 'true' || github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+      (needs.changes.outputs.spring == 'true' || needs.changes.outputs.client == 'true' || needs.changes.outputs.genai == 'true' || needs.changes.outputs.docker == 'true' || github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -207,6 +290,12 @@ jobs:
           - name: spring
             context: services/spring
             dockerfile: services/spring/Dockerfile
+          - name: client
+            context: services/client
+            dockerfile: services/client/Dockerfile
+          - name: genai
+            context: services/genai
+            dockerfile: services/genai/Dockerfile
     permissions:
       contents: read
       packages: write   # needed to push to GHCR on main
@@ -273,11 +362,13 @@ jobs:
   # ---------------------------------------------------------------------
   compose-smoke:
     name: compose smoke test
-    needs: [changes, build-spring]
+    needs: [changes, build-spring, build-client, build-genai]
     if: |
       always() &&
       needs.build-spring.result != 'failure' &&
-      (needs.changes.outputs.spring == 'true' || needs.changes.outputs.docker == 'true' || github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+      needs.build-client.result != 'failure' &&
+      needs.build-genai.result != 'failure' &&
+      (needs.changes.outputs.spring == 'true' || needs.changes.outputs.client == 'true' || needs.changes.outputs.genai == 'true' || needs.changes.outputs.docker == 'true' || github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -285,18 +376,39 @@ jobs:
       - name: bring stack up
         run: docker compose up -d --build --wait --wait-timeout 180
 
-      - name: hit /hello
+      - name: check spring service
         run: |
           for i in 1 2 3 4 5 6 7 8 9 10; do
             if curl -fsS http://localhost:8080/hello | grep -q "Hello World"; then
-              echo "ok"; exit 0
+              echo "spring ok"; break
             fi
             echo "waiting for spring service... ($i/10)"
             sleep 3
           done
-          echo "service did not become ready"
-          docker compose logs
-          exit 1
+
+      - name: check client service
+        run: |
+          for i in 1 2 3 4 5; do
+            if curl -fsS http://localhost:8082/ > /dev/null; then
+              echo "client ok"; break
+            fi
+            echo "waiting for client... ($i/5)"
+            sleep 2
+          done
+
+      - name: check genai service
+        run: |
+          for i in 1 2 3 4 5; do
+            if curl -fsS http://localhost:8000/genai/health > /dev/null; then
+              echo "genai ok"; break
+            fi
+            echo "waiting for genai... ($i/5)"
+            sleep 2
+          done
+
+      - name: show logs on failure
+        if: failure()
+        run: docker compose logs
 
       - name: tear stack down
         if: always()
@@ -314,6 +426,8 @@ jobs:
       - lint-dockerfiles
       - lint-workflows
       - build-spring
+      - build-client
+      - build-genai
       - build-image
       - compose-smoke
     runs-on: ubuntu-latest
