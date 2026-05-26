@@ -7,29 +7,37 @@ info:
     identifier: MIT
   version: 0.1.0
 servers:
-- url: /
-  description: Current server
+  - url: /
+    description: Current server
 tags:
-- name: Users
-  description: User account management
-- name: Health
-  description: Liveness and smoke endpoints
+  - name: Users
+    description: User account management
+    x-displayName: Users
+  - name: Health
+    description: Liveness and smoke endpoints
+    x-displayName: Health
+  - description: Health check endpoints
+    name: health
+    x-displayName: health
+  - description: Hello endpoints
+    name: hello
+    x-displayName: hello
 paths:
   /hello:
     get:
       tags:
-      - Health
+        - Health
       summary: Health check
       description: Returns 'Hello World!' if service is running
       operationId: helloEndpoint
       responses:
-        "200":
+        '200':
           description: Service is running
           content:
             text/plain:
               schema:
                 type: string
-        "404":
+        '404':
           description: Endpoint not found
           content:
             text/plain:
@@ -39,29 +47,71 @@ paths:
   /api/v1/users/{id}:
     delete:
       tags:
-      - Users
+        - Users
       summary: Delete user account
       description: Users can only delete their own account
       operationId: deleteUser
       parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
       responses:
-        "204":
+        '204':
           description: User deleted
-        "403":
+        '403':
           description: Cannot delete other users
-        "404":
+        '404':
           description: User not found
       security:
-      - bearerAuth: []
+        - bearerAuth: []
+  /genai/health:
+    get:
+      description: Health check endpoint.
+      operationId: health_genai_health_get
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: string
+                title: Response Health Genai Health Get
+                type: object
+          description: Successful Response
+      security: []
+      summary: Health
+      tags:
+        - health
+  /genai/hello:
+    get:
+      description: Hello endpoint.
+      operationId: hello_genai_hello_get
+      responses:
+        '200':
+          content:
+            text/plain:
+              schema:
+                type: string
+          description: Successful Response
+      security: []
+      summary: Hello
+      tags:
+        - hello
 components:
   securitySchemes:
     bearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
+x-tagGroups:
+  - name: Alexandria API
+    tags:
+      - Users
+      - Health
+  - name: Alexandria GenAI
+    tags:
+      - health
+      - hello

@@ -25,6 +25,7 @@ On every `git commit`, these checks run automatically:
 - `hadolint-docker` with `.hadolint.yaml`
 - `actionlint`
 - `redocly-lint` via `npx --yes @redocly/cli@2.30.3 lint api/openapi.yaml` for files under `api/`
+- `redocly-join` via `npx --yes @redocly/cli@2.30.3 join api/spring-openapi.yaml api/genai-openapi.yaml -o api/openapi.yaml` to merge generated OpenAPI specs into a unified YAML.
 
 To run the full hook set manually:
 `pre-commit run --all-files`

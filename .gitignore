@@ -411,3 +411,6 @@ pyrightconfig.json
 **/.idea/
 !.env.config
 !.env.example
+
+**/spring-openapi.yaml
+**/genai-openapi.yaml
