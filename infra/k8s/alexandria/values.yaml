@@ -27,3 +27,15 @@ genai:
 ingress:
   enabled: true
   className: nginx
+
+keycloak:
+  adminPassword: "secure-admin-password"
+  proxyHeaders: "xforwarded"
+  keycloak:
+    httpRelativePath: /keycloak
+
+postgres-db:
+  auth:
+    username: "postgres"
+    password: "keycloak-db-password"
+    database: "keycloak"
