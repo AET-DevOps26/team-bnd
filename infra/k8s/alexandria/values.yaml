@@ -48,6 +48,7 @@ genai:
 ingress:
   enabled: true
   className: nginx
+  host: alexandria.local
 
 keycloak:
   adminPassword: "secure-admin-password"
