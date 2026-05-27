@@ -85,6 +85,7 @@ Deploy:
 ```bash
 helm install alexandria infra/k8s/alexandria \
   --namespace alexandria --create-namespace \
+  --dependency-update \
   -f infra/k8s/alexandria/values-secrets.yaml
 ```
 
@@ -92,6 +93,7 @@ Upgrade after changes:
 ```bash
 helm upgrade alexandria infra/k8s/alexandria \
   --namespace alexandria \
+  --dependency-update \
   -f infra/k8s/alexandria/values-secrets.yaml
 ```
 
@@ -104,6 +106,7 @@ Override values (e.g., different image tag):
 ```bash
 helm install alexandria infra/k8s/alexandria \
   --namespace alexandria --create-namespace \
+  --dependency-update \
   -f infra/k8s/alexandria/values-secrets.yaml \
   --set image.tag=sha-abc123 \
   --set ingress.host=alexandria.example.com

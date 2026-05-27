@@ -26,6 +26,6 @@ Alexandria has been deployed to namespace {{ .Release.Namespace }}.
    cp infra/k8s/alexandria/values-secrets.yaml.example infra/k8s/alexandria/values-secrets.yaml
 
  Then deploy with:
-   helm upgrade {{ .Release.Name }} infra/k8s/alexandria -f infra/k8s/alexandria/values-secrets.yaml
+   helm upgrade {{ .Release.Name }} infra/k8s/alexandria --dependency-update -f infra/k8s/alexandria/values-secrets.yaml
 ===========================================================================
 {{- end }}
