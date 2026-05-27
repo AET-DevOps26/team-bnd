@@ -68,20 +68,31 @@ For local Python dev (tests, autoreload), see [`services/genai/README.md`](servi
 
 ### Kubernetes Deployment
 
-A Helm chart is provided in `infra/helm/alexandria/`.
+A Helm chart is provided in `infra/k8s/alexandria/`.
 
 Prerequisites:
 - A running Kubernetes cluster (Rancher, Azure AKS, minikube, etc.)
 - `helm` and `kubectl` configured to access the cluster
 
+Secrets Setup:
+1. Copy the secrets template:
+   ```bash
+   cp infra/k8s/alexandria/values-secrets.yaml.example infra/k8s/alexandria/values-secrets.yaml
+   ```
+2. Edit `values-secrets.yaml` and set your actual passwords (this file is gitignored)
+
 Deploy:
 ```bash
-helm install alexandria infra/helm/alexandria --namespace alexandria --create-namespace
+helm install alexandria infra/k8s/alexandria \
+  --namespace alexandria --create-namespace \
+  -f infra/k8s/alexandria/values-secrets.yaml
 ```
 
 Upgrade after changes:
 ```bash
-helm upgrade alexandria infra/helm/alexandria --namespace alexandria
+helm upgrade alexandria infra/k8s/alexandria \
+  --namespace alexandria \
+  -f infra/k8s/alexandria/values-secrets.yaml
 ```
 
 Uninstall:
@@ -91,8 +102,9 @@ helm uninstall alexandria --namespace alexandria
 
 Override values (e.g., different image tag):
 ```bash
-helm install alexandria infra/helm/alexandria \
+helm install alexandria infra/k8s/alexandria \
   --namespace alexandria --create-namespace \
+  -f infra/k8s/alexandria/values-secrets.yaml \
   --set image.tag=sha-abc123 \
   --set ingress.host=alexandria.example.com
 ```

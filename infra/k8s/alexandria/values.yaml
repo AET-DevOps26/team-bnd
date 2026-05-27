@@ -51,7 +51,7 @@ ingress:
   host: alexandria.local
 
 keycloak:
-  adminPassword: "secure-admin-password"
+  adminPassword: "admin"
   proxyHeaders: "xforwarded"
   keycloak:
     httpRelativePath: /keycloak

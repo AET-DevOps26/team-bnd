@@ -1,0 +1,31 @@
+Alexandria has been deployed to namespace {{ .Release.Namespace }}.
+
+{{- $insecure := list }}
+{{- if eq .Values.spring.database.password "postgres-password" }}
+{{- $insecure = append $insecure "spring.database.password" }}
+{{- end }}
+{{- if eq .Values.keycloak.adminPassword "admin" }}
+{{- $insecure = append $insecure "keycloak.adminPassword" }}
+{{- end }}
+{{- if eq .Values.keycloak.database.password "postgres-password" }}
+{{- $insecure = append $insecure "keycloak.database.password" }}
+{{- end }}
+{{- if eq (index .Values "postgres-db" "auth" "password") "postgres-password" }}
+{{- $insecure = append $insecure "postgres-db.auth.password" }}
+{{- end }}
+
+{{- if $insecure }}
+
+===========================================================================
+ SECURITY WARNING: You are using default passwords for the following values:
+{{- range $insecure }}
+   - {{ . }}
+{{- end }}
+
+ To set secure passwords, create a values-secrets.yaml file:
+   cp infra/k8s/alexandria/values-secrets.yaml.example infra/k8s/alexandria/values-secrets.yaml
+
+ Then deploy with:
+   helm upgrade {{ .Release.Name }} infra/k8s/alexandria -f infra/k8s/alexandria/values-secrets.yaml
+===========================================================================
+{{- end }}
