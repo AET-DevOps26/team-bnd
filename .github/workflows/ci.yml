@@ -32,6 +32,8 @@ env:
   JAVA_DISTRIBUTION: "temurin"
   REGISTRY: ghcr.io
   IMAGE_NAMESPACE: ${{ github.repository }}
+  POSTGRES_HOST: ${{ vars.POSTGRES_HOST }}
+  POSTGRES_PORT: ${{ vars.POSTGRES_PORT }}
   POSTGRES_DB: ${{ vars.POSTGRES_DB }}
   POSTGRES_USER: ${{ vars.POSTGRES_USER }}
   POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
@@ -158,7 +160,7 @@ jobs:
             path: services/spring/app
     permissions:
       contents: read
-      checks: write   # for test report annotations
+      checks: write # for test report annotations
     steps:
       - uses: actions/checkout@v6
 
@@ -298,8 +300,8 @@ jobs:
             dockerfile: services/genai/Dockerfile
     permissions:
       contents: read
-      packages: write   # needed to push to GHCR on main
-      security-events: write   # for Trivy SARIF upload
+      packages: write # needed to push to GHCR on main
+      security-events: write # for Trivy SARIF upload
     steps:
       - uses: actions/checkout@v6
 
@@ -346,7 +348,7 @@ jobs:
           format: sarif
           output: trivy-${{ matrix.service.name }}.sarif
           severity: CRITICAL,HIGH
-          exit-code: "0"   # don't fail PRs on vulns yet, just report
+          exit-code: "0" # don't fail PRs on vulns yet, just report
           ignore-unfixed: true
 
       - name: upload trivy sarif
