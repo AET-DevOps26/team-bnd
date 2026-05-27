@@ -6,6 +6,27 @@ image:
   pullPolicy: Always
   tag: "latest"
 
+spring:
+  resources:
+    requests:
+      cpu: 250m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  database:
+    host: "alexandria-postgres-db"
+    port: "5432"
+    name: "alexandria"
+    username: "postgres"
+    password: "postgres-password"
+  oidc:
+    issuerUri: "http://alexandria-keycloak:8080/keycloak/realms/alexandria"
+    jwkSetUri: "http://alexandria-keycloak:8080/keycloak/realms/alexandria/protocol/openid-connect/certs"
+    userIdClaim: "sub"
+    usernameClaim: "preferred_username"
+    rolesClaim: "roles"
+
 client:
   resources:
     requests:
@@ -33,9 +54,34 @@ keycloak:
   proxyHeaders: "xforwarded"
   keycloak:
     httpRelativePath: /keycloak
+  database:
+    type: postgres
+    host: "alexandria-postgres-db"
+    port: "5432"
+    name: "keycloak"
+    username: "postgres"
+    password: "postgres-password"
+  postgres:
+    enabled: false
+  extraInitContainers:
+    - name: wait-for-postgres
+      image: postgres:16-alpine
+      command:
+        - sh
+        - -c
+        - |
+          until pg_isready -h alexandria-postgres-db -p 5432 -U postgres; do
+            echo "waiting for database..."
+            sleep 2
+          done
+          echo "database is ready"
 
 postgres-db:
   auth:
     username: "postgres"
-    password: "keycloak-db-password"
+    password: "postgres-password"
     database: "keycloak"
+  initdb:
+    scripts:
+      create-alexandria-db.sql: |
+        CREATE DATABASE alexandria;

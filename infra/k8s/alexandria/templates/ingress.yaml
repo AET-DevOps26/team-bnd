@@ -18,6 +18,13 @@ spec:
                 name: {{ include "alexandria.fullname" . }}-client
                 port:
                   number: 80
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "alexandria.fullname" . }}-spring
+                port:
+                  number: 8080
           - path: /genai
             pathType: Prefix
             backend:
