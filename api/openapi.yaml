@@ -5,17 +5,23 @@ info:
   license:
     name: MIT
     identifier: MIT
-  version: 0.1.0
+  version: 0.2.0
 servers:
   - url: /
     description: Current server
 tags:
+  - name: Documents
+    description: Document management
+    x-displayName: Documents
   - name: Users
     description: User account management
     x-displayName: Users
   - name: Health
     description: Liveness and smoke endpoints
     x-displayName: Health
+  - name: KnowledgeBase
+    description: Document management and AI-powered knowledge operations
+    x-displayName: KnowledgeBase
   - description: Health check endpoints
     name: health
     x-displayName: health
@@ -23,6 +29,90 @@ tags:
     name: hello
     x-displayName: hello
 paths:
+  /api/v1/knowledgebase/documents:
+    get:
+      tags:
+        - KnowledgeBase
+      summary: List all documents
+      operationId: listDocuments
+      responses:
+        '200':
+          description: Documents retrieved
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Document'
+      security:
+        - bearerAuth: []
+    post:
+      tags:
+        - KnowledgeBase
+      summary: Create a new document
+      operationId: createDocument
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateDocumentRequest'
+        required: true
+      responses:
+        '201':
+          description: Document created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Document'
+      security:
+        - bearerAuth: []
+  /api/v1/knowledgebase/documents/{id}/tags:
+    post:
+      tags:
+        - KnowledgeBase
+      summary: Add tag to document
+      operationId: addTag
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddTagRequest'
+        required: true
+      responses:
+        '204':
+          description: Tag added
+        '404':
+          description: Document not found
+      security:
+        - bearerAuth: []
+  /api/v1/knowledgebase/ask:
+    post:
+      tags:
+        - KnowledgeBase
+      summary: Ask a question about your documents
+      operationId: ask
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AskRequest'
+        required: true
+      responses:
+        '200':
+          description: Answer generated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QAInteraction'
+      security:
+        - bearerAuth: []
   /hello:
     get:
       tags:
@@ -44,6 +134,176 @@ paths:
               schema:
                 type: string
       security: []
+  /api/v1/knowledgebase/search:
+    get:
+      tags:
+        - KnowledgeBase
+      summary: Search documents
+      operationId: search
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Document'
+      security:
+        - bearerAuth: []
+  /api/v1/knowledgebase/history/search:
+    get:
+      tags:
+        - KnowledgeBase
+      summary: Get search history
+      operationId: getSearchHistory
+      responses:
+        '200':
+          description: Search history retrieved
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SearchQuery'
+      security:
+        - bearerAuth: []
+  /api/v1/knowledgebase/history/qa:
+    get:
+      tags:
+        - KnowledgeBase
+      summary: Get Q&A history
+      operationId: getQAHistory
+      responses:
+        '200':
+          description: Q&A history retrieved
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/QAInteraction'
+      security:
+        - bearerAuth: []
+  /api/v1/knowledgebase/documents/{id}:
+    get:
+      tags:
+        - KnowledgeBase
+      summary: Get document by ID
+      operationId: getDocument
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Document retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Document'
+        '404':
+          description: Document not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Document'
+      security:
+        - bearerAuth: []
+    delete:
+      tags:
+        - KnowledgeBase
+      summary: Delete document
+      operationId: deleteDocument
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Document deleted
+        '404':
+          description: Document not found
+      security:
+        - bearerAuth: []
+  /api/v1/documents:
+    get:
+      tags:
+        - Documents
+      summary: List documents of user
+      operationId: listDocuments_1
+      responses:
+        '200':
+          description: Documents retrieved
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Document'
+      security:
+        - bearerAuth: []
+  /api/v1/documents/{id}:
+    get:
+      tags:
+        - Documents
+      summary: Get document by ID
+      operationId: getDocument_1
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Document retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Document'
+        '404':
+          description: Document not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Document'
+      security:
+        - bearerAuth: []
+    delete:
+      tags:
+        - Documents
+      summary: Delete document
+      operationId: deleteDocument_1
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Document deleted
+        '403':
+          description: Cannot delete other users documents
+        '404':
+          description: Document not found
+      security:
+        - bearerAuth: []
   /api/v1/users/{id}:
     delete:
       tags:
@@ -65,6 +325,32 @@ paths:
           description: Cannot delete other users
         '404':
           description: User not found
+      security:
+        - bearerAuth: []
+  /api/v1/knowledgebase/documents/{documentId}/tags/{tagId}:
+    delete:
+      tags:
+        - KnowledgeBase
+      summary: Remove tag from document
+      operationId: removeTag
+      parameters:
+        - name: documentId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: tagId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Tag removed
+        '404':
+          description: Document not found
       security:
         - bearerAuth: []
   /genai/health:
@@ -101,6 +387,186 @@ paths:
       tags:
         - hello
 components:
+  schemas:
+    CreateDocumentRequest:
+      type: object
+      properties:
+        fileName:
+          type: string
+        filePath:
+          type: string
+        fileType:
+          type: string
+        fileSize:
+          type: integer
+          format: int64
+        textContent:
+          type: string
+    Document:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        owner:
+          $ref: '#/components/schemas/User'
+        fileName:
+          type: string
+        filePath:
+          type: string
+        fileType:
+          type: string
+        fileSize:
+          type: integer
+          format: int64
+        rawTextContent:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        fileContent:
+          $ref: '#/components/schemas/FileContent'
+        summary:
+          $ref: '#/components/schemas/Summary'
+        extractedEntities:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExtractedEntity'
+        tags:
+          type: array
+          items:
+            $ref: '#/components/schemas/Tag'
+          uniqueItems: true
+    ExtractedEntity:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        document:
+          $ref: '#/components/schemas/Document'
+        name:
+          type: string
+        type:
+          type: string
+          enum:
+            - PERSON
+            - DATE
+            - TOPIC
+            - ORGANIZATION
+        confidence:
+          type: number
+          format: double
+    FileContent:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        document:
+          $ref: '#/components/schemas/Document'
+        fileContent:
+          type: object
+          properties:
+            binaryStream: {}
+    Summary:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        document:
+          $ref: '#/components/schemas/Document'
+        content:
+          type: string
+        generatedAt:
+          type: string
+          format: date-time
+        modelUsed:
+          type: string
+    Tag:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        label:
+          type: string
+        source:
+          type: string
+          enum:
+            - AUTO
+            - USER
+        documents:
+          type: array
+          items:
+            $ref: '#/components/schemas/Document'
+          uniqueItems: true
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        oidcSubject:
+          type: string
+        username:
+          type: string
+        email:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        preferences:
+          type: string
+    AddTagRequest:
+      type: object
+      properties:
+        label:
+          type: string
+    AskRequest:
+      type: object
+      properties:
+        question:
+          type: string
+    QAInteraction:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        user:
+          $ref: '#/components/schemas/User'
+        question:
+          type: string
+        answer:
+          type: string
+        sourceDocumentIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+        timestamp:
+          type: string
+          format: date-time
+        modelUsed:
+          type: string
+    SearchQuery:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        user:
+          $ref: '#/components/schemas/User'
+        queryText:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        resultCount:
+          type: integer
+          format: int32
   securitySchemes:
     bearerAuth:
       type: http
@@ -109,8 +575,10 @@ components:
 x-tagGroups:
   - name: Alexandria API
     tags:
+      - Documents
       - Users
       - Health
+      - KnowledgeBase
   - name: Alexandria GenAI
     tags:
       - health

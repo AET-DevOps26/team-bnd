@@ -4,6 +4,10 @@ import com.alexandria.app.user.User;
 import jakarta.persistence.*;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Entity
@@ -29,11 +33,28 @@ public class Document {
     @Column(nullable = false)
     private Long fileSize;
 
+    @Column(columnDefinition = "TEXT")
+    private String rawTextContent;
+
     @Column(nullable = false)
     private Instant createdAt;
 
     @OneToOne(mappedBy = "document", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private FileContent fileContent;
+
+    @OneToOne(mappedBy = "document", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private Summary summary;
+
+    @OneToMany(mappedBy = "document", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ExtractedEntity> extractedEntities = new ArrayList<>();
+
+    @ManyToMany
+    @JoinTable(
+            name = "document_tags",
+            joinColumns = @JoinColumn(name = "document_id"),
+            inverseJoinColumns = @JoinColumn(name = "tag_id")
+    )
+    private Set<Tag> tags = new HashSet<>();
 
     public Document() {
     }
@@ -99,6 +120,14 @@ public class Document {
         this.fileSize = fileSize;
     }
 
+    public String getRawTextContent() {
+        return rawTextContent;
+    }
+
+    public void setRawTextContent(String rawTextContent) {
+        this.rawTextContent = rawTextContent;
+    }
+
     public FileContent getFileContent() {
         return fileContent;
     }
@@ -108,5 +137,39 @@ public class Document {
         if (fileContent != null) {
             fileContent.setDocument(this);
         }
+    }
+
+    public Summary getSummary() {
+        return summary;
+    }
+
+    public void setSummary(Summary summary) {
+        this.summary = summary;
+    }
+
+    public List<ExtractedEntity> getExtractedEntities() {
+        return extractedEntities;
+    }
+
+    public void setExtractedEntities(List<ExtractedEntity> extractedEntities) {
+        this.extractedEntities = extractedEntities;
+    }
+
+    public Set<Tag> getTags() {
+        return tags;
+    }
+
+    public void setTags(Set<Tag> tags) {
+        this.tags = tags;
+    }
+
+    public void addTag(Tag tag) {
+        tags.add(tag);
+        tag.getDocuments().add(this);
+    }
+
+    public void removeTag(Tag tag) {
+        tags.remove(tag);
+        tag.getDocuments().remove(this);
     }
 }

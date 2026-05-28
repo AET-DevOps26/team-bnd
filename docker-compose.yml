@@ -36,6 +36,7 @@ services:
     depends_on:
       - postgres-db
       - keycloak
+      - genai
 
   genai:
     build: services/genai/

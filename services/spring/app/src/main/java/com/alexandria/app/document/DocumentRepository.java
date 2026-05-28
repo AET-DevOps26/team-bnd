@@ -10,5 +10,7 @@ import java.util.UUID;
 public interface DocumentRepository extends JpaRepository<Document, UUID> {
     List<Document> findByOwnerId(UUID ownerId);
 
+    List<Document> findByOwnerIdAndFileNameContainingIgnoreCase(UUID ownerId, String fileName);
+
     boolean existsByIdAndOwnerId(UUID id, UUID ownerId);
 }
