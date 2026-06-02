@@ -1,0 +1,9 @@
+dependencies:
+- name: keycloak
+  repository: oci://registry-1.docker.io/cloudpirates
+  version: 0.21.9
+- name: postgres
+  repository: oci://registry-1.docker.io/cloudpirates
+  version: 0.19.5
+digest: sha256:6513f06cd4a184113073a7f0e65c5f9aabeaa63f2e3c18ec6db7cbbd96a558f3
+generated: "2026-05-27T17:01:19.084076962+02:00"

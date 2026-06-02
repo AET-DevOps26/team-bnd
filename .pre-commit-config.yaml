@@ -50,13 +50,14 @@ repos:
         name: merge-openapi
         entry: redocly join api/spring-openapi.yaml api/genai-openapi.yaml -o api/openapi.yaml
         language: node
-        additional_dependencies: ['@redocly/cli@2.30.3']
+        additional_dependencies: ["@redocly/cli@2.30.3"]
         files: '^(services/genai/.*\.py|services/spring/.*\.java)$'
         pass_filenames: false
       - id: redocly-lint
         name: redocly-lint
         entry: redocly lint api/openapi.yaml
         language: node
-        additional_dependencies: ['@redocly/cli@2.30.3']
+        additional_dependencies: ["@redocly/cli@2.30.3"]
         files: '^api/openapi\.yaml$'
         pass_filenames: false
+exclude: "infra/.*/(templates|charts)"
