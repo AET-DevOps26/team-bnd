@@ -148,11 +148,11 @@ public class Document {
     }
 
     public List<ExtractedEntity> getExtractedEntities() {
-        return extractedEntities;
+        return extractedEntities == null ? new ArrayList<>() : new ArrayList<>(extractedEntities);
     }
 
     public void setExtractedEntities(List<ExtractedEntity> extractedEntities) {
-        this.extractedEntities = extractedEntities;
+        this.extractedEntities = extractedEntities == null ? new ArrayList<>() : new ArrayList<>(extractedEntities);
     }
 
     public Set<Tag> getTags() {
