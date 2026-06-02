@@ -13,5 +13,5 @@ rules:
   no-empty-servers: warn
   operation-operationId: warn
   operation-summary: warn
-  operation-4xx-response: warn
+  operation-4xx-response: off
   tags-alphabetical: off

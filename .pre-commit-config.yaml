@@ -34,9 +34,29 @@ repos:
 
   - repo: local
     hooks:
+      - id: genai-openapi
+        name: genai-openapi
+        entry: api/generate-genai-openapi.sh
+        language: script
+        files: '^services/genai/.*\.py$'
+        pass_filenames: false
+      - id: spring-openapi
+        name: spring-openapi
+        entry: api/generate-spring-openapi.sh
+        language: script
+        files: '^services/spring/.*\.java$'
+        pass_filenames: false
+      - id: merge-openapi
+        name: merge-openapi
+        entry: redocly join api/spring-openapi.yaml api/genai-openapi.yaml -o api/openapi.yaml
+        language: node
+        additional_dependencies: ['@redocly/cli@2.30.3']
+        files: '^(services/genai/.*\.py|services/spring/.*\.java)$'
+        pass_filenames: false
       - id: redocly-lint
         name: redocly-lint
-        entry: npx --yes @redocly/cli@2.30.3 lint api/openapi.yaml
-        language: system
-        files: '^api/.*\.ya?ml$'
+        entry: redocly lint api/openapi.yaml
+        language: node
+        additional_dependencies: ['@redocly/cli@2.30.3']
+        files: '^api/openapi\.yaml$'
         pass_filenames: false

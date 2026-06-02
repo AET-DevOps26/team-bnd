@@ -421,3 +421,6 @@ infra/terraform/terraform.tfvars
 infra/terraform/*auto.tfvars
 infra/ansible/inventory.ini
 infra/.keys/
+
+**/spring-openapi.yaml
+**/genai-openapi.yaml

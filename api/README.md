@@ -1,6 +1,7 @@
 # API
-The API is generated automatically from the annotated REST endpoints in the server code.
-To regenerate the `openapi.yaml` run `./gradlew generateOpenApiDocs` in the spring `app` directory.
+The API is generated from the respective codebases, i.e., Spring and FastAPI. Two scripts are provided in the `api/` directory to regenerate the respective `.yaml` files, these can be then merged using the `merge-openapi.sh` scripts.
+
+If pre-commit hooks are installed, the API spec is automatically regenerated.
 
 The respective client implementations can then be generated via tools as described in the "Best Practices Microservices" section on Artemis.
 
