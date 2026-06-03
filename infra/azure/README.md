@@ -18,11 +18,11 @@ This folder automates Azure VM provisioning and configuration. Terraform creates
    If you use a service principal, set the ARM_* environment variables instead.
 2. Prepare defaults and keys:
    ```bash
-   ./infra/prepare.sh
+   ./infra/azure/prepare.sh
    ```
 3. Provision the VM and run Ansible:
    ```bash
-   ./infra/provision.sh
+   ./infra/azure/provision.sh
    ```
 
 prepare.sh writes the SSH public key into terraform.tfvars and provision.sh uses the matching private key for Ansible, so you do not need to pass key paths manually.
@@ -46,14 +46,14 @@ export INFRA_CREATE_RG=false
 
 prepare.sh makes setup less manual and avoids mistakes:
 
-- Generates an RSA SSH keypair under infra/.keys. Azure does not accept ed25519 for Linux VMs, so RSA is used.
-- Creates infra/terraform/terraform.tfvars if it does not exist. It writes the location and SSH public key path and keeps defaults for everything else. The default location is swedencentral because of the subscription policy.
+- Generates an RSA SSH keypair under infra/azure/.keys. Azure does not accept ed25519 for Linux VMs, so RSA is used.
+- Creates infra/azure/terraform/terraform.tfvars if it does not exist. It writes the location and SSH public key path and keeps defaults for everything else. The default location is swedencentral because of the subscription policy.
 
 Location is required. You can provide it in advance:
 
 ```bash
 export TF_VAR_location=swedencentral
-./infra/prepare.sh
+./infra/azure/prepare.sh
 ```
 
 You can also set AZURE_LOCATION, it is treated the same way.
@@ -61,7 +61,7 @@ You can also set AZURE_LOCATION, it is treated the same way.
 If you want a different key location or name, set:
 
 ```bash
-export INFRA_KEYS_DIR=./infra/.keys
+export INFRA_KEYS_DIR=./infra/azure/.keys
 export INFRA_KEY_NAME=azure_vm_rsa
 ```
 
@@ -72,23 +72,23 @@ terraform.tfvars is created with minimal required values. You can edit it to cha
 ## Manual provisioning (if needed)
 
 ```bash
-cd infra/terraform
+cd infra/azure/terraform
 terraform init
 terraform apply
 terraform output -raw public_ip_address
 ```
 
-Create infra/ansible/inventory.ini from inventory.ini.example, fill in the public IP and key path, then run:
+Create infra/azure/ansible/inventory.ini from inventory.ini.example, fill in the public IP and key path, then run:
 
 ```bash
-cd infra/ansible
+cd infra/azure/ansible
 ansible-playbook -i inventory.ini playbook.yml
 ```
 
 ## Cleanup
 
 ```bash
-cd infra/terraform
+cd infra/azure/terraform
 terraform destroy
 ```
 
