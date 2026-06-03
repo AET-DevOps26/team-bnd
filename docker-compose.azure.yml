@@ -1,0 +1,73 @@
+services:
+  client:
+    image: ghcr.io/${IMAGE_NAMESPACE}/client:${IMAGE_TAG}
+    container_name: client
+    ports:
+      - "80:80"
+    restart: unless-stopped
+    networks:
+      - alexandria
+
+  spring:
+    image: ghcr.io/${IMAGE_NAMESPACE}/spring:${IMAGE_TAG}
+    container_name: spring
+    env_file:
+      - .env
+      - .env.config
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    restart: unless-stopped
+    networks:
+      - alexandria
+    depends_on:
+      - postgres-db
+      - keycloak
+
+  genai:
+    image: ghcr.io/${IMAGE_NAMESPACE}/genai:${IMAGE_TAG}
+    container_name: genai
+    env_file:
+      - .env.config
+    restart: unless-stopped
+    networks:
+      - alexandria
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.6.2
+    container_name: keycloak
+    command: start-dev --import-realm
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KC_BOOTSTRAP_ADMIN_USERNAME}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KC_BOOTSTRAP_ADMIN_PASSWORD}
+      KC_HTTP_PORT: 8180
+      KC_HOSTNAME: ${KC_HOSTNAME:-localhost}
+      KC_HOSTNAME_PORT: ${KC_HOSTNAME_PORT:-8180}
+    restart: unless-stopped
+    networks:
+      - alexandria
+    volumes:
+      - ./oidc/realm.json:/opt/keycloak/data/import/realm.json:ro
+
+  postgres-db:
+    image: postgres:16-alpine
+    container_name: postgres-db
+    env_file:
+      - .env
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    restart: unless-stopped
+    networks:
+      - alexandria
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+networks:
+  alexandria:
+    driver: bridge
+
+volumes:
+  pgdata:

@@ -412,5 +412,15 @@ pyrightconfig.json
 !.env.config
 !.env.example
 
+# Infrastructure
+infra/azure/terraform/.terraform/
+infra/azure/terraform/*.tfstate
+infra/azure/terraform/*.tfstate.*
+infra/azure/terraform/*.tfplan
+infra/azure/terraform/terraform.tfvars
+infra/azure/terraform/*auto.tfvars
+infra/azure/ansible/inventory.ini
+infra/azure/.keys/
+
 **/spring-openapi.yaml
 **/genai-openapi.yaml

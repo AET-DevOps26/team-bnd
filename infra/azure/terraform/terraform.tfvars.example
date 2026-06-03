@@ -1,0 +1,13 @@
+# subscription_id is optional when using az login. Set it only if you need to
+# override the selected subscription.
+subscription_id     = "00000000-0000-0000-0000-000000000000"
+location            = "swedencentral"
+resource_group_name = "devops-rg"
+name_prefix         = "alexandria"
+vm_name             = "alexandria-vm"
+vm_size             = "Standard_D2s_v3"
+admin_username      = "azureuser"
+ssh_public_key_path = "./../.keys/azure_vm_rsa.pub"
+# create_resource_group is set automatically by provision.sh, but you can
+# override it here if you run terraform manually.
+# create_resource_group = true
