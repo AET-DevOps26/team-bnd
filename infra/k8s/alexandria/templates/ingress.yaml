@@ -3,10 +3,16 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: {{ include "alexandria.fullname" . }}
+  annotations:
+      cert-manager.io/cluster-issuer: "letsencrypt-prod"
   labels:
     {{- include "alexandria.labels" . | nindent 4 }}
 spec:
   ingressClassName: {{ .Values.ingress.className }}
+  tls:
+    - hosts:
+      - {{ .Values.ingress.host }}
+      secretName: "alexandria-tls"
   rules:
     - host: {{ .Values.ingress.host }}
       http:

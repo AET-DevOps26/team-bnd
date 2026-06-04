@@ -48,7 +48,7 @@ genai:
 ingress:
   enabled: true
   className: nginx
-  host: alexandria.local
+  host: alexandria.stud.k8s.aet.cit.tum.de
 
 keycloak:
   adminPassword: "admin"
@@ -64,6 +64,22 @@ keycloak:
     password: "postgres-password"
   postgres:
     enabled: false
+  resources:
+    requests:
+      cpu: 250m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  initContainers:
+    copyQuarkusLib:
+      resources:
+        requests:
+          cpu: 20m
+          memory: 32Mi
+        limits:
+          cpu: 40m
+          memory: 64Mi
   extraInitContainers:
     - name: wait-for-postgres
       image: postgres:16-alpine
@@ -76,6 +92,13 @@ keycloak:
             sleep 2
           done
           echo "database is ready"
+      resources:
+        requests:
+          cpu: 20m
+          memory: 32Mi
+        limits:
+          cpu: 40m
+          memory: 64Mi
 
 postgres-db:
   auth:
@@ -86,3 +109,10 @@ postgres-db:
     scripts:
       create-alexandria-db.sql: |
         CREATE DATABASE alexandria;
+  resources:
+    requests:
+      memory: "1Gi"
+      cpu: "500m"
+    limits:
+      memory: "2Gi"
+      cpu: "1000m"
