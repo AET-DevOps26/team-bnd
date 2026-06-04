@@ -31,7 +31,8 @@ public class TextExtractor {
                 return new String(file.getBytes(), StandardCharsets.UTF_8);
             }
         } catch (IOException e) {
-            log.warn("Failed to extract text from file {}: {}", file.getOriginalFilename(), e.getMessage());
+            String safeFilename = sanitizeForLog(file.getOriginalFilename());
+            log.warn("Failed to extract text from file {}: {}", safeFilename, e.getMessage());
         }
 
         return null;
@@ -42,5 +43,15 @@ public class TextExtractor {
             PDFTextStripper stripper = new PDFTextStripper();
             return stripper.getText(document);
         }
+    }
+
+    private String sanitizeForLog(String value) {
+        if (value == null) {
+            return "null";
+        }
+        return value
+                .replace('\r', '_')
+                .replace('\n', '_')
+                .replaceAll("\\p{Cntrl}", "_");
     }
 }
