@@ -48,6 +48,9 @@ class KnowledgeBaseServiceTest {
     @Mock
     private GenAiClient genAiClient;
 
+    @Mock
+    private TextExtractor textExtractor;
+
     private KnowledgeBaseService knowledgeBaseService;
 
     private User testUser;
@@ -61,7 +64,8 @@ class KnowledgeBaseServiceTest {
                 tagRepository,
                 searchQueryRepository,
                 qaInteractionRepository,
-                genAiClient
+                genAiClient,
+                textExtractor
         );
         testUser = new User("oidc|123", "testuser", "test@example.com");
         setUserId(testUser, UUID.randomUUID());

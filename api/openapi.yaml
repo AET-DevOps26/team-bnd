@@ -10,9 +10,6 @@ servers:
   - url: /
     description: Current server
 tags:
-  - name: Documents
-    description: Document management
-    x-displayName: Documents
   - name: Users
     description: User account management
     x-displayName: Users
@@ -52,7 +49,7 @@ paths:
     post:
       tags:
         - KnowledgeBase
-      summary: Create a new document
+      summary: Create a new document with text content
       operationId: createDocument
       requestBody:
         content:
@@ -93,6 +90,38 @@ paths:
           description: Tag added
         '404':
           description: Document not found
+      security:
+        - bearerAuth: []
+  /api/v1/knowledgebase/documents/upload:
+    post:
+      tags:
+        - KnowledgeBase
+      summary: Upload a document file
+      operationId: uploadDocument
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+              required:
+                - file
+      responses:
+        '201':
+          description: Document uploaded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Document'
+        '400':
+          description: Invalid file
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Document'
       security:
         - bearerAuth: []
   /api/v1/knowledgebase/ask:
@@ -237,72 +266,6 @@ paths:
       responses:
         '204':
           description: Document deleted
-        '404':
-          description: Document not found
-      security:
-        - bearerAuth: []
-  /api/v1/documents:
-    get:
-      tags:
-        - Documents
-      summary: List documents of user
-      operationId: listDocuments_1
-      responses:
-        '200':
-          description: Documents retrieved
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Document'
-      security:
-        - bearerAuth: []
-  /api/v1/documents/{id}:
-    get:
-      tags:
-        - Documents
-      summary: Get document by ID
-      operationId: getDocument_1
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-      responses:
-        '200':
-          description: Document retrieved
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Document'
-        '404':
-          description: Document not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Document'
-      security:
-        - bearerAuth: []
-    delete:
-      tags:
-        - Documents
-      summary: Delete document
-      operationId: deleteDocument_1
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-      responses:
-        '204':
-          description: Document deleted
-        '403':
-          description: Cannot delete other users documents
         '404':
           description: Document not found
       security:
@@ -791,7 +754,6 @@ components:
 x-tagGroups:
   - name: Alexandria API
     tags:
-      - Documents
       - Users
       - Health
       - KnowledgeBase

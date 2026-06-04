@@ -11,7 +11,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import javax.sql.rowset.serial.SerialBlob;
+import java.io.IOException;
+import java.sql.SQLException;
 import java.util.List;
 import java.util.UUID;
 
@@ -27,6 +31,7 @@ public class KnowledgeBaseService {
     private final SearchQueryRepository searchQueryRepository;
     private final QAInteractionRepository qaInteractionRepository;
     private final GenAiClient genAiClient;
+    private final TextExtractor textExtractor;
 
     public KnowledgeBaseService(
             DocumentRepository documentRepository,
@@ -35,7 +40,8 @@ public class KnowledgeBaseService {
             TagRepository tagRepository,
             SearchQueryRepository searchQueryRepository,
             QAInteractionRepository qaInteractionRepository,
-            GenAiClient genAiClient) {
+            GenAiClient genAiClient,
+            TextExtractor textExtractor) {
         this.documentRepository = documentRepository;
         this.summaryRepository = summaryRepository;
         this.extractedEntityRepository = extractedEntityRepository;
@@ -43,6 +49,7 @@ public class KnowledgeBaseService {
         this.searchQueryRepository = searchQueryRepository;
         this.qaInteractionRepository = qaInteractionRepository;
         this.genAiClient = genAiClient;
+        this.textExtractor = textExtractor;
     }
 
     @Transactional
@@ -50,6 +57,36 @@ public class KnowledgeBaseService {
         Document document = new Document(owner, fileName, filePath, fileType, fileSize);
         document.setRawTextContent(textContent);
         document = documentRepository.save(document);
+
+        if (textContent != null && !textContent.isBlank()) {
+            processSummary(document, textContent);
+            processEntities(document, textContent);
+        }
+
+        return document;
+    }
+
+    @Transactional
+    public Document uploadDocument(User owner, MultipartFile file) {
+        String fileName = file.getOriginalFilename();
+        String fileType = file.getContentType();
+        Long fileSize = file.getSize();
+        String filePath = "/uploads/" + UUID.randomUUID() + "/" + fileName;
+
+        String textContent = textExtractor.extract(file);
+
+        Document document = new Document(owner, fileName, filePath, fileType, fileSize);
+        document.setRawTextContent(textContent);
+        document = documentRepository.save(document);
+
+        try {
+            FileContent fileContent = new FileContent();
+            fileContent.setDocument(document);
+            fileContent.setFileContent(new SerialBlob(file.getBytes()));
+            document.setFileContent(fileContent);
+        } catch (IOException | SQLException e) {
+            log.warn("Failed to store file content for document {}: {}", document.getId(), e.getMessage());
+        }
 
         if (textContent != null && !textContent.isBlank()) {
             processSummary(document, textContent);

@@ -15,6 +15,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.security.Principal;
 import java.util.List;
@@ -43,7 +44,7 @@ public class KnowledgeBaseController {
     }
 
     @PostMapping(value = "/documents", consumes = MediaType.APPLICATION_JSON_VALUE)
-    @Operation(summary = "Create a new document")
+    @Operation(summary = "Create a new document with text content")
     @ApiResponse(responseCode = "201", description = "Document created")
     public ResponseEntity<Document> createDocument(@RequestBody CreateDocumentRequest request, Principal principal) {
         User user = getCurrentUser(principal);
@@ -55,6 +56,18 @@ public class KnowledgeBaseController {
                 request.fileSize(),
                 request.textContent()
         );
+        return ResponseEntity.status(HttpStatus.CREATED).body(document);
+    }
+
+    @PostMapping(value = "/documents/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(summary = "Upload a document file")
+    @ApiResponse(responseCode = "201", description = "Document uploaded")
+    @ApiResponse(responseCode = "400", description = "Invalid file")
+    public ResponseEntity<Document> uploadDocument(
+            @RequestParam("file") MultipartFile file,
+            Principal principal) {
+        User user = getCurrentUser(principal);
+        Document document = knowledgeBaseService.uploadDocument(user, file);
         return ResponseEntity.status(HttpStatus.CREATED).body(document);
     }
 
