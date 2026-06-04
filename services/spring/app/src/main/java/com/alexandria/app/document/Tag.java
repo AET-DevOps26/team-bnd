@@ -52,10 +52,10 @@ public class Tag {
     }
 
     public Set<Document> getDocuments() {
-        return documents;
+        return new HashSet<>(documents);
     }
 
     public void setDocuments(Set<Document> documents) {
-        this.documents = documents;
+        this.documents = documents == null ? new HashSet<>() : new HashSet<>(documents);
     }
 }
