@@ -35,6 +35,8 @@ spec:
                 sleep 2
               done
               echo "database is ready"
+          resources:
+            {{- toYaml .Values.spring.resources | nindent 12 }}
       containers:
         - name: spring
           image: {{ include "alexandria.image" (dict "Values" .Values "service" "spring") }}
