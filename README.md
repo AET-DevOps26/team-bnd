@@ -11,6 +11,18 @@ TODO
 
 ## Setup
 
+### Traefik Reverse Proxy
+
+All services are accessed through Traefik as the reverse proxy. See [`docs/traefik.md`](docs/traefik.md) for architecture, routing, and configuration details.
+
+**Quick reference:**
+| URL | Service |
+|-----|---------|
+| http://localhost/ | Client (frontend) |
+| http://localhost/api/v1/... | Spring API |
+| http://localhost/swagger-ui/ | API documentation |
+| http://localhost/auth/ | Keycloak |
+
 ### Infrastructure (Terraform + Ansible)
 
 Provisioning for Azure VM deployment lives under [`infra/azure/`](infra/azure/README.md).
@@ -44,29 +56,25 @@ To start up the spring-boot service, a Dockerfile is provided. To use it:
 
 Alternatively, you can just use docker compose: `docker compose up -d`. To force a fresh gradle build, run `docker compose up --build --force-recreate --no-deps`.
 
+With docker compose, the service is available at `http://localhost/hello` (via Traefik).
+
 ### Client
 Client assets live under `services/client/` and are served as a static frontend.
 
 Quickest way:
-1. `docker compose up --build client`
-2. Open http://localhost:8082 or run `curl http://localhost:8082` to verify the site is up.
+1. `docker compose up -d`
+2. Open http://localhost/ to view the site.
 
 To force a fresh build: `docker compose up --build --force-recreate --no-deps client`.
 
 For local frontend development (hot-reload, tests, linting), see `services/client/README.md`.
 
-Troubleshooting:
-- If the port 8082 is already in use, stop the conflicting process or change the port mapping in `docker-compose.yml`.
-- If assets don't update, rebuild the image or clear the browser cache.
-
-Health check example: `curl -I http://localhost:8082/` should return HTTP 200.
-
 ### GenAI
 Python/FastAPI under `services/genai/`.
 
 Quickest way:
-1. `docker compose up --build genai`
-2. `curl http://localhost:8000/genai/hello`
+1. `docker compose up -d`
+2. `curl http://localhost/genai/hello`
 
 For local Python dev (tests, autoreload), see [`services/genai/README.md`](services/genai/README.md).
 
