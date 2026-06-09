@@ -22,6 +22,9 @@ tags:
   - description: Hello endpoints
     name: hello
     x-displayName: hello
+  - description: AI-powered document processing
+    name: ai
+    x-displayName: ai
 paths:
   /hello:
     get:
@@ -67,6 +70,60 @@ paths:
           description: User not found
       security:
         - bearerAuth: []
+  /genai/ask:
+    post:
+      description: Answer a question based on the provided documents.
+      operationId: ask_genai_ask_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenAiAskRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenAiAskResponse'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      security: []
+      summary: Ask
+      tags:
+        - ai
+  /genai/extract:
+    post:
+      description: Extract entities from the provided content.
+      operationId: extract_genai_extract_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenAiExtractRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenAiExtractResponse'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      security: []
+      summary: Extract
+      tags:
+        - ai
   /genai/health:
     get:
       description: Health check endpoint.
@@ -100,12 +157,172 @@ paths:
       summary: Hello
       tags:
         - hello
+  /genai/summarize:
+    post:
+      description: Generate a summary of the provided content.
+      operationId: summarize_genai_summarize_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenAiSummarizeRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenAiSummarizeResponse'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      security: []
+      summary: Summarize
+      tags:
+        - ai
 components:
   securitySchemes:
     bearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
+  schemas:
+    GenAiAskRequest:
+      properties:
+        documentIds:
+          items:
+            type: string
+          title: Documentids
+          type: array
+        question:
+          title: Question
+          type: string
+      required:
+        - question
+        - documentIds
+      title: GenAiAskRequest
+      type: object
+    GenAiAskResponse:
+      properties:
+        answer:
+          title: Answer
+          type: string
+        modelUsed:
+          title: Modelused
+          type: string
+        sourceDocumentIds:
+          items:
+            type: string
+          title: Sourcedocumentids
+          type: array
+      required:
+        - answer
+        - sourceDocumentIds
+        - modelUsed
+      title: GenAiAskResponse
+      type: object
+    GenAiExtractRequest:
+      properties:
+        content:
+          title: Content
+          type: string
+      required:
+        - content
+      title: GenAiExtractRequest
+      type: object
+    GenAiExtractResponse:
+      properties:
+        entities:
+          items:
+            $ref: '#/components/schemas/GenAiExtractedEntity'
+          title: Entities
+          type: array
+        modelUsed:
+          title: Modelused
+          type: string
+      required:
+        - entities
+        - modelUsed
+      title: GenAiExtractResponse
+      type: object
+    GenAiExtractedEntity:
+      properties:
+        confidence:
+          title: Confidence
+          type: number
+        name:
+          title: Name
+          type: string
+        type:
+          title: Type
+          type: string
+      required:
+        - name
+        - type
+        - confidence
+      title: GenAiExtractedEntity
+      type: object
+    GenAiSummarizeRequest:
+      properties:
+        content:
+          title: Content
+          type: string
+      required:
+        - content
+      title: GenAiSummarizeRequest
+      type: object
+    GenAiSummarizeResponse:
+      properties:
+        modelUsed:
+          title: Modelused
+          type: string
+        summary:
+          title: Summary
+          type: string
+      required:
+        - summary
+        - modelUsed
+      title: GenAiSummarizeResponse
+      type: object
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          title: Detail
+          type: array
+      title: HTTPValidationError
+      type: object
+    ValidationError:
+      properties:
+        ctx:
+          title: Context
+          type: object
+        input:
+          title: Input
+        loc:
+          items:
+            anyOf:
+              - type: string
+              - type: integer
+          title: Location
+          type: array
+        msg:
+          title: Message
+          type: string
+        type:
+          title: Error Type
+          type: string
+      required:
+        - loc
+        - msg
+        - type
+      title: ValidationError
+      type: object
 x-tagGroups:
   - name: Alexandria API
     tags:
@@ -115,3 +332,4 @@ x-tagGroups:
     tags:
       - health
       - hello
+      - ai

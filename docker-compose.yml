@@ -4,8 +4,6 @@ services:
       context: services/client/
       dockerfile: Dockerfile
     container_name: client
-    ports:
-      - 8082:80
     restart: unless-stopped
     networks:
       - alexandria
@@ -14,6 +12,12 @@ services:
         limits:
           cpus: "0.25"
           memory: 128M
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.client.rule=PathPrefix(`/`)"
+      - "traefik.http.routers.client.entrypoints=web"
+      - "traefik.http.routers.client.priority=1"
+      - "traefik.http.services.client.loadbalancer.server.port=80"
 
   spring:
     build: services/spring/
@@ -21,12 +25,10 @@ services:
     env_file: .env.config
     environment:
       POSTGRES_HOST: "postgres-db"
-      POSTGRES_PORT: ${POSTGRES_PORT}
+      POSTGRES_PORT: 5432
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-    ports:
-      - 8080:8080
     restart: unless-stopped
     networks:
       - alexandria
@@ -35,6 +37,12 @@ services:
         limits:
           cpus: "0.50"
           memory: 512M
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.spring.rule=PathPrefix(`/api`) || PathPrefix(`/swagger-ui`) || PathPrefix(`/v3/api-docs`) || PathPrefix(`/actuator`) || PathPrefix(`/hello`)"
+      - "traefik.http.routers.spring.entrypoints=web"
+      - "traefik.http.routers.spring.priority=10"
+      - "traefik.http.services.spring.loadbalancer.server.port=8080"
     depends_on:
       - postgres-db
       - keycloak
@@ -42,8 +50,6 @@ services:
   genai:
     build: services/genai/
     container_name: genai
-    ports:
-      - 8000:8000
     restart: unless-stopped
     networks:
       - alexandria
@@ -52,6 +58,13 @@ services:
         limits:
           cpus: "0.50"
           memory: 512M
+    labels:
+      - "traefik.enable=true"
+      # Only allow access to hello and health endpoints
+      - "traefik.http.routers.genai.rule=PathPrefix(`/genai/hello`) || PathPrefix(`/genai/health`)"
+      - "traefik.http.routers.genai.entrypoints=web"
+      - "traefik.http.routers.genai.priority=20"
+      - "traefik.http.services.genai.loadbalancer.server.port=8000"
 
   keycloak:
     image: quay.io/keycloak/keycloak:26.6.2
@@ -62,19 +75,25 @@ services:
       KC_BOOTSTRAP_ADMIN_PASSWORD: ${KC_BOOTSTRAP_ADMIN_PASSWORD}
       KC_HTTP_PORT: 8180
       KC_HOSTNAME: localhost
-      KC_HOSTNAME_PORT: 8180
-    ports:
-      - "8180:8180"
+      KC_HOSTNAME_PORT: 80
+      KC_PROXY_HEADERS: xforwarded
+      KC_HTTP_RELATIVE_PATH: /auth
     restart: unless-stopped
     networks:
       - alexandria
     volumes:
-      - ./oidc/realm.json:/opt/keycloak/data/import/realm.json:ro
+      - ./infra/oidc/realm.json:/opt/keycloak/data/import/realm.json:ro
     deploy:
       resources:
         limits:
           cpus: "0.50"
           memory: 512M
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.keycloak.rule=PathPrefix(`/auth`)"
+      - "traefik.http.routers.keycloak.entrypoints=web"
+      - "traefik.http.routers.keycloak.priority=10"
+      - "traefik.http.services.keycloak.loadbalancer.server.port=8180"
 
   postgres-db:
     image: postgres:16-alpine
@@ -84,8 +103,6 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-    ports:
-      - "${POSTGRES_PORT}:5432"
     restart: unless-stopped
     networks:
       - alexandria
@@ -96,6 +113,34 @@ services:
         limits:
           cpus: "0.25"
           memory: 256M
+
+  traefik:
+    image: traefik:v3.7
+    container_name: traefik
+    command:
+      - "--api.dashboard=true"
+      - "--api.insecure=false"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+    ports:
+      - "80:80"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - alexandria
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "0.25"
+          memory: 128M
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.dashboard.rule=Host(`traefik.localhost`)"
+      - "traefik.http.routers.dashboard.entrypoints=web"
+      - "traefik.http.routers.dashboard.service=api@internal"
+      - "traefik.http.services.dashboard.loadbalancer.server.port=9999"
 
 networks:
   alexandria:

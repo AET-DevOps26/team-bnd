@@ -31,7 +31,42 @@ spec:
                 name: {{ include "alexandria.fullname" . }}-spring
                 port:
                   number: 8080
-          - path: /genai
+          - path: /swagger-ui
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "alexandria.fullname" . }}-spring
+                port:
+                  number: 8080
+          - path: /v3/api-docs
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "alexandria.fullname" . }}-spring
+                port:
+                  number: 8080
+          - path: /actuator
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "alexandria.fullname" . }}-spring
+                port:
+                  number: 8080
+          - path: /hello
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "alexandria.fullname" . }}-spring
+                port:
+                  number: 8080
+          - path: /genai/health
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "alexandria.fullname" . }}-genai
+                port:
+                  number: 8000
+          - path: /genai/hello
             pathType: Prefix
             backend:
               service:
