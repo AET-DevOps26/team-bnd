@@ -262,7 +262,7 @@ jobs:
 
       - name: install dependencies
         working-directory: services/genai
-        run: uv sync --extra dev
+        run: uv sync --group dev
 
       - name: lint with ruff
         working-directory: services/genai

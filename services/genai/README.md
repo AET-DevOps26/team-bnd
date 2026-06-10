@@ -48,7 +48,7 @@ Requires [uv](https://docs.astral.sh/uv/) and Python 3.14 (`uv python install 3.
 
 ```bash
 cd services/genai
-uv sync --extra dev
+uv sync --group dev
 LLM_API_KEY=lg-... uv run uvicorn app.main:app --reload --port 8000
 ```
 
