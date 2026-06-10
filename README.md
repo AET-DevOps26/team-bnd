@@ -47,22 +47,18 @@ To run the full hook set manually:
 `pre-commit run --all-files`
 
 ### Server
-To start up the spring-boot service, a Dockerfile is provided. To use it:
-1. Navigate to `services/spring/`
-2. Build the image: `docker build -t spring`
-3. Run the container: `docker run -p 8080:8080 spring`
-4. Perform API calls: e.g. `curl http://localhost:8080/hello`
-5. Enjoy!
+Spring Boot lives under `services/spring/`.
+Quickest way:
+1. `docker compose up -d spring`
+2. Perform API calls, e.g., `curl http://localhost/hello`
 
-Alternatively, you can just use docker compose: `docker compose up -d`. To force a fresh gradle build, run `docker compose up --build --force-recreate --no-deps`.
-
-With docker compose, the service is available at `http://localhost/hello` (via Traefik).
+To force a fresh gradle build, run `docker compose up --build --force-recreate --no-deps spring`.
 
 ### Client
 Client assets live under `services/client/` and are served as a static frontend.
 
 Quickest way:
-1. `docker compose up -d`
+1. `docker compose up -d client`
 2. Open http://localhost/ to view the site.
 
 To force a fresh build: `docker compose up --build --force-recreate --no-deps client`.
@@ -73,7 +69,7 @@ For local frontend development (hot-reload, tests, linting), see `services/clien
 Python/FastAPI under `services/genai/`.
 
 Quickest way:
-1. `docker compose up -d`
+1. `docker compose up -d genai`
 2. `curl http://localhost/genai/hello`
 
 For local Python dev (tests, autoreload), see [`services/genai/README.md`](services/genai/README.md).

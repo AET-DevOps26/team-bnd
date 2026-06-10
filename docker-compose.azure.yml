@@ -16,6 +16,8 @@ services:
       - "traefik.http.routers.client.entrypoints=web"
       - "traefik.http.routers.client.priority=1"
       - "traefik.http.services.client.loadbalancer.server.port=80"
+    depends_on:
+      - traefik
 
   spring:
     image: ghcr.io/aet-devops26/team-bnd/spring:latest
@@ -44,6 +46,7 @@ services:
     depends_on:
       - postgres-db
       - keycloak
+      - traefik
 
   genai:
     image: ghcr.io/aet-devops26/team-bnd/genai:latest
@@ -63,6 +66,8 @@ services:
       - "traefik.http.routers.genai.entrypoints=web"
       - "traefik.http.routers.genai.priority=20"
       - "traefik.http.services.genai.loadbalancer.server.port=8000"
+    depends_on:
+      - traefik
 
   keycloak:
     image: quay.io/keycloak/keycloak:26.6.2
@@ -92,6 +97,8 @@ services:
       - "traefik.http.routers.keycloak.entrypoints=web"
       - "traefik.http.routers.keycloak.priority=10"
       - "traefik.http.services.keycloak.loadbalancer.server.port=8180"
+    depends_on:
+      - traefik
 
   postgres-db:
     image: postgres:16-alpine
