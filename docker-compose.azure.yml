@@ -22,7 +22,9 @@ services:
   spring:
     image: ghcr.io/aet-devops26/team-bnd/spring:latest
     container_name: spring
-    env_file: .env.config
+    env_file:
+      - .env
+      - .env.config
     environment:
       POSTGRES_HOST: "postgres-db"
       POSTGRES_PORT: 5432
@@ -51,6 +53,8 @@ services:
   genai:
     image: ghcr.io/aet-devops26/team-bnd/genai:latest
     container_name: genai
+    env_file:
+      - .env.config
     restart: unless-stopped
     networks:
       - alexandria
@@ -103,7 +107,8 @@ services:
   postgres-db:
     image: postgres:16-alpine
     container_name: postgres-db
-    env_file: .env.config
+    env_file:
+      - .env
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
