@@ -5,7 +5,7 @@ info:
   license:
     name: MIT
     identifier: MIT
-  version: 0.1.0
+  version: 0.2.0
 servers:
   - url: /
     description: Current server
@@ -16,6 +16,9 @@ tags:
   - name: Health
     description: Liveness and smoke endpoints
     x-displayName: Health
+  - name: KnowledgeBase
+    description: Document management and AI-powered knowledge operations
+    x-displayName: KnowledgeBase
   - description: Health check endpoints
     name: health
     x-displayName: health
@@ -26,6 +29,122 @@ tags:
     name: ai
     x-displayName: ai
 paths:
+  /api/v1/knowledgebase/documents:
+    get:
+      tags:
+        - KnowledgeBase
+      summary: List all documents
+      operationId: listDocuments
+      responses:
+        '200':
+          description: Documents retrieved
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Document'
+      security:
+        - bearerAuth: []
+    post:
+      tags:
+        - KnowledgeBase
+      summary: Create a new document with text content
+      operationId: createDocument
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateDocumentRequest'
+        required: true
+      responses:
+        '201':
+          description: Document created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Document'
+      security:
+        - bearerAuth: []
+  /api/v1/knowledgebase/documents/{id}/tags:
+    post:
+      tags:
+        - KnowledgeBase
+      summary: Add tag to document
+      operationId: addTag
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddTagRequest'
+        required: true
+      responses:
+        '204':
+          description: Tag added
+        '404':
+          description: Document not found
+      security:
+        - bearerAuth: []
+  /api/v1/knowledgebase/documents/upload:
+    post:
+      tags:
+        - KnowledgeBase
+      summary: Upload a document file
+      operationId: uploadDocument
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+              required:
+                - file
+      responses:
+        '201':
+          description: Document uploaded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Document'
+        '400':
+          description: Invalid file
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Document'
+      security:
+        - bearerAuth: []
+  /api/v1/knowledgebase/ask:
+    post:
+      tags:
+        - KnowledgeBase
+      summary: Ask a question about your documents
+      operationId: ask
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AskRequest'
+        required: true
+      responses:
+        '200':
+          description: Answer generated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QAInteraction'
+      security:
+        - bearerAuth: []
   /hello:
     get:
       tags:
@@ -47,6 +166,110 @@ paths:
               schema:
                 type: string
       security: []
+  /api/v1/knowledgebase/search:
+    get:
+      tags:
+        - KnowledgeBase
+      summary: Search documents
+      operationId: search
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Document'
+      security:
+        - bearerAuth: []
+  /api/v1/knowledgebase/history/search:
+    get:
+      tags:
+        - KnowledgeBase
+      summary: Get search history
+      operationId: getSearchHistory
+      responses:
+        '200':
+          description: Search history retrieved
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SearchQuery'
+      security:
+        - bearerAuth: []
+  /api/v1/knowledgebase/history/qa:
+    get:
+      tags:
+        - KnowledgeBase
+      summary: Get Q&A history
+      operationId: getQAHistory
+      responses:
+        '200':
+          description: Q&A history retrieved
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/QAInteraction'
+      security:
+        - bearerAuth: []
+  /api/v1/knowledgebase/documents/{id}:
+    get:
+      tags:
+        - KnowledgeBase
+      summary: Get document by ID
+      operationId: getDocument
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Document retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Document'
+        '404':
+          description: Document not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Document'
+      security:
+        - bearerAuth: []
+    delete:
+      tags:
+        - KnowledgeBase
+      summary: Delete document
+      operationId: deleteDocument
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Document deleted
+        '404':
+          description: Document not found
+      security:
+        - bearerAuth: []
   /api/v1/users/{id}:
     delete:
       tags:
@@ -195,6 +418,318 @@ paths:
       tags:
         - ai
 components:
+  schemas:
+    CreateDocumentRequest:
+      type: object
+      properties:
+        fileName:
+          type: string
+        filePath:
+          type: string
+        fileType:
+          type: string
+        fileSize:
+          type: integer
+          format: int64
+        textContent:
+          type: string
+    Document:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        owner:
+          $ref: '#/components/schemas/User'
+        fileName:
+          type: string
+        filePath:
+          type: string
+        fileType:
+          type: string
+        fileSize:
+          type: integer
+          format: int64
+        rawTextContent:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        fileContent:
+          $ref: '#/components/schemas/FileContent'
+        summary:
+          $ref: '#/components/schemas/Summary'
+        extractedEntities:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExtractedEntity'
+        tags:
+          type: array
+          items:
+            $ref: '#/components/schemas/Tag'
+          uniqueItems: true
+    ExtractedEntity:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        document:
+          $ref: '#/components/schemas/Document'
+        name:
+          type: string
+        type:
+          type: string
+          enum:
+            - PERSON
+            - DATE
+            - TOPIC
+            - ORGANIZATION
+        confidence:
+          type: number
+          format: double
+    FileContent:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        document:
+          $ref: '#/components/schemas/Document'
+        fileContent:
+          type: object
+          properties:
+            binaryStream: {}
+    Summary:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        document:
+          $ref: '#/components/schemas/Document'
+        content:
+          type: string
+        generatedAt:
+          type: string
+          format: date-time
+        modelUsed:
+          type: string
+    Tag:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        label:
+          type: string
+        source:
+          type: string
+          enum:
+            - AUTO
+            - USER
+        documents:
+          type: array
+          items:
+            $ref: '#/components/schemas/Document'
+          uniqueItems: true
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        oidcSubject:
+          type: string
+        username:
+          type: string
+        email:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        preferences:
+          type: string
+    AddTagRequest:
+      type: object
+      properties:
+        label:
+          type: string
+    AskRequest:
+      type: object
+      properties:
+        question:
+          type: string
+    QAInteraction:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        user:
+          $ref: '#/components/schemas/User'
+        question:
+          type: string
+        answer:
+          type: string
+        sourceDocumentIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+        timestamp:
+          type: string
+          format: date-time
+        modelUsed:
+          type: string
+    SearchQuery:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        user:
+          $ref: '#/components/schemas/User'
+        queryText:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        resultCount:
+          type: integer
+          format: int32
+    GenAiAskRequest:
+      properties:
+        documentIds:
+          items:
+            type: string
+          title: Documentids
+          type: array
+        question:
+          title: Question
+          type: string
+      required:
+        - question
+        - documentIds
+      title: GenAiAskRequest
+      type: object
+    GenAiAskResponse:
+      properties:
+        answer:
+          title: Answer
+          type: string
+        modelUsed:
+          title: Modelused
+          type: string
+        sourceDocumentIds:
+          items:
+            type: string
+          title: Sourcedocumentids
+          type: array
+      required:
+        - answer
+        - sourceDocumentIds
+        - modelUsed
+      title: GenAiAskResponse
+      type: object
+    GenAiExtractRequest:
+      properties:
+        content:
+          title: Content
+          type: string
+      required:
+        - content
+      title: GenAiExtractRequest
+      type: object
+    GenAiExtractResponse:
+      properties:
+        entities:
+          items:
+            $ref: '#/components/schemas/GenAiExtractedEntity'
+          title: Entities
+          type: array
+        modelUsed:
+          title: Modelused
+          type: string
+      required:
+        - entities
+        - modelUsed
+      title: GenAiExtractResponse
+      type: object
+    GenAiExtractedEntity:
+      properties:
+        confidence:
+          title: Confidence
+          type: number
+        name:
+          title: Name
+          type: string
+        type:
+          title: Type
+          type: string
+      required:
+        - name
+        - type
+        - confidence
+      title: GenAiExtractedEntity
+      type: object
+    GenAiSummarizeRequest:
+      properties:
+        content:
+          title: Content
+          type: string
+      required:
+        - content
+      title: GenAiSummarizeRequest
+      type: object
+    GenAiSummarizeResponse:
+      properties:
+        modelUsed:
+          title: Modelused
+          type: string
+        summary:
+          title: Summary
+          type: string
+      required:
+        - summary
+        - modelUsed
+      title: GenAiSummarizeResponse
+      type: object
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          title: Detail
+          type: array
+      title: HTTPValidationError
+      type: object
+    ValidationError:
+      properties:
+        ctx:
+          title: Context
+          type: object
+        input:
+          title: Input
+        loc:
+          items:
+            anyOf:
+              - type: string
+              - type: integer
+          title: Location
+          type: array
+        msg:
+          title: Message
+          type: string
+        type:
+          title: Error Type
+          type: string
+      required:
+        - loc
+        - msg
+        - type
+      title: ValidationError
+      type: object
   securitySchemes:
     bearerAuth:
       type: http
@@ -358,6 +893,7 @@ x-tagGroups:
     tags:
       - Users
       - Health
+      - KnowledgeBase
   - name: Alexandria GenAI
     tags:
       - health
