@@ -48,6 +48,7 @@ services:
     depends_on:
       - postgres-db
       - keycloak
+      - genai
       - traefik
 
   genai:
