@@ -43,7 +43,7 @@ Alexandria uses [Traefik](https://traefik.io/) as the reverse proxy and API gate
 | `/` | Client | 80 | Static frontend (catch-all, lowest priority) |
 | `/api/*` | Spring | 8080 | REST API |
 | `/swagger-ui/*` | Spring | 8080 | API documentation UI |
-| `/v3/api-docs/*` | Spring | 8080 | OpenAPI spec |
+| `/v3/api-docs` | Spring | 8080 | OpenAPI spec |
 | `/actuator/*` | Spring | 8080 | Health and metrics |
 | `/hello` | Spring | 8080 | Smoke test endpoint |
 | `/auth/*` | Keycloak | 8180 | OIDC provider |
@@ -63,11 +63,13 @@ docker compose up -d
 | URL | Service |
 |-----|---------|
 | http://localhost/ | Client (frontend) |
-| http://localhost/api/v1/... | Spring API |
-| http://localhost/swagger-ui/ | API documentation |
+| http://localhost/api/... | Spring API |
+| http://localhost/swagger-ui/index.html | Spring API documentation |
+| http://localhost/v3/api-docs| Spring API documentation |
 | http://localhost/hello | Spring health check |
 | http://localhost/auth/ | Keycloak admin |
 | http://localhost/genai/health | GenAI health check |
+| http://localhost/genai/hello | GenAI smoke test |
 
 ### Access Traefik Dashboard
 
