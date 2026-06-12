@@ -287,6 +287,8 @@ jobs:
       (needs.lint-dockerfiles.result == 'success' || needs.lint-dockerfiles.result == 'skipped') &&
       (needs.changes.outputs.spring == 'true' || needs.changes.outputs.client == 'true' || needs.changes.outputs.genai == 'true' || needs.changes.outputs.docker == 'true' || github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
+    outputs:
+      image-tag: ${{ steps.meta.outputs.version }}
     strategy:
       fail-fast: false
       matrix:
@@ -481,3 +483,55 @@ jobs:
         run: |
           ssh -i ~/.ssh/azure_key "${{ env.AZURE_USER }}@${{ env.AZURE_PUBLIC_IP }}" \
             "cd ~/deploy && echo '${{ secrets.GITHUB_TOKEN }}' | docker login ${{ env.REGISTRY }} -u '${{ github.actor }}' --password-stdin && docker compose -f docker-compose.azure.yml pull && docker compose -f docker-compose.azure.yml up -d"
+
+  # ---------------------------------------------------------------------
+  # Deploy to stud cluster (Rancher/k8s)
+  # ---------------------------------------------------------------------
+  deploy-stud:
+    name: deploy to stud cluster
+    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    runs-on: ubuntu-latest
+    needs: [build-image, ci-summary]
+    environment: STUD
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: setup helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.18.4
+
+      - name: setup kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: v1.32.4
+
+      - name: configure kubeconfig
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBE_CONFIG }}" > ~/.kube/config
+          chmod 600 ~/.kube/config
+
+      - name: update helm dependencies
+        working-directory: infra/k8s/alexandria
+        run: helm dependency update
+
+      - name: deploy with helm
+        working-directory: infra/k8s/alexandria
+        run: |
+          helm upgrade --install alexandria . \
+            --namespace alexandria \
+            --set image.tag="${{ needs.build-image.outputs.image-tag }}" \
+            --set spring.database.password="${{ secrets.POSTGRES_PASSWORD }}" \
+            --set keycloak.adminUser="${{ secrets.KC_BOOTSTRAP_ADMIN_USERNAME }}" \
+            --set keycloak.adminPassword="${{ secrets.KC_BOOTSTRAP_ADMIN_PASSWORD }}" \
+            --set keycloak.database.password="${{ secrets.POSTGRES_PASSWORD }}" \
+            --set postgres-db.auth.password="${{ secrets.POSTGRES_PASSWORD }}" \
+            --wait \
+            --timeout 5m
+
+      - name: verify deployment
+        run: |
+          kubectl -n alexandria get pods
+          kubectl -n alexandria get svc
+          kubectl -n alexandria get ingress
