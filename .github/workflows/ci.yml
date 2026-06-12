@@ -502,7 +502,7 @@ jobs:
 
       - name: install playwright browsers
         working-directory: services/client
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install --with-deps
 
       - name: run playwright tests
         working-directory: services/client
