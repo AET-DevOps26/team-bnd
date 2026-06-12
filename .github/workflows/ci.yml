@@ -419,6 +419,113 @@ jobs:
         run: docker compose down -v --remove-orphans
 
   # ---------------------------------------------------------------------
+  # E2E tests: bring the full stack up with Docker Compose, provision a
+  # Keycloak test user via the Admin REST API, then run Playwright tests
+  # ---------------------------------------------------------------------
+  e2e:
+    name: e2e tests (playwright)
+    needs: [changes, build-spring, build-client, build-genai]
+    if: |
+      always() &&
+      needs.build-spring.result != 'failure' &&
+      needs.build-client.result != 'failure' &&
+      needs.build-genai.result != 'failure' &&
+      (needs.changes.outputs.spring == 'true' || needs.changes.outputs.client == 'true' || needs.changes.outputs.genai == 'true' || needs.changes.outputs.docker == 'true' || github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    env:
+      TEST_USER: ${{ vars.TEST_USER }}
+      TEST_PASSWORD: ${{ secrets.TEST_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: bring stack up
+        run: docker compose up -d --build --wait --wait-timeout 180
+
+      - name: wait for keycloak realm
+        run: |
+          for i in $(seq 1 20); do
+            if curl -fsS "http://localhost/auth/realms/alexandria" > /dev/null 2>&1; then
+              echo "keycloak realm ready"; break
+            fi
+            echo "waiting for keycloak... ($i/20)"
+            sleep 5
+          done
+
+      - name: provision test user via keycloak admin api
+        run: |
+          # Obtain an admin access token from the master realm
+          ADMIN_TOKEN=$(curl -fsS \
+            -d "client_id=admin-cli" \
+            -d "username=${KC_BOOTSTRAP_ADMIN_USERNAME}" \
+            -d "password=${KC_BOOTSTRAP_ADMIN_PASSWORD}" \
+            -d "grant_type=password" \
+            "http://localhost/auth/realms/master/protocol/openid-connect/token" \
+            | jq -r '.access_token')
+
+          # Create the test user in the alexandria realm
+          CREATE_RESPONSE=$(curl -sS -o /dev/null -w "%{http_code}" \
+            -H "Authorization: Bearer ${ADMIN_TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d "{\"username\": \"${TEST_USER}\", \"enabled\": true, \"email\": \"${TEST_USER}@test.local\"}" \
+            "http://localhost/auth/admin/realms/alexandria/users")
+
+          if [ "$CREATE_RESPONSE" != "201" ] && [ "$CREATE_RESPONSE" != "409" ]; then
+            echo "Failed to create test user (HTTP $CREATE_RESPONSE)"
+            exit 1
+          fi
+
+          # Fetch the user ID
+          USER_ID=$(curl -fsS \
+            -H "Authorization: Bearer ${ADMIN_TOKEN}" \
+            "http://localhost/auth/admin/realms/alexandria/users?username=${TEST_USER}&exact=true" \
+            | jq -r '.[0].id')
+
+          # Set the test user's password (temporary=false so no reset required)
+          curl -fsS -X PUT \
+            -H "Authorization: Bearer ${ADMIN_TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d "{\"type\": \"password\", \"value\": \"${TEST_PASSWORD}\", \"temporary\": false}" \
+            "http://localhost/auth/admin/realms/alexandria/users/${USER_ID}/reset-password"
+
+          echo "test user provisioned (id: ${USER_ID})"
+
+      - name: setup node
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: services/client/package-lock.json
+
+      - name: install dependencies
+        working-directory: services/client
+        run: npm ci
+
+      - name: install playwright browsers
+        working-directory: services/client
+        run: npx playwright install --with-deps chromium
+
+      - name: run playwright tests
+        working-directory: services/client
+        run: npx playwright test
+
+      - name: upload playwright report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report
+          path: services/client/playwright-report/
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: show logs on failure
+        if: failure()
+        run: docker compose logs
+
+      - name: tear stack down
+        if: always()
+        run: docker compose down -v --remove-orphans
+
+  # ---------------------------------------------------------------------
   # Aggregate gate: branch protection should require this single check.
   # If anything upstream failed, this fails.
   # ---------------------------------------------------------------------
@@ -434,6 +541,7 @@ jobs:
       - build-genai
       - build-image
       - compose-smoke
+      - e2e
     runs-on: ubuntu-latest
     steps:
       - name: fail if any required job failed
