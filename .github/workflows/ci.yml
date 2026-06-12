@@ -6,9 +6,6 @@
 # - Stay extensible: when web-client and the GenAI service land,
 #   they slot in as new jobs / matrix entries without rewriting this file.
 #
-# CD (push images, deploy to k8s) lives in a separate workflow once we
-# have a target cluster. This file is CI-only on purpose.
-
 name: ci
 
 on:
@@ -521,12 +518,12 @@ jobs:
         run: |
           helm upgrade --install alexandria . \
             --namespace alexandria \
-            --set image.tag="${{ needs.build-image.outputs.image-tag }}" \
-            --set spring.database.password="${{ secrets.POSTGRES_PASSWORD }}" \
-            --set keycloak.adminUser="${{ secrets.KC_BOOTSTRAP_ADMIN_USERNAME }}" \
-            --set keycloak.adminPassword="${{ secrets.KC_BOOTSTRAP_ADMIN_PASSWORD }}" \
-            --set keycloak.database.password="${{ secrets.POSTGRES_PASSWORD }}" \
-            --set postgres-db.auth.password="${{ secrets.POSTGRES_PASSWORD }}" \
+            --set "image.tag=${{ needs.build-image.outputs.image-tag }}" \
+            --set "spring.database.password=${{ secrets.POSTGRES_PASSWORD }}" \
+            --set "keycloak.adminUser=${{ secrets.KC_BOOTSTRAP_ADMIN_USERNAME }}" \
+            --set "keycloak.adminPassword=${{ secrets.KC_BOOTSTRAP_ADMIN_PASSWORD }}" \
+            --set "keycloak.database.password=${{ secrets.POSTGRES_PASSWORD }}" \
+            --set "postgres-db.auth.password=${{ secrets.POSTGRES_PASSWORD }}" \
             --wait \
             --timeout 5m
 

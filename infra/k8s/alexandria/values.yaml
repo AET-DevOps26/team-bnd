@@ -37,6 +37,7 @@ client:
       memory: 128Mi
 
 genai:
+  baseUrl: "http://alexandria-genai:8000"
   resources:
     requests:
       cpu: 250m
