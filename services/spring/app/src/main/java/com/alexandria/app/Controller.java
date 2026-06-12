@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @Tag(name = "Health", description = "Liveness and smoke endpoints")
 public class Controller {
-    @GetMapping(value = "/hello", produces = "text/plain")
+    @GetMapping(path = "/hello", produces = "text/plain")
     @Operation(summary = "Health check", description = "Returns 'Hello World!' if service is running")
     @SecurityRequirements
     @ApiResponse(responseCode = "200", description = "Service is running")
