@@ -6,9 +6,6 @@
 # - Stay extensible: when web-client and the GenAI service land,
 #   they slot in as new jobs / matrix entries without rewriting this file.
 #
-# CD (push images, deploy to k8s) lives in a separate workflow once we
-# have a target cluster. This file is CI-only on purpose.
-
 name: ci
 
 on:
