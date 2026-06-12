@@ -50,10 +50,10 @@ Testing
 
 Playwright is used for end-to-end tests. The tests run against a remote browser served by a Playwright Docker container.
 
-Start the Playwright server (once; runs in the background):
+Include the Playwright server when starting services:
 
 ```bash
-npm run test:server
+docker compose --profile e2e up
 ```
 
 Run the tests:

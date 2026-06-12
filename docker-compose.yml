@@ -157,6 +157,18 @@ services:
       timeout: 3s
       retries: 3
       start_period: 5s
+  playwright:
+    container_name: playwright
+    image: mcr.microsoft.com/playwright:v1.60.0-noble
+    init: true
+    user: pwuser
+    networks:
+      - alexandria
+    ports:
+      - 3000:3000
+    profiles:
+      - e2e
+    command: '/bin/sh -c "npx -y playwright@1.60.0 run-server --port 3000 --host 0.0.0.0"'
 
 networks:
   alexandria:

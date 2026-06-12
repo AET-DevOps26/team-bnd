@@ -439,7 +439,7 @@ jobs:
       - uses: actions/checkout@v6
 
       - name: bring stack up
-        run: docker compose up -d --build --wait --wait-timeout 180
+        run: docker compose --profile e2e up -d --build --wait --wait-timeout 180
 
       - name: wait for keycloak realm
         run: |
@@ -500,13 +500,9 @@ jobs:
         working-directory: services/client
         run: npm ci
 
-      - name: install playwright browsers
-        working-directory: services/client
-        run: npx playwright install --with-deps
-
       - name: run playwright tests
         working-directory: services/client
-        run: npx playwright test
+        run: npm run test
 
       - name: upload playwright report
         if: always()

@@ -6,8 +6,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview --port 5173",
-    "test": "PW_TEST_CONNECT_WS_ENDPOINT=ws://127.0.0.1:3000/ playwright test --config playwright.config.ts",
-    "test:server": "docker run --add-host=hostmachine:host-gateway -p 3000:3000 --rm --init -d --user pwuser mcr.microsoft.com/playwright:v1.60.0-noble /bin/sh -c \"npx -y playwright@1.60.0 run-server --port 3000 --host 0.0.0.0\""
+    "test": "PW_TEST_CONNECT_WS_ENDPOINT=ws://127.0.0.1:3000/ playwright test"
   },
   "dependencies": {
     "react": "^18.2.0",

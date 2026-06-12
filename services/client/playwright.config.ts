@@ -27,7 +27,7 @@ export default defineConfig({
   use: {
     /* Base URL to use in actions like `await page.goto('')`.
      * The full stack (local and CI) is served via Traefik on port 80. */
-    baseURL: process.env.CI ? 'http://localhost' : 'http://hostmachine',
+    baseURL: 'http://client',
 
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
