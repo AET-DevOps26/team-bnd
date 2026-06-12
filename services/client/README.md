@@ -45,6 +45,24 @@ npm install
 npm run dev
 ```
 
+Testing
+-------
+
+Playwright is used for end-to-end tests. The tests run against a remote browser served by a Playwright Docker container.
+
+Include the Playwright server when starting services:
+
+```bash
+docker compose --profile e2e up
+```
+
+Run the tests:
+
+```bash
+cd services/client
+npm run test:e2e
+```
+
 Notes
 -----
 - The dev Dockerfile starts Vite with --host 0.0.0.0 so the dev server is reachable from the host when running in a container.
