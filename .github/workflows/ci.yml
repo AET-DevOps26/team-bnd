@@ -502,7 +502,7 @@ jobs:
 
       - name: run playwright tests
         working-directory: services/client
-        run: npm run test
+        run: npm run test:e2e
 
       - name: upload playwright report
         if: always()

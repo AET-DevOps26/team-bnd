@@ -60,7 +60,7 @@ Run the tests:
 
 ```bash
 cd services/client
-npm run test
+npm run test:e2e
 ```
 
 Notes
