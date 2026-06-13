@@ -52,9 +52,10 @@ ingress:
   host: alexandria.stud.k8s.aet.cit.tum.de
 
 keycloak:
-  adminPassword: "admin"
-  proxyHeaders: "xforwarded"
   keycloak:
+    adminPassword: "admin"
+    proxyHeaders: "xforwarded"
+    hostname: "https://alexandria.stud.k8s.aet.cit.tum.de/keycloak"
     httpRelativePath: /keycloak
   database:
     type: postgres
