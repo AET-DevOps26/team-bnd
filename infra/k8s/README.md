@@ -7,6 +7,16 @@ A Helm chart is provided in `infra/k8s/alexandria/`.
 - A running Kubernetes cluster (Rancher, Azure AKS, minikube, etc.)
 - `helm` and `kubectl` configured to access the cluster
 
+## Deploy in one command:
+
+**WARNING**: This is insecure as the deployed pods will use default secrets.
+
+```bash
+helm install alexandria infra/k8s/alexandria \
+  --namespace alexandria --create-namespace \
+  --dependency-update
+```
+
 ## Secrets Setup:
 
 1. Copy the secrets template:
