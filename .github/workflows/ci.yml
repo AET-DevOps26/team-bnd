@@ -147,10 +147,12 @@ jobs:
   # are multiple Spring microservices.
   # ---------------------------------------------------------------------
   build-spring:
-    name: Build and Test (${{ matrix.service.title || 'Skipped' }})
+    name: Build and Test (${{ matrix.service.title }})
     needs: changes
-    if: needs.changes.outputs.spring == 'true' || github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    if: always()
     runs-on: ubuntu-latest
+    env:
+      RUN_JOB: ${{ needs.changes.outputs.spring == 'true' || github.event_name == 'push' || github.event_name == 'workflow_dispatch' }}
     strategy:
       fail-fast: false
       matrix:
@@ -163,24 +165,28 @@ jobs:
       checks: write # for test report annotations
     steps:
       - uses: actions/checkout@v6
+        if: env.RUN_JOB == 'true'
 
       - name: Setup Java
+        if: env.RUN_JOB == 'true'
         uses: actions/setup-java@v5
         with:
           java-version: ${{ env.JAVA_VERSION }}
           distribution: ${{ env.JAVA_DISTRIBUTION }}
 
       - name: Setup Gradle (with Build Cache)
+        if: env.RUN_JOB == 'true'
         uses: gradle/actions/setup-gradle@v6
         with:
           cache-read-only: ${{ github.event_name == 'pull_request' }}
 
       - name: Build and Test
+        if: env.RUN_JOB == 'true'
         working-directory: ${{ matrix.service.path }}
         run: ./gradlew --no-daemon --stacktrace build
 
       - name: Upload Test Reports
-        if: always()
+        if: always() && env.RUN_JOB == 'true'
         uses: actions/upload-artifact@v7
         with:
           name: test-reports-${{ matrix.service.name }}
@@ -191,7 +197,7 @@ jobs:
           retention-days: 7
 
       - name: Upload JAR
-        if: always()
+        if: always() && env.RUN_JOB == 'true'
         uses: actions/upload-artifact@v7
         with:
           name: jar-${{ matrix.service.name }}
@@ -275,16 +281,12 @@ jobs:
   # Image is also fed into Trivy for vuln scanning.
   # ---------------------------------------------------------------------
   build-image:
-    name: Build Docker Image (${{ matrix.service.title || 'Skipped' }})
+    name: Build Docker Image (${{ matrix.service.title }})
     needs: [changes, build-spring, build-client, build-genai, lint-dockerfiles]
-    if: |
-      always() &&
-      (needs.build-spring.result == 'success' || needs.build-spring.result == 'skipped') &&
-      (needs.build-client.result == 'success' || needs.build-client.result == 'skipped') &&
-      (needs.build-genai.result == 'success' || needs.build-genai.result == 'skipped') &&
-      (needs.lint-dockerfiles.result == 'success' || needs.lint-dockerfiles.result == 'skipped') &&
-      (needs.changes.outputs.spring == 'true' || needs.changes.outputs.client == 'true' || needs.changes.outputs.genai == 'true' || needs.changes.outputs.docker == 'true' || github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    if: always()
     runs-on: ubuntu-latest
+    env:
+      RUN_JOB: ${{ (needs.build-spring.result == 'success' || needs.build-spring.result == 'skipped') && (needs.build-client.result == 'success' || needs.build-client.result == 'skipped') && (needs.build-genai.result == 'success' || needs.build-genai.result == 'skipped') && (needs.lint-dockerfiles.result == 'success' || needs.lint-dockerfiles.result == 'skipped') && (needs.changes.outputs.spring == 'true' || needs.changes.outputs.client == 'true' || needs.changes.outputs.genai == 'true' || needs.changes.outputs.docker == 'true' || github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
     outputs:
       image-tag: ${{ steps.meta.outputs.version }}
     strategy:
@@ -309,11 +311,14 @@ jobs:
       security-events: write # for Trivy SARIF upload
     steps:
       - uses: actions/checkout@v6
+        if: env.RUN_JOB == 'true'
 
       - name: Setup Buildx
+        if: env.RUN_JOB == 'true'
         uses: docker/setup-buildx-action@v4
 
       - name: Extract Image Metadata
+        if: env.RUN_JOB == 'true'
         id: meta
         uses: docker/metadata-action@v6
         with:
@@ -325,7 +330,7 @@ jobs:
             type=raw,value=latest,enable=${{ github.ref == format('refs/heads/{0}', github.event.repository.default_branch) }}
 
       - name: Login to GHCR
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' && env.RUN_JOB == 'true'
         uses: docker/login-action@v4
         with:
           registry: ${{ env.REGISTRY }}
@@ -333,6 +338,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build (and Push on main)
+        if: env.RUN_JOB == 'true'
         id: build
         uses: docker/build-push-action@v7
         with:
@@ -347,6 +353,7 @@ jobs:
           provenance: false
 
       - name: Run Trivy Scan (Image)
+        if: env.RUN_JOB == 'true'
         uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: ${{ fromJSON(steps.meta.outputs.json).tags[0] }}
@@ -357,7 +364,7 @@ jobs:
           ignore-unfixed: true
 
       - name: Upload Trivy SARIF
-        if: always()
+        if: always() && env.RUN_JOB == 'true'
         uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: trivy-${{ matrix.service.name }}.sarif

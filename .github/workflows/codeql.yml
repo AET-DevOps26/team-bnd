@@ -26,7 +26,7 @@ permissions:
 
 jobs:
   analyze:
-    name: Analyze ${{ matrix.language == 'java-kotlin' && 'Java/Kotlin' || 'Skipped' }}
+    name: Analyze ${{ matrix.language == 'java-kotlin' && 'Java/Kotlin' }}
     runs-on: ubuntu-latest
     permissions:
       security-events: write
