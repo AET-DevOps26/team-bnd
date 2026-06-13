@@ -1,5 +1,6 @@
 services:
   client:
+    image: ghcr.io/aet-devops26/team-bnd/client:latest
     build:
       context: services/client/
       dockerfile: Dockerfile
@@ -22,6 +23,7 @@ services:
       - traefik
 
   spring:
+    image: ghcr.io/aet-devops26/team-bnd/spring:latest
     build: services/spring/
     container_name: spring
     env_file: .env.config
@@ -52,6 +54,7 @@ services:
       - traefik
 
   genai:
+    image: ghcr.io/aet-devops26/team-bnd/genai:latest
     build: services/genai/
     container_name: genai
     restart: unless-stopped

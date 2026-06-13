@@ -17,6 +17,7 @@ Alexandria consists of three main subsystems orchestrated via Docker Compose and
 
 ## Setup
 
+
 ### Traefik Reverse Proxy
 
 All services are accessed through Traefik as the reverse proxy. See [`docs/traefik.md`](docs/traefik.md) for architecture, routing, and configuration details.
@@ -46,12 +47,14 @@ To run the full hook set manually:
 
 ### Local Quickstart
 
-To start all services together locally:
+Our `docker-compose.yml` includes both pre-built image references and local build contexts. You can choose to pull images for instant startup or build them locally.
 
-1. `docker compose up -d`
+**Pull and Run (Fastest):**
+1. `docker compose pull && docker compose up -d`
 2. Open http://localhost/ to view the site.
 
-To force a fresh build of all services: `docker compose up --build --force-recreate`
+**Build and Run (For Development):**
+To build the images from your local source: `docker compose up --build --force-recreate`
 
 ### Server
 
