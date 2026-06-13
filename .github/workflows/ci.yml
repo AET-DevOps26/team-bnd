@@ -6,7 +6,7 @@
 # - Stay extensible: when web-client and the GenAI service land,
 #   they slot in as new jobs / matrix entries without rewriting this file.
 #
-name: ci
+name: CI
 
 on:
   pull_request:
@@ -44,7 +44,7 @@ jobs:
   # Detect what changed so downstream jobs can self-skip cleanly.
   # ---------------------------------------------------------------------
   changes:
-    name: detect changed paths
+    name: Detect Changed Paths
     runs-on: ubuntu-latest
     outputs:
       api: ${{ steps.filter.outputs.api }}
@@ -86,26 +86,26 @@ jobs:
   # OpenAPI spec linting. Single source of truth must always be valid.
   # ---------------------------------------------------------------------
   lint-openapi:
-    name: lint openapi spec
+    name: Lint OpenAPI Spec
     needs: changes
     if: needs.changes.outputs.api == 'true' || github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
 
-      - name: setup node
+      - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
           node-version: "24"
 
-      - name: redocly lint
+      - name: Run Redocly Lint
         run: npx --yes @redocly/cli@latest lint api/openapi.yaml
 
   # ---------------------------------------------------------------------
   # Dockerfile linting. Catches non-pinned base images, root user, etc.
   # ---------------------------------------------------------------------
   lint-dockerfiles:
-    name: lint dockerfiles
+    name: Lint Dockerfiles
     needs: changes
     if: needs.changes.outputs.docker == 'true' || github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
@@ -130,13 +130,13 @@ jobs:
   # Workflow file linting. Catches typos and bad action refs early.
   # ---------------------------------------------------------------------
   lint-workflows:
-    name: lint workflows
+    name: Lint Workflow Files
     needs: changes
     if: needs.changes.outputs.workflows == 'true' || github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - name: actionlint
+      - name: Run actionlint
         # Pinned to the project's actionlint container so the version is reproducible.
         run: |
           bash <(curl -fsSL https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash)
@@ -147,39 +147,46 @@ jobs:
   # are multiple Spring microservices.
   # ---------------------------------------------------------------------
   build-spring:
-    name: build & test ${{ matrix.service.name }}
+    name: Build and Test (${{ matrix.service.title }})
     needs: changes
-    if: needs.changes.outputs.spring == 'true' || github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    if: always()
     runs-on: ubuntu-latest
+    env:
+      RUN_JOB: ${{ needs.changes.outputs.spring == 'true' || github.event_name == 'push' || github.event_name == 'workflow_dispatch' }}
     strategy:
       fail-fast: false
       matrix:
         service:
           - name: spring
+            title: Spring
             path: services/spring/app
     permissions:
       contents: read
       checks: write # for test report annotations
     steps:
       - uses: actions/checkout@v6
+        if: env.RUN_JOB == 'true'
 
-      - name: setup java
+      - name: Setup Java
+        if: env.RUN_JOB == 'true'
         uses: actions/setup-java@v5
         with:
           java-version: ${{ env.JAVA_VERSION }}
           distribution: ${{ env.JAVA_DISTRIBUTION }}
 
-      - name: setup gradle (with build cache)
+      - name: Setup Gradle (with Build Cache)
+        if: env.RUN_JOB == 'true'
         uses: gradle/actions/setup-gradle@v6
         with:
           cache-read-only: ${{ github.event_name == 'pull_request' }}
 
-      - name: build & test
+      - name: Build and Test
+        if: env.RUN_JOB == 'true'
         working-directory: ${{ matrix.service.path }}
         run: ./gradlew --no-daemon --stacktrace build
 
-      - name: upload test reports
-        if: always()
+      - name: Upload Test Reports
+        if: always() && env.RUN_JOB == 'true'
         uses: actions/upload-artifact@v7
         with:
           name: test-reports-${{ matrix.service.name }}
@@ -189,8 +196,8 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
-      - name: upload jar
-        if: always()
+      - name: Upload JAR
+        if: always() && env.RUN_JOB == 'true'
         uses: actions/upload-artifact@v7
         with:
           name: jar-${{ matrix.service.name }}
@@ -202,7 +209,7 @@ jobs:
   # Client: build and test the React/Vite frontend.
   # ---------------------------------------------------------------------
   build-client:
-    name: build & test client
+    name: Build and Test Client
     needs: changes
     if: needs.changes.outputs.client == 'true' || github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
@@ -211,22 +218,22 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: setup node
+      - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
           node-version: "24"
           cache: npm
           cache-dependency-path: services/client/package-lock.json
 
-      - name: install dependencies
+      - name: Install Dependencies
         working-directory: services/client
         run: npm ci
 
-      - name: build
+      - name: Build
         working-directory: services/client
         run: npm run build
 
-      - name: upload dist
+      - name: Upload dist
         uses: actions/upload-artifact@v7
         with:
           name: client-dist
@@ -238,7 +245,7 @@ jobs:
   # GenAI service: lint and test the Python/FastAPI service.
   # ---------------------------------------------------------------------
   build-genai:
-    name: build & test genai
+    name: Build and Test GenAI
     needs: changes
     if: needs.changes.outputs.genai == 'true' || github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
@@ -247,25 +254,25 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: setup uv
+      - name: Setup uv
         uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
           cache-dependency-glob: services/genai/uv.lock
 
-      - name: setup python
+      - name: Setup Python
         working-directory: services/genai
         run: uv python install
 
-      - name: install dependencies
+      - name: Install Dependencies
         working-directory: services/genai
         run: uv sync --group dev
 
-      - name: lint with ruff
+      - name: Lint with Ruff
         working-directory: services/genai
         run: uv run ruff check .
 
-      - name: run tests
+      - name: Run Tests
         working-directory: services/genai
         run: uv run pytest
 
@@ -274,16 +281,12 @@ jobs:
   # Image is also fed into Trivy for vuln scanning.
   # ---------------------------------------------------------------------
   build-image:
-    name: build image ${{ matrix.service.name }}
+    name: Build Docker Image (${{ matrix.service.title }})
     needs: [changes, build-spring, build-client, build-genai, lint-dockerfiles]
-    if: |
-      always() &&
-      (needs.build-spring.result == 'success' || needs.build-spring.result == 'skipped') &&
-      (needs.build-client.result == 'success' || needs.build-client.result == 'skipped') &&
-      (needs.build-genai.result == 'success' || needs.build-genai.result == 'skipped') &&
-      (needs.lint-dockerfiles.result == 'success' || needs.lint-dockerfiles.result == 'skipped') &&
-      (needs.changes.outputs.spring == 'true' || needs.changes.outputs.client == 'true' || needs.changes.outputs.genai == 'true' || needs.changes.outputs.docker == 'true' || github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    if: always()
     runs-on: ubuntu-latest
+    env:
+      RUN_JOB: ${{ (needs.build-spring.result == 'success' || needs.build-spring.result == 'skipped') && (needs.build-client.result == 'success' || needs.build-client.result == 'skipped') && (needs.build-genai.result == 'success' || needs.build-genai.result == 'skipped') && (needs.lint-dockerfiles.result == 'success' || needs.lint-dockerfiles.result == 'skipped') && (needs.changes.outputs.spring == 'true' || needs.changes.outputs.client == 'true' || needs.changes.outputs.genai == 'true' || needs.changes.outputs.docker == 'true' || github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
     outputs:
       image-tag: ${{ steps.meta.outputs.version }}
     strategy:
@@ -291,12 +294,15 @@ jobs:
       matrix:
         service:
           - name: spring
+            title: Spring
             context: services/spring
             dockerfile: services/spring/Dockerfile
           - name: client
+            title: Client
             context: services/client
             dockerfile: services/client/Dockerfile
           - name: genai
+            title: GenAI
             context: services/genai
             dockerfile: services/genai/Dockerfile
     permissions:
@@ -305,11 +311,14 @@ jobs:
       security-events: write # for Trivy SARIF upload
     steps:
       - uses: actions/checkout@v6
+        if: env.RUN_JOB == 'true'
 
-      - name: setup buildx
+      - name: Setup Buildx
+        if: env.RUN_JOB == 'true'
         uses: docker/setup-buildx-action@v4
 
-      - name: extract image metadata
+      - name: Extract Image Metadata
+        if: env.RUN_JOB == 'true'
         id: meta
         uses: docker/metadata-action@v6
         with:
@@ -320,15 +329,16 @@ jobs:
             type=sha,format=short
             type=raw,value=latest,enable=${{ github.ref == format('refs/heads/{0}', github.event.repository.default_branch) }}
 
-      - name: login to ghcr
-        if: github.event_name == 'push'
+      - name: Login to GHCR
+        if: github.event_name == 'push' && env.RUN_JOB == 'true'
         uses: docker/login-action@v4
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: build (and push on main)
+      - name: Build (and Push on main)
+        if: env.RUN_JOB == 'true'
         id: build
         uses: docker/build-push-action@v7
         with:
@@ -342,7 +352,8 @@ jobs:
           cache-to: type=gha,mode=max,scope=${{ matrix.service.name }}
           provenance: false
 
-      - name: trivy scan (image)
+      - name: Run Trivy Scan (Image)
+        if: env.RUN_JOB == 'true'
         uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: ${{ fromJSON(steps.meta.outputs.json).tags[0] }}
@@ -352,8 +363,8 @@ jobs:
           exit-code: "0" # don't fail PRs on vulns yet, just report
           ignore-unfixed: true
 
-      - name: upload trivy sarif
-        if: always()
+      - name: Upload Trivy SARIF
+        if: always() && env.RUN_JOB == 'true'
         uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: trivy-${{ matrix.service.name }}.sarif
@@ -364,7 +375,7 @@ jobs:
   # public endpoint. Catches integration regressions that unit tests miss.
   # ---------------------------------------------------------------------
   compose-smoke:
-    name: compose smoke test
+    name: Docker Compose Smoke Test
     needs: [changes, build-spring, build-client, build-genai]
     if: |
       always() &&
@@ -376,10 +387,10 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: bring stack up
+      - name: Bring Stack Up
         run: docker compose up -d --build --wait --wait-timeout 180
 
-      - name: check spring service
+      - name: Check Spring Service
         run: |
           for i in 1 2 3 4 5 6 7 8 9 10; do
             if curl -fsS http://localhost/hello | grep -q "Hello World"; then
@@ -389,7 +400,7 @@ jobs:
             sleep 3
           done
 
-      - name: check client service
+      - name: Check Client Service
         run: |
           for i in 1 2 3 4 5; do
             if curl -fsS http://localhost/ > /dev/null; then
@@ -399,7 +410,7 @@ jobs:
             sleep 2
           done
 
-      - name: check genai service
+      - name: Check GenAI Service
         run: |
           for i in 1 2 3 4 5; do
             if curl -fsS http://localhost/genai/health > /dev/null; then
@@ -409,11 +420,11 @@ jobs:
             sleep 2
           done
 
-      - name: show logs on failure
+      - name: Show Logs on Failure
         if: failure()
         run: docker compose logs
 
-      - name: tear stack down
+      - name: Tear Stack Down
         if: always()
         run: docker compose down -v --remove-orphans
 
@@ -422,7 +433,7 @@ jobs:
   # Keycloak test user via the Admin REST API, then run Playwright tests
   # ---------------------------------------------------------------------
   e2e:
-    name: e2e tests (playwright)
+    name: E2E Tests (Playwright)
     needs: [changes, build-spring, build-client, build-genai]
     if: |
       always() &&
@@ -437,10 +448,10 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: bring stack up
+      - name: Bring Stack Up
         run: docker compose --profile e2e up -d --build --wait --wait-timeout 180
 
-      - name: wait for keycloak realm
+      - name: Wait for Keycloak Realm
         run: |
           for i in $(seq 1 20); do
             if curl -fsS "http://localhost/auth/realms/alexandria" > /dev/null 2>&1; then
@@ -450,7 +461,7 @@ jobs:
             sleep 5
           done
 
-      - name: provision test user via keycloak admin api
+      - name: Provision Test User via Keycloak Admin API
         run: |
           # Obtain an admin access token from the master realm
           ADMIN_TOKEN=$(curl -fsS \
@@ -488,22 +499,22 @@ jobs:
 
           echo "test user provisioned (id: ${USER_ID})"
 
-      - name: setup node
+      - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
           node-version: "24"
           cache: npm
           cache-dependency-path: services/client/package-lock.json
 
-      - name: install dependencies
+      - name: Install Dependencies
         working-directory: services/client
         run: npm ci
 
-      - name: run playwright tests
+      - name: Run Playwright Tests
         working-directory: services/client
         run: npm run test:e2e
 
-      - name: upload playwright report
+      - name: Upload Playwright Report
         if: always()
         uses: actions/upload-artifact@v7
         with:
@@ -512,11 +523,11 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
-      - name: show logs on failure
+      - name: Show Logs on Failure
         if: failure()
         run: docker compose logs
 
-      - name: tear stack down
+      - name: Tear Stack Down
         if: always()
         run: docker compose down -v --remove-orphans
 
@@ -525,7 +536,7 @@ jobs:
   # If anything upstream failed, this fails.
   # ---------------------------------------------------------------------
   ci-summary:
-    name: ci summary
+    name: CI Summary
     if: always()
     needs:
       - lint-openapi
@@ -539,7 +550,7 @@ jobs:
       - e2e
     runs-on: ubuntu-latest
     steps:
-      - name: fail if any required job failed
+      - name: Fail if Any Required Job Failed
         env:
           RESULTS: ${{ toJSON(needs) }}
         run: |
@@ -555,7 +566,7 @@ jobs:
   # Deploy to Azure VM
   # ---------------------------------------------------------------------
   deploy:
-    name: deploy to azure vm
+    name: Deploy to Azure VM
     if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
     runs-on: ubuntu-latest
     needs: [build-image, ci-summary]
@@ -563,24 +574,24 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: setup ssh key
+      - name: Setup SSH Key
         run: |
           install -m 700 -d ~/.ssh
           echo "${{ secrets.AZURE_PRIVATE_KEY }}" > ~/.ssh/azure_key
           chmod 600 ~/.ssh/azure_key
           ssh-keyscan -H "${{ env.AZURE_PUBLIC_IP }}" >> ~/.ssh/known_hosts
 
-      - name: prepare remote directory
+      - name: Prepare Remote Directory
         run: |
           ssh -i ~/.ssh/azure_key "${{ env.AZURE_USER }}@${{ env.AZURE_PUBLIC_IP }}" "mkdir -p ~/deploy/infra/oidc"
 
-      - name: copy compose and config
+      - name: Copy Compose and Config
         run: |
           scp -i ~/.ssh/azure_key docker-compose.azure.yml "${{ env.AZURE_USER }}@${{ env.AZURE_PUBLIC_IP }}:~/deploy/docker-compose.azure.yml"
           scp -i ~/.ssh/azure_key .env.config "${{ env.AZURE_USER }}@${{ env.AZURE_PUBLIC_IP }}:~/deploy/.env.config"
           scp -i ~/.ssh/azure_key infra/oidc/realm.json "${{ env.AZURE_USER }}@${{ env.AZURE_PUBLIC_IP }}:~/deploy/infra/oidc/realm.json"
 
-      - name: deploy
+      - name: Deploy
         run: |
           ssh -i ~/.ssh/azure_key "${{ env.AZURE_USER }}@${{ env.AZURE_PUBLIC_IP }}" \
             "cd ~/deploy && echo '${{ secrets.GITHUB_TOKEN }}' | docker login ${{ env.REGISTRY }} -u '${{ github.actor }}' --password-stdin && docker compose -f docker-compose.azure.yml pull && docker compose -f docker-compose.azure.yml up -d"
@@ -589,7 +600,7 @@ jobs:
   # Deploy to stud cluster (Rancher/k8s)
   # ---------------------------------------------------------------------
   deploy-stud:
-    name: deploy to stud cluster
+    name: Deploy to Stud Cluster
     if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
     runs-on: ubuntu-latest
     needs: [build-image, ci-summary]
@@ -597,27 +608,27 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: setup helm
+      - name: Setup Helm
         uses: azure/setup-helm@v5
         with:
           version: v3.18.4
 
-      - name: setup kubectl
+      - name: Setup kubectl
         uses: azure/setup-kubectl@v5
         with:
           version: v1.32.4
 
-      - name: configure kubeconfig
+      - name: Configure kubeconfig
         run: |
           mkdir -p ~/.kube
           echo "${{ secrets.KUBE_CONFIG }}" > ~/.kube/config
           chmod 600 ~/.kube/config
 
-      - name: update helm dependencies
+      - name: Update Helm Dependencies
         working-directory: infra/k8s/alexandria
         run: helm dependency update
 
-      - name: deploy with helm
+      - name: Deploy with Helm
         working-directory: infra/k8s/alexandria
         run: |
           helm upgrade --install alexandria . \
@@ -631,7 +642,7 @@ jobs:
             --wait \
             --timeout 5m
 
-      - name: verify deployment
+      - name: Verify Deployment
         run: |
           kubectl -n alexandria get pods
           kubectl -n alexandria get svc
