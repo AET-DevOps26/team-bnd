@@ -1,0 +1,76 @@
+# Kubernetes Deployment
+
+A Helm chart is provided in `infra/k8s/alexandria/`.
+
+## Prerequisites:
+
+- A running Kubernetes cluster (Rancher, Azure AKS, minikube, etc.)
+- `helm` and `kubectl` configured to access the cluster
+
+## Secrets Setup:
+
+1. Copy the secrets template:
+   ```bash
+   cp infra/k8s/alexandria/values-secrets.yaml.example infra/k8s/alexandria/values-secrets.yaml
+   ```
+2. Edit `values-secrets.yaml` and set your actual passwords (this file is gitignored)
+
+## Deploy:
+
+```bash
+helm install alexandria infra/k8s/alexandria \
+  --namespace alexandria --create-namespace \
+  --dependency-update \
+  -f infra/k8s/alexandria/values-secrets.yaml
+```
+
+## Upgrade after changes:
+
+```bash
+helm upgrade alexandria infra/k8s/alexandria \
+  --namespace alexandria \
+  --dependency-update \
+  -f infra/k8s/alexandria/values-secrets.yaml
+```
+
+## Uninstall:
+
+```bash
+helm uninstall alexandria --namespace alexandria
+```
+
+## Override values (e.g., different image tag):
+
+```bash
+helm install alexandria infra/k8s/alexandria \
+  --namespace alexandria --create-namespace \
+  --dependency-update \
+  -f infra/k8s/alexandria/values-secrets.yaml \
+  --set image.tag=sha-abc123 \
+  --set ingress.host=alexandria.example.com
+```
+
+## Check status:
+
+```bash
+kubectl -n alexandria get pods
+kubectl -n alexandria get svc
+kubectl -n alexandria get ingress
+```
+
+# Kubernetes Troubleshooting
+
+**Spring or Keycloak fail postgres password authentication after a reinstall**
+
+The postgres subchart creates a PersistentVolumeClaim that survives `helm uninstall`. On a subsequent install, postgres reuses the existing data directory (with the old password) and ignores the new `POSTGRES_PASSWORD` value, causing spring and keycloak to fail authentication.
+
+Fix: delete the PVC before reinstalling.
+
+```bash
+helm uninstall alexandria --namespace alexandria
+kubectl -n alexandria delete pvc --all
+helm install alexandria infra/k8s/alexandria \
+  --namespace alexandria --create-namespace \
+  --dependency-update \
+  -f infra/k8s/alexandria/values-secrets.yaml
+```
