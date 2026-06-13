@@ -24,7 +24,7 @@ All services are accessed through Traefik as the reverse proxy. See [`docs/traef
 **Quick reference:**
 | URL | Service |
 |-----|---------|
-| http://localhost/ | Client (frontend) |
+| http://localhost/ | Client |
 | http://localhost/api/v1/... | Spring API |
 | http://localhost/swagger-ui/ | Spring API documentation |
 | http://localhost/genai/docs | GenAI API documentation |
@@ -55,13 +55,13 @@ To force a fresh build of all services: `docker compose up --build --force-recre
 
 ### Server
 
-Spring Boot application handling the core backend logic and database.
-For local backend development, see [`services/spring/README.md`](services/spring/README.md).
+Spring Boot application handling the core server logic and database.
+For local server development, see [`services/spring/README.md`](services/spring/README.md).
 
 ### Client
 
-React SPA serving as the web frontend.
-For local frontend development, see [`services/client/README.md`](services/client/README.md).
+React SPA serving as the web client.
+For local client development, see [`services/client/README.md`](services/client/README.md).
 
 ### GenAI
 
