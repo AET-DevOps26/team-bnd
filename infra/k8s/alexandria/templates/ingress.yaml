@@ -73,6 +73,27 @@ spec:
                 name: {{ include "alexandria.fullname" . }}-genai
                 port:
                   number: 8000
+          - path: /docs
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "alexandria.fullname" . }}-genai
+                port:
+                  number: 8000
+          - path: /redoc
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "alexandria.fullname" . }}-genai
+                port:
+                  number: 8000
+          - path: /openapi.json
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "alexandria.fullname" . }}-genai
+                port:
+                  number: 8000
           - path: /keycloak
             pathType: Prefix
             backend:

@@ -30,11 +30,11 @@ Alexandria uses [Traefik](https://traefik.io/) as the reverse proxy and API gate
 - Client (frontend)
 - Spring (REST API)
 - Keycloak (OIDC provider)
-- GenAI (health endpoints only)
+- GenAI (health and docs endpoints only)
 
 **Private services** (internal Docker network only):
 - PostgreSQL
-- GenAI (except health endpoints)
+- GenAI (except health and docs endpoints)
 
 ## Routing Table
 
@@ -49,6 +49,9 @@ Alexandria uses [Traefik](https://traefik.io/) as the reverse proxy and API gate
 | `/auth/*` | Keycloak | 8180 | OIDC provider |
 | `/genai/health` | GenAI | 8000 | Health check |
 | `/genai/hello` | GenAI | 8000 | Smoke test |
+| `/docs` | GenAI | 8000 | FastAPI documentation UI |
+| `/redoc` | GenAI | 8000 | FastAPI documentation UI (ReDoc) |
+| `/openapi.json` | GenAI | 8000 | FastAPI OpenAPI spec |
 
 ## Local Development
 
@@ -70,6 +73,9 @@ docker compose up -d
 | http://localhost/auth/ | Keycloak admin |
 | http://localhost/genai/health | GenAI health check |
 | http://localhost/genai/hello | GenAI smoke test |
+| http://localhost/docs | GenAI API documentation |
+| http://localhost/redoc | GenAI API documentation (ReDoc) |
+| http://localhost/openapi.json | GenAI OpenAPI spec |
 
 ### Access Traefik Dashboard
 
