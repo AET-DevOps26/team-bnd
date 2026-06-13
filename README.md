@@ -56,6 +56,17 @@ Our `docker-compose.yml` includes both pre-built image references and local buil
 **Build and Run (For Development):**
 To build the images from your local source: `docker compose up --build --force-recreate`
 
+### Environment Files
+
+The project uses a two-file pattern for configuration:
+
+| File | Committed | Purpose |
+|------|-----------|---------|
+| `.env.config` | Yes | Non-secret configuration (API URLs, feature flags) |
+| `.env` | No | Secrets (passwords, API keys), copy from `.env.example` |
+
+For local development, `docker compose up` works out of the box; safe defaults are embedded in `docker-compose.yml`. For production or CI, set environment variables explicitly or create a `.env` file from `.env.example`.
+
 ### Server
 
 Spring Boot application handling the core server logic and database.
