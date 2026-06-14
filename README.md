@@ -67,6 +67,9 @@ The project uses a two-file pattern for configuration:
 
 For local development, `docker compose up` works out of the box; safe defaults are embedded in `docker-compose.yml`. For production or CI, set environment variables explicitly or create a `.env` file from `.env.example`.
 
+#### Troubleshooting
+- Make sure to remove all containers *and* docker volumes if you change to a local .env file. Otherwise, e.g., the postgres service will use the old password, leading to failed connections on the server side. This can be achieved by running `docker compose rm <container>` and `docker volume rm <volume>`.
+
 ### Server
 
 Spring Boot application handling the core server logic and database.
