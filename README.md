@@ -58,14 +58,7 @@ To build the images from your local source: `docker compose up --build --force-r
 
 ### Environment Files
 
-The project uses a two-file pattern for configuration:
-
-| File | Committed | Purpose |
-|------|-----------|---------|
-| `.env.config` | Yes | Non-secret configuration (API URLs, feature flags) |
-| `.env` | No | Secrets (passwords, API keys), copy from `.env.example` |
-
-For local development, `docker compose up` works out of the box; safe defaults are embedded in `docker-compose.yml`. For production or CI, set environment variables explicitly or create a `.env` file from `.env.example`.
+For local development, `docker compose up` works out of the box; safe defaults are embedded in `docker-compose.yml`. For production or CI, copy `.env.example` to `.env` and set the values as needed.
 
 #### Troubleshooting
 - Make sure to remove all containers *and* docker volumes if you change to a local .env file. Otherwise, e.g., the postgres service will use the old password, leading to failed connections on the server side. This can be achieved by running `docker compose rm <container>` and `docker volume rm <volume>`.

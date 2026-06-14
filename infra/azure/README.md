@@ -94,7 +94,7 @@ terraform destroy
 
 ## Azure VM deployment (docker compose)
 
-The production compose file is `docker-compose.azure.yml`. It pulls images from GHCR and only publishes ports 80 and 443. It expects a `.env` file on the VM for secrets (Postgres and Keycloak), and it uses `.env.config` for non-secret defaults.
+The production compose file is `docker-compose.azure.yml`. It pulls images from GHCR and only publishes port 80. It expects a `.env` file on the VM for secrets (Postgres and Keycloak).
 
 The deploy workflow uses the GitHub Environment `AZURE` and expects:
 
@@ -102,4 +102,4 @@ The deploy workflow uses the GitHub Environment `AZURE` and expects:
 - `AZURE_PUBLIC_IP` variable
 - `AZURE_USER` variable (typically azureuser)
 
-When the workflow runs, it copies `docker-compose.azure.yml`, `.env.config`, and `oidc/realm.json` to `~/deploy` on the VM and then runs docker compose with the image tag from the commit SHA.
+When the workflow runs, it copies `docker-compose.azure.yml` and `oidc/realm.json` to `~/deploy` on the VM and then runs docker compose with the image tag from the commit SHA.

@@ -409,7 +409,6 @@ pyrightconfig.json
 
 
 **/.idea/
-!.env.config
 !.env.example
 
 # Infrastructure
