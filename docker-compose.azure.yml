@@ -53,6 +53,7 @@ services:
     depends_on:
       - postgres-db
       - keycloak
+      - genai
       - traefik
 
   genai:
@@ -143,6 +144,7 @@ services:
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
       - "--entrypoints.web.address=:80"
+      - "--ping=true"
     ports:
       - "80:80"
     volumes:
@@ -161,6 +163,25 @@ services:
       - "traefik.http.routers.dashboard.entrypoints=web"
       - "traefik.http.routers.dashboard.service=api@internal"
       - "traefik.http.services.dashboard.loadbalancer.server.port=9999"
+    healthcheck:
+      test: ["CMD", "traefik", "healthcheck", "--ping"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+
+  playwright:
+    container_name: playwright
+    image: mcr.microsoft.com/playwright:v1.60.0-noble
+    init: true
+    user: pwuser
+    networks:
+      - alexandria
+    ports:
+      - 3000:3000
+    profiles:
+      - e2e
+    command: '/bin/sh -c "npx -y playwright@1.60.0 run-server --port 3000 --host 0.0.0.0"'
 
 networks:
   alexandria:
