@@ -26,13 +26,18 @@ services:
     image: ghcr.io/aet-devops26/team-bnd/spring:latest
     build: services/spring/
     container_name: spring
-    env_file: .env.config
     environment:
+      GENAI_BASE_URL: ${GENAI_BASE_URL:-http://genai:8000}
+      OIDC_ISSUER_URI: ${OIDC_ISSUER_URI:-http://localhost/auth/realms/alexandria}
+      OIDC_JWK_SET_URI: ${OIDC_JWK_SET_URI:-http://localhost/auth/realms/alexandria/protocol/openid-connect/certs}
+      OIDC_USER_ID_CLAIM: ${OIDC_USER_ID_CLAIM:-sub}
+      OIDC_USERNAME_CLAIM: ${OIDC_USERNAME_CLAIM:-preferred_username}
+      OIDC_ROLES_CLAIM: ${OIDC_ROLES_CLAIM:-roles}
       POSTGRES_HOST: "postgres-db"
-      POSTGRES_PORT: ${POSTGRES_PORT}
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_PORT: ${POSTGRES_PORT:-5432}
+      POSTGRES_DB: ${POSTGRES_DB:-alexandria}
+      POSTGRES_USER: ${POSTGRES_USER:-admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-localpgpassword}
     restart: unless-stopped
     networks:
       - alexandria
@@ -57,6 +62,12 @@ services:
     image: ghcr.io/aet-devops26/team-bnd/genai:latest
     build: services/genai/
     container_name: genai
+    environment:
+      GENAI_LOG_LEVEL: ${GENAI_LOG_LEVEL:-info}
+      LLM_PROVIDER: ${LLM_PROVIDER:-logos}
+      LLM_BASE_URL: ${LLM_BASE_URL:-https://logos.aet.cit.tum.de/v1}
+      LLM_MODEL: ${LLM_MODEL:-openai/gpt-oss-120b}
+      LLM_API_KEY: ${LLM_API_KEY:-lg-your-api-key}
     restart: unless-stopped
     networks:
       - alexandria
@@ -80,8 +91,8 @@ services:
     container_name: keycloak
     command: start-dev --import-realm
     environment:
-      KC_BOOTSTRAP_ADMIN_USERNAME: ${KC_BOOTSTRAP_ADMIN_USERNAME}
-      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KC_BOOTSTRAP_ADMIN_PASSWORD}
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KC_BOOTSTRAP_ADMIN_USERNAME:-admin}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KC_BOOTSTRAP_ADMIN_PASSWORD:-localkcpassword}
       KC_HTTP_PORT: 8180
       KC_HOSTNAME: localhost
       KC_HOSTNAME_PORT: 80
@@ -109,12 +120,11 @@ services:
   postgres-db:
     image: postgres:16-alpine
     container_name: postgres-db
-    env_file: .env.config
     environment:
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      PG_PORT: ${POSTGRES_PORT}
+      PGPORT: ${POSTGRES_PORT:-5432}
+      POSTGRES_DB: ${POSTGRES_DB:-alexandria}
+      POSTGRES_USER: ${POSTGRES_USER:-admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-localpgpassword}
     restart: unless-stopped
     networks:
       - alexandria
@@ -160,6 +170,7 @@ services:
       timeout: 3s
       retries: 3
       start_period: 5s
+
   playwright:
     container_name: playwright
     image: mcr.microsoft.com/playwright:v1.60.0-noble

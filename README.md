@@ -56,6 +56,13 @@ Our `docker-compose.yml` includes both pre-built image references and local buil
 **Build and Run (For Development):**
 To build the images from your local source: `docker compose up --build --force-recreate`
 
+### Environment Files
+
+For local development, `docker compose up` works out of the box; safe defaults are embedded in `docker-compose.yml`. For production or CI, copy `.env.example` to `.env` and set the values as needed.
+
+#### Troubleshooting
+- Make sure to remove all containers *and* docker volumes if you change to a local .env file. Otherwise, e.g., the postgres service will use the old password, leading to failed connections on the server side. This can be achieved by running `docker compose rm <container>` and `docker volume rm <volume>`.
+
 ### Server
 
 Spring Boot application handling the core server logic and database.

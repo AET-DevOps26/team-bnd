@@ -588,7 +588,6 @@ jobs:
       - name: Copy Compose and Config
         run: |
           scp -i ~/.ssh/azure_key docker-compose.azure.yml "${{ env.AZURE_USER }}@${{ env.AZURE_PUBLIC_IP }}:~/deploy/docker-compose.azure.yml"
-          scp -i ~/.ssh/azure_key .env.config "${{ env.AZURE_USER }}@${{ env.AZURE_PUBLIC_IP }}:~/deploy/.env.config"
           scp -i ~/.ssh/azure_key infra/oidc/realm.json "${{ env.AZURE_USER }}@${{ env.AZURE_PUBLIC_IP }}:~/deploy/infra/oidc/realm.json"
 
       - name: Deploy
