@@ -587,13 +587,13 @@ jobs:
 
       - name: Copy Compose and Config
         run: |
-          scp -i ~/.ssh/azure_key docker-compose.azure.yml "${{ env.AZURE_USER }}@${{ env.AZURE_PUBLIC_IP }}:~/deploy/docker-compose.azure.yml"
+          scp -i ~/.ssh/azure_key docker-compose.yml "${{ env.AZURE_USER }}@${{ env.AZURE_PUBLIC_IP }}:~/deploy/docker-compose.yml"
           scp -i ~/.ssh/azure_key infra/oidc/realm.json "${{ env.AZURE_USER }}@${{ env.AZURE_PUBLIC_IP }}:~/deploy/infra/oidc/realm.json"
 
       - name: Deploy
         run: |
           ssh -i ~/.ssh/azure_key "${{ env.AZURE_USER }}@${{ env.AZURE_PUBLIC_IP }}" \
-            "cd ~/deploy && echo '${{ secrets.GITHUB_TOKEN }}' | docker login ${{ env.REGISTRY }} -u '${{ github.actor }}' --password-stdin && docker compose -f docker-compose.azure.yml pull && docker compose -f docker-compose.azure.yml up -d"
+            "cd ~/deploy && echo '${{ secrets.GITHUB_TOKEN }}' | docker login ${{ env.REGISTRY }} -u '${{ github.actor }}' --password-stdin && docker compose pull && docker compose up -d"
 
   # ---------------------------------------------------------------------
   # Deploy to stud cluster (Rancher/k8s)
