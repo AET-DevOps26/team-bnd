@@ -39,6 +39,24 @@ def test_openapi_schema_exposes_all_endpoints():
     assert "/genai/summarize" in paths
     assert "/genai/extract" in paths
     assert "/genai/ask" in paths
+    # metrics is an operational endpoint, not part of the public API surface
+    assert "/genai/metrics" not in paths
+
+
+# --- metrics ---
+
+
+def test_metrics_endpoint_returns_prometheus_text():
+    response = client.get("/genai/metrics")
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("text/plain")
+
+
+def test_metrics_endpoint_records_http_requests():
+    client.get("/genai/health")
+    body = client.get("/genai/metrics").text
+    assert "http_requests_total" in body
+    assert 'handler="/genai/health"' in body
 
 
 # --- summarize ---

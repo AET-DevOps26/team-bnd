@@ -11,8 +11,11 @@ Python/FastAPI microservice for AI-powered document processing. Uses LangChain t
 | POST   | `/genai/summarize` | Generate a concise summary of document text          |
 | POST   | `/genai/extract`   | Extract named entities (people, dates, topics, orgs) |
 | POST   | `/genai/ask`       | Answer a question, optionally grounded in documents  |
+| GET    | `/genai/metrics`   | Prometheus metrics (in-network scraping only)        |
 
 FastAPI also exposes `/openapi.json` and `/docs` (Swagger UI) out of the box.
+
+`/genai/metrics` is served by [prometheus-fastapi-instrumentator](https://github.com/trallnag/prometheus-fastapi-instrumentator) and exposes HTTP request count, latency, and Python process metrics. Prometheus scrapes it directly over the internal network (`http://genai:8000/genai/metrics`), so it is not routed through Traefik or the k8s ingress.
 
 ## LLM configuration
 

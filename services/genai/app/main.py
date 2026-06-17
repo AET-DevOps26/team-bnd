@@ -1,5 +1,6 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import PlainTextResponse
+from prometheus_fastapi_instrumentator import Instrumentator
 from pydantic import BaseModel
 
 from app.extract import extract_entities
@@ -19,6 +20,16 @@ app = FastAPI(
         {"name": "ai", "description": "AI-powered document processing"},
     ],
     servers=[{"url": "/"}],
+)
+
+# should_group_untemplated rolls unmatched URLs (404s, port scans) into one
+# series to bound label cardinality. The endpoint is for in-network Prometheus
+# scraping only, it is intentionally left out of the Traefik/ingress allow-list.
+Instrumentator(should_group_untemplated=True).instrument(app).expose(
+    app,
+    endpoint="/genai/metrics",
+    include_in_schema=False,
+    tags=["metrics"],
 )
 
 
