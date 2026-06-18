@@ -44,7 +44,6 @@ Alexandria uses [Traefik](https://traefik.io/) as the reverse proxy and API gate
 | `/api/*` | Spring | 8080 | REST API |
 | `/swagger-ui/*` | Spring | 8080 | API documentation UI |
 | `/v3/api-docs` | Spring | 8080 | OpenAPI spec |
-| `/actuator/*` | Spring | 8080 | Health and metrics |
 | `/hello` | Spring | 8080 | Smoke test endpoint |
 | `/auth/*` | Keycloak | 8180 | OIDC provider |
 | `/genai/health` | GenAI | 8000 | Health check |

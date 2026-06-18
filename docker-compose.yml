@@ -48,7 +48,8 @@ services:
           memory: 512M
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.spring.rule=PathPrefix(`/api`) || PathPrefix(`/swagger-ui`) || PathPrefix(`/v3/api-docs`) || PathPrefix(`/actuator`) || PathPrefix(`/hello`)"
+      # /actuator/ endpoints only exposed internally, not visible to the outside
+      - "traefik.http.routers.spring.rule=PathPrefix(`/api`) || PathPrefix(`/swagger-ui`) || PathPrefix(`/v3/api-docs`) || PathPrefix(`/hello`)"
       - "traefik.http.routers.spring.entrypoints=web"
       - "traefik.http.routers.spring.priority=10"
       - "traefik.http.services.spring.loadbalancer.server.port=8080"
