@@ -21,7 +21,7 @@ spring:
     username: "postgres"
     password: "postgres-password"
   oidc:
-    issuerUri: "http://alexandria-keycloak:8080/keycloak/realms/alexandria"
+    issuerUri: "https://alexandria.stud.k8s.aet.cit.tum.de/keycloak/realms/alexandria"
     jwkSetUri: "http://alexandria-keycloak:8080/keycloak/realms/alexandria/protocol/openid-connect/certs"
     userIdClaim: "sub"
     usernameClaim: "preferred_username"
@@ -56,6 +56,7 @@ keycloak:
     adminPassword: "admin"
     proxyHeaders: "xforwarded"
     hostname: "https://alexandria.stud.k8s.aet.cit.tum.de/keycloak"
+    hostnameBackchannel: "http://alexandria-keycloak:8080/keycloak"
     httpRelativePath: /keycloak
   database:
     type: postgres
