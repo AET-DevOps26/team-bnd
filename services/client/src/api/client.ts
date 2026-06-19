@@ -1,14 +1,15 @@
 import createFetchClient from "openapi-fetch";
 import createQueryClient from "openapi-react-query";
 import type { paths } from "./schema";
+import { userManager } from "../oidcConfig";
 
 export const fetchClient = createFetchClient<paths>({ baseUrl: "" });
 
 fetchClient.use({
   async onRequest({ request }) {
-    const token = localStorage.getItem("access_token");
-    if (token) {
-      request.headers.set("Authorization", `Bearer ${token}`);
+    const user = await userManager.getUser();
+    if (user?.access_token) {
+      request.headers.set("Authorization", `Bearer ${user.access_token}`);
     }
     return request;
   },
