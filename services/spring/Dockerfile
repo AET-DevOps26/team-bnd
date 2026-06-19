@@ -38,6 +38,6 @@ EXPOSE 8080
 
 # Healthcheck against actuator
 HEALTHCHECK --interval=10s --timeout=5s --start-period=80s --retries=3 \
-    CMD wget --quiet --tries=1 --spider http://localhost:8080/actuator/health || exit 1
+    CMD wget --quiet --tries=1 --spider http://localhost:8080/actuator/health/readiness || exit 1
 
 ENTRYPOINT ["java", "-jar", "app.jar"]
