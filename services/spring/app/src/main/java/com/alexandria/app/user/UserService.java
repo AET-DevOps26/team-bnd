@@ -28,10 +28,18 @@ public class UserService {
      */
     @Transactional
     public User findOrCreateByOidcSubject(String oidcSubject, String username, String email) {
-        Optional<User> existing = repository.findByOidcSubject(oidcSubject);
-        if (existing.isPresent()) {
-            return existing.get();
+        Optional<User> bySubject = repository.findByOidcSubject(oidcSubject);
+        if (bySubject.isPresent()) {
+            return bySubject.get();
         }
+
+        Optional<User> byEmail = repository.findByEmail(email);
+        if (byEmail.isPresent()) {
+            User user = byEmail.get();
+            user.setOidcSubject(oidcSubject);
+            return repository.save(user);
+        }
+
         return repository.save(new User(oidcSubject, username, email));
     }
 

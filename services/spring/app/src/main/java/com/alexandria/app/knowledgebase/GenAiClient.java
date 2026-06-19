@@ -17,13 +17,13 @@ public class GenAiClient {
     public GenAiClient(@Value("${genai.base-url:http://localhost:8000}") String baseUrl) {
         this.restClient = RestClient.builder()
                 .baseUrl(baseUrl)
-                .defaultHeader("Content-Type", MediaType.APPLICATION_JSON_VALUE)
                 .build();
     }
 
     public SummarizeResponse summarize(String content) {
         return restClient.post()
                 .uri("/genai/summarize")
+                .contentType(MediaType.APPLICATION_JSON)
                 .body(new SummarizeRequest(content))
                 .retrieve()
                 .body(SummarizeResponse.class);
@@ -32,6 +32,7 @@ public class GenAiClient {
     public ExtractResponse extract(String content) {
         return restClient.post()
                 .uri("/genai/extract")
+                .contentType(MediaType.APPLICATION_JSON)
                 .body(new ExtractRequest(content))
                 .retrieve()
                 .body(ExtractResponse.class);
@@ -40,6 +41,7 @@ public class GenAiClient {
     public AskResponse ask(String question, List<UUID> documentIds) {
         return restClient.post()
                 .uri("/genai/ask")
+                .contentType(MediaType.APPLICATION_JSON)
                 .body(new AskRequest(question, documentIds))
                 .retrieve()
                 .body(AskResponse.class);
