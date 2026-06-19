@@ -41,7 +41,9 @@ public class TextExtractor {
     private String extractFromPdf(MultipartFile file) throws IOException {
         try (PDDocument document = Loader.loadPDF(file.getBytes())) {
             PDFTextStripper stripper = new PDFTextStripper();
-            return stripper.getText(document);
+            String text = stripper.getText(document);
+            // Remove null bytes that postgres won't store in text columns
+            return text != null ? text.replace("\u0000", "") : null;
         }
     }
 

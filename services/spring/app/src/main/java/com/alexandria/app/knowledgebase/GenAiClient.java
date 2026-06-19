@@ -2,6 +2,7 @@ package com.alexandria.app.knowledgebase;
 
 import com.alexandria.app.document.EntityType;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
@@ -16,6 +17,7 @@ public class GenAiClient {
     public GenAiClient(@Value("${genai.base-url:http://localhost:8000}") String baseUrl) {
         this.restClient = RestClient.builder()
                 .baseUrl(baseUrl)
+                .defaultHeader("Content-Type", MediaType.APPLICATION_JSON_VALUE)
                 .build();
     }
 
