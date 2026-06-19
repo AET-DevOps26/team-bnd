@@ -78,8 +78,8 @@ services:
           memory: 512M
     labels:
       - "traefik.enable=true"
-      # Only allow access to hello, health, and docs endpoints
-      - "traefik.http.routers.genai.rule=PathPrefix(`/genai/hello`) || PathPrefix(`/genai/health`) || PathPrefix(`/docs`) || PathPrefix(`/redoc`) || PathPrefix(`/openapi.json`)"
+      # Only allow access to docs endpoints
+      - "traefik.http.routers.genai.rule=PathPrefix(`/docs`) || PathPrefix(`/redoc`) || PathPrefix(`/openapi.json`)"
       - "traefik.http.routers.genai.entrypoints=web"
       - "traefik.http.routers.genai.priority=20"
       - "traefik.http.services.genai.loadbalancer.server.port=8000"

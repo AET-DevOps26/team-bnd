@@ -6,7 +6,7 @@ Alexandria uses [Traefik](https://traefik.io/) as the reverse proxy and API gate
 
 ```
                          ┌─────────────┐
-            HTTP:80 ──▶ │   Traefik   │
+            HTTP:80 ──▶  │   Traefik   │
                          └──────┬──────┘
                                 │
            ┌────────────────────┼──────────────────┐
@@ -47,8 +47,6 @@ Alexandria uses [Traefik](https://traefik.io/) as the reverse proxy and API gate
 | `/actuator/*` | Spring | 8080 | Health and metrics |
 | `/hello` | Spring | 8080 | Smoke test endpoint |
 | `/auth/*` | Keycloak | 8180 | OIDC provider |
-| `/genai/health` | GenAI | 8000 | Health check |
-| `/genai/hello` | GenAI | 8000 | Smoke test |
 | `/docs` | GenAI | 8000 | FastAPI documentation UI |
 | `/redoc` | GenAI | 8000 | FastAPI documentation UI (ReDoc) |
 | `/openapi.json` | GenAI | 8000 | FastAPI OpenAPI spec |
@@ -71,8 +69,6 @@ docker compose up -d
 | http://localhost/v3/api-docs| Spring API documentation |
 | http://localhost/hello | Spring health check |
 | http://localhost/auth/ | Keycloak admin |
-| http://localhost/genai/health | GenAI health check |
-| http://localhost/genai/hello | GenAI smoke test |
 | http://localhost/docs | GenAI API documentation |
 | http://localhost/redoc | GenAI API documentation (ReDoc) |
 | http://localhost/openapi.json | GenAI OpenAPI spec |
@@ -146,8 +142,8 @@ curl http://localhost/hello
 # Test Keycloak
 curl http://localhost/auth/
 
-# Test GenAI health
-curl http://localhost/genai/health
+# Test GenAI docs
+curl http://localhost/docs
 ```
 
 ## Production Considerations
