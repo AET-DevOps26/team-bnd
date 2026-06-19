@@ -73,7 +73,7 @@ spec:
                 name: {{ include "alexandria.fullname" . }}-genai
                 port:
                   number: 8000
-          - path: /keycloak
+          - path: /auth
             pathType: Prefix
             backend:
               service:
