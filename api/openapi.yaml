@@ -321,15 +321,7 @@ paths:
         - bearerAuth: []
   /genai/ask:
     post:
-      description: >-
-        Answer a natural language question about a set of documents.
-
-
-        If documentContents is provided, the answer is grounded in the actual
-        document text.
-
-        Without it, the model answers from general knowledge and returns all
-        documentIds as sources.
+      description: Answer a question based on the provided documents.
       operationId: ask_genai_ask_post
       requestBody:
         content:
@@ -356,9 +348,7 @@ paths:
         - ai
   /genai/extract:
     post:
-      description: >-
-        Extract named entities (people, dates, topics, organizations) from
-        document text.
+      description: Extract entities from the provided content.
       operationId: extract_genai_extract_post
       requestBody:
         content:
@@ -418,8 +408,8 @@ paths:
         - hello
   /genai/summarize:
     post:
-      description: Generate a concise summary of the provided document text.
-      operationId: summarize_document_genai_summarize_post
+      description: Generate a summary of the provided content.
+      operationId: summarize_genai_summarize_post
       requestBody:
         content:
           application/json:
@@ -440,7 +430,7 @@ paths:
                 $ref: '#/components/schemas/HTTPValidationError'
           description: Validation Error
       security: []
-      summary: Summarize Document
+      summary: Summarize
       tags:
         - ai
 components:
@@ -624,28 +614,8 @@ components:
         resultCount:
           type: integer
           format: int32
-    DocumentContent:
-      properties:
-        content:
-          title: Content
-          type: string
-        id:
-          title: Id
-          type: string
-      required:
-        - id
-        - content
-      title: DocumentContent
-      type: object
     GenAiAskRequest:
       properties:
-        documentContents:
-          anyOf:
-            - items:
-                $ref: '#/components/schemas/DocumentContent'
-              type: array
-            - type: 'null'
-          title: Documentcontents
         documentIds:
           items:
             type: string

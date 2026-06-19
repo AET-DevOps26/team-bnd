@@ -1,5 +1,6 @@
 package com.alexandria.app.document;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 
 import java.sql.Blob;
@@ -16,6 +17,7 @@ public class FileContent {
     @OneToOne
     @MapsId
     @JoinColumn(name = "id")
+    @JsonBackReference
     private Document document;
 
     @Lob

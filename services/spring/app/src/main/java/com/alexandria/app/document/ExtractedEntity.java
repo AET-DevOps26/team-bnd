@@ -1,5 +1,6 @@
 package com.alexandria.app.document;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 
 import java.util.UUID;
@@ -13,6 +14,7 @@ public class ExtractedEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "document_id", nullable = false)
+    @JsonBackReference
     private Document document;
 
     @Column(nullable = false)
