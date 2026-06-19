@@ -62,6 +62,11 @@ keycloak:
   realm:
     import: true
     existingSecret: alexandria-oidc-realm
+  extraEnvVars:
+    - name: KEYCLOAK_REDIRECT_URI
+      value: "https://alexandria.stud.k8s.aet.cit.tum.de/*"
+    - name: KEYCLOAK_WEB_ORIGIN
+      value: "https://alexandria.stud.k8s.aet.cit.tum.de"
   database:
     type: postgres
     host: "alexandria-postgres-db"

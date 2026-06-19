@@ -99,6 +99,8 @@ services:
       KC_PROXY_HEADERS: xforwarded
       KC_HTTP_RELATIVE_PATH: /auth
       KC_HOSTNAME_BACKCHANNEL_DYNAMIC: true
+      KEYCLOAK_REDIRECT_URI: ${KEYCLOAK_REDIRECT_URI:-http://localhost/*}
+      KEYCLOAK_WEB_ORIGIN: ${KEYCLOAK_WEB_ORIGIN:-http://localhost}
     restart: unless-stopped
     networks:
       - alexandria
