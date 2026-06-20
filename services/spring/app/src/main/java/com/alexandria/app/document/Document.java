@@ -1,6 +1,7 @@
 package com.alexandria.app.document;
 
 import com.alexandria.app.user.User;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 import java.time.Instant;
@@ -34,6 +35,7 @@ public class Document {
     private Long fileSize;
 
     @Column(columnDefinition = "TEXT")
+    @JsonIgnore
     private String rawTextContent;
 
     @Column(nullable = false)

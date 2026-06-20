@@ -15,8 +15,10 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.sql.rowset.serial.SerialBlob;
 import java.io.IOException;
+import java.io.InputStream;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -131,6 +133,20 @@ public class KnowledgeBaseService {
             throw new DocumentNotFoundException(id);
         }
         return document;
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<byte[]> getFileContent(UUID documentId) {
+        return documentRepository.findById(documentId)
+                .map(Document::getFileContent)
+                .map(fileContent -> {
+                    try {
+                        return fileContent.getFileContent().getBinaryStream().readAllBytes();
+                    } catch (SQLException | IOException e) {
+                        log.warn("Failed to read file content for document {}: {}", documentId, e.getMessage());
+                        return null;
+                    }
+                });
     }
 
     @Transactional

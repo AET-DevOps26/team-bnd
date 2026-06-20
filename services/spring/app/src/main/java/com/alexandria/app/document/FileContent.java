@@ -1,6 +1,7 @@
 package com.alexandria.app.document;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 import java.sql.Blob;
@@ -22,6 +23,7 @@ public class FileContent {
 
     @Lob
     @Column(nullable = false)
+    @JsonIgnore
     private Blob fileContent;
 
     // Getters & Setters

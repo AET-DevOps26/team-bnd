@@ -29,43 +29,6 @@ tags:
     name: ai
     x-displayName: ai
 paths:
-  /api/v1/knowledgebase/documents:
-    get:
-      tags:
-        - KnowledgeBase
-      summary: List all documents
-      operationId: listDocuments
-      responses:
-        '200':
-          description: Documents retrieved
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Document'
-      security:
-        - bearerAuth: []
-    post:
-      tags:
-        - KnowledgeBase
-      summary: Create a new document with text content
-      operationId: createDocument
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateDocumentRequest'
-        required: true
-      responses:
-        '201':
-          description: Document created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Document'
-      security:
-        - bearerAuth: []
   /api/v1/knowledgebase/documents/{id}/tags:
     post:
       tags:
@@ -118,6 +81,27 @@ paths:
                 $ref: '#/components/schemas/Document'
         '400':
           description: Invalid file
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Document'
+      security:
+        - bearerAuth: []
+  /api/v1/knowledgebase/documents/create:
+    post:
+      tags:
+        - KnowledgeBase
+      summary: Create a new document with text content
+      operationId: createDocument
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateDocumentRequest'
+        required: true
+      responses:
+        '201':
+          description: Document created
           content:
             application/json:
               schema:
@@ -223,6 +207,23 @@ paths:
                   $ref: '#/components/schemas/QAInteraction'
       security:
         - bearerAuth: []
+  /api/v1/knowledgebase/documents:
+    get:
+      tags:
+        - KnowledgeBase
+      summary: List all documents
+      operationId: listDocuments
+      responses:
+        '200':
+          description: Documents retrieved
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Document'
+      security:
+        - bearerAuth: []
   /api/v1/knowledgebase/documents/{id}:
     get:
       tags:
@@ -268,6 +269,36 @@ paths:
           description: Document deleted
         '404':
           description: Document not found
+      security:
+        - bearerAuth: []
+  /api/v1/knowledgebase/documents/{id}/download:
+    get:
+      tags:
+        - KnowledgeBase
+      summary: Download document file
+      operationId: downloadDocument
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: File content
+          content:
+            application/json:
+              schema:
+                type: string
+                format: byte
+        '404':
+          description: Document not found
+          content:
+            application/json:
+              schema:
+                type: string
+                format: byte
       security:
         - bearerAuth: []
   /api/v1/users/{id}:
@@ -445,19 +476,10 @@ paths:
         - ai
 components:
   schemas:
-    CreateDocumentRequest:
+    AddTagRequest:
       type: object
       properties:
-        fileName:
-          type: string
-        filePath:
-          type: string
-        fileType:
-          type: string
-        fileSize:
-          type: integer
-          format: int64
-        textContent:
+        label:
           type: string
     Document:
       type: object
@@ -476,8 +498,6 @@ components:
         fileSize:
           type: integer
           format: int64
-        rawTextContent:
-          type: string
         createdAt:
           type: string
           format: date-time
@@ -522,10 +542,6 @@ components:
           format: uuid
         document:
           $ref: '#/components/schemas/Document'
-        fileContent:
-          type: object
-          properties:
-            binaryStream: {}
     Summary:
       type: object
       properties:
@@ -576,10 +592,19 @@ components:
           format: date-time
         preferences:
           type: string
-    AddTagRequest:
+    CreateDocumentRequest:
       type: object
       properties:
-        label:
+        fileName:
+          type: string
+        filePath:
+          type: string
+        fileType:
+          type: string
+        fileSize:
+          type: integer
+          format: int64
+        textContent:
           type: string
     AskRequest:
       type: object
