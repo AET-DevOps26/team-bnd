@@ -5,6 +5,7 @@ export const oidcConfig: AuthProviderProps = {
   client_id: "alexandria-client",
   redirect_uri: `${window.location.origin}/`,
   post_logout_redirect_uri: `${window.location.origin}/`,
+  prompt: "login",
   scope: "openid profile",
   onSigninCallback: () => {
     // Remove OIDC query params from URL after successful login
