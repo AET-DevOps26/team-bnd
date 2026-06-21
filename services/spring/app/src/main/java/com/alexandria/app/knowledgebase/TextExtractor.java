@@ -25,11 +25,13 @@ public class TextExtractor {
         }
 
         try {
+            String text = null;
             if (contentType.equals("application/pdf")) {
-                return extractFromPdf(file);
+                text = extractFromPdf(file);
             } else if (contentType.startsWith("text/")) {
-                return new String(file.getBytes(), StandardCharsets.UTF_8);
+                text = new String(file.getBytes(), StandardCharsets.UTF_8);
             }
+            return sanitizeText(text);
         } catch (IOException e) {
             String safeFilename = sanitizeForLog(file.getOriginalFilename());
             log.warn("Failed to extract text from file {}: {}", safeFilename, e.getMessage());
@@ -41,10 +43,15 @@ public class TextExtractor {
     private String extractFromPdf(MultipartFile file) throws IOException {
         try (PDDocument document = Loader.loadPDF(file.getBytes())) {
             PDFTextStripper stripper = new PDFTextStripper();
-            String text = stripper.getText(document);
-            // Remove null bytes that postgres won't store in text columns
-            return text != null ? text.replace("\u0000", "") : null;
+            return stripper.getText(document);
         }
+    }
+
+    private String sanitizeText(String text) {
+        if (text == null) {
+            return null;
+        }
+        return text.replace("\u0000", "");
     }
 
     private String sanitizeForLog(String value) {

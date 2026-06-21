@@ -35,7 +35,7 @@ docker compose up -d spring --build
 
 ## Testing
 
-### Performing individual API calls
+### Performing individual API Calls
 For most API endpoints, a Bearer auth token is required, which can be requested from keycloak:
 ```bash
 TOKEN=$(curl -s -X POST "http://localhost/auth/realms/alexandria/protocol/openid-connect/token" \
@@ -48,3 +48,11 @@ TOKEN=$(curl -s -X POST "http://localhost/auth/realms/alexandria/protocol/openid
 # Then you can perform API calls using the $TOKEN shell variable, e.g.,
 curl -i -H "Authorization: Bearer $TOKEN" http://localhost/api/v1/knowledgebase/documents
 ```
+### Run all Test Cases
+If you want to run the test cases for the spring service locally, you can do it as follows:
+```bash
+# execute in services/spring/app/
+./gradlew test --no-daemon
+```
+
+The generated report can then be found at `build/reports/tests/test/index.html`.
