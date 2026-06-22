@@ -5,7 +5,7 @@ info:
   license:
     name: MIT
     identifier: MIT
-  version: 0.3.0
+  version: 1.3.0
 servers:
   - url: /
     description: Current server
@@ -491,7 +491,7 @@ components:
           $ref: '#/components/schemas/User'
         fileName:
           type: string
-        filePath:
+        objectKey:
           type: string
         fileType:
           type: string
@@ -501,8 +501,6 @@ components:
         createdAt:
           type: string
           format: date-time
-        fileContent:
-          $ref: '#/components/schemas/FileContent'
         summary:
           $ref: '#/components/schemas/Summary'
         extractedEntities:
@@ -534,14 +532,6 @@ components:
         confidence:
           type: number
           format: double
-    FileContent:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-        document:
-          $ref: '#/components/schemas/Document'
     Summary:
       type: object
       properties:
@@ -597,7 +587,7 @@ components:
       properties:
         fileName:
           type: string
-        filePath:
+        objectKey:
           type: string
         fileType:
           type: string
@@ -623,11 +613,10 @@ components:
           type: string
         answer:
           type: string
-        sourceDocumentIds:
+        sourceObjectKeys:
           type: array
           items:
             type: string
-            format: uuid
         timestamp:
           type: string
           format: date-time

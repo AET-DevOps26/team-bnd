@@ -52,7 +52,7 @@ public class KnowledgeBaseController {
         Document document = knowledgeBaseService.createDocument(
                 user,
                 request.fileName(),
-                request.filePath(),
+                request.objectKey(),
                 request.fileType(),
                 request.fileSize(),
                 request.textContent()
@@ -99,7 +99,7 @@ public class KnowledgeBaseController {
         User user = getCurrentUser(principal);
         Document document = knowledgeBaseService.getDocument(id, user.getId());
 
-        return knowledgeBaseService.getFileContent(id)
+        return knowledgeBaseService.getFileContent(id, user.getId())
                 .map(bytes -> {
                     HttpHeaders headers = new HttpHeaders();
                     headers.setContentType(MediaType.parseMediaType(document.getFileType()));
@@ -170,7 +170,7 @@ public class KnowledgeBaseController {
                 .orElseThrow(() -> new UserNotFoundException(oidcSubject));
     }
 
-    public record CreateDocumentRequest(String fileName, String filePath, String fileType, Long fileSize, String textContent) {}
+    public record CreateDocumentRequest(String fileName, String objectKey, String fileType, Long fileSize, String textContent) {}
 
     public record AskRequest(String question) {}
 

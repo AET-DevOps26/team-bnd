@@ -26,7 +26,7 @@ public class Document {
     private String fileName;
 
     @Column(nullable = false)
-    private String filePath;
+    private String objectKey;
 
     @Column(nullable = false)
     private String fileType;
@@ -40,9 +40,6 @@ public class Document {
 
     @Column(nullable = false)
     private Instant createdAt;
-
-    @OneToOne(mappedBy = "document", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private FileContent fileContent;
 
     @OneToOne(mappedBy = "document", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private Summary summary;
@@ -61,10 +58,10 @@ public class Document {
     public Document() {
     }
 
-    public Document(User owner, String fileName, String filePath, String fileType, Long fileSize) {
+    public Document(User owner, String fileName, String objectKey, String fileType, Long fileSize) {
         this.owner = owner;
         this.fileName = fileName;
-        this.filePath = filePath;
+        this.objectKey = objectKey;
         this.fileType = fileType;
         this.fileSize = fileSize;
     }
@@ -98,12 +95,12 @@ public class Document {
         this.fileName = fileName;
     }
 
-    public String getFilePath() {
-        return filePath;
+    public String getObjectKey() {
+        return objectKey;
     }
 
-    public void setFilePath(String filePath) {
-        this.filePath = filePath;
+    public void setObjectKey(String objectKey) {
+        this.objectKey = objectKey;
     }
 
     public String getFileType() {
@@ -128,17 +125,6 @@ public class Document {
 
     public void setRawTextContent(String rawTextContent) {
         this.rawTextContent = rawTextContent;
-    }
-
-    public FileContent getFileContent() {
-        return fileContent;
-    }
-
-    public void setFileContent(FileContent fileContent) {
-        this.fileContent = fileContent;
-        if (fileContent != null) {
-            fileContent.setDocument(this);
-        }
     }
 
     public Summary getSummary() {

@@ -1,7 +1,7 @@
 package com.alexandria.app.knowledgebase;
 
 import com.alexandria.app.document.Document;
-import com.alexandria.app.document.DocumentRepository;
+import com.alexandria.app.exception.DocumentNotFoundException;
 import com.alexandria.app.user.User;
 import com.alexandria.app.user.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -10,11 +10,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.when;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -26,6 +29,12 @@ class FileHandlingIntegrationTest {
 
     @Autowired
     private UserRepository userRepository;
+
+    @MockitoBean
+    private ObjectStorageService objectStorageService;
+
+    @MockitoBean
+    private GenAiClient genAiClient;
 
     private User testUser;
 
@@ -45,7 +54,6 @@ class FileHandlingIntegrationTest {
         assertThat(doc.getFileName()).isEqualTo("test.txt");
         assertThat(doc.getFileType()).isEqualTo("text/plain");
         assertThat(doc.getRawTextContent()).isEqualTo("Hello World");
-        assertThat(doc.getFileContent()).isNotNull();
     }
 
     @Test
@@ -55,7 +63,9 @@ class FileHandlingIntegrationTest {
                 "file", "download.txt", "text/plain", content);
 
         Document doc = knowledgeBaseService.uploadDocument(testUser, file);
-        Optional<byte[]> downloaded = knowledgeBaseService.getFileContent(doc.getId());
+        when(objectStorageService.download(doc.getObjectKey())).thenReturn(content);
+
+        Optional<byte[]> downloaded = knowledgeBaseService.getFileContent(doc.getId(), testUser.getId());
 
         assertThat(downloaded).isPresent();
         assertThat(downloaded.get()).isEqualTo(content);
@@ -73,9 +83,8 @@ class FileHandlingIntegrationTest {
     }
 
     @Test
-    void integration_file_getFileContentReturnsEmptyForNonexistent() {
-        Optional<byte[]> content = knowledgeBaseService.getFileContent(java.util.UUID.randomUUID());
-
-        assertThat(content).isEmpty();
+    void integration_file_getFileContentThrowsForNonexistentDocument() {
+        assertThatThrownBy(() -> knowledgeBaseService.getFileContent(java.util.UUID.randomUUID(), testUser.getId()))
+                .isInstanceOf(DocumentNotFoundException.class);
     }
 }
