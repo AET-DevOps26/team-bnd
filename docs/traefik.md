@@ -31,10 +31,13 @@ Alexandria uses [Traefik](https://traefik.io/) as the reverse proxy and API gate
 - Spring (REST API)
 - Keycloak (OIDC provider)
 - GenAI (health and docs endpoints only)
+- Grafana and Prometheus (monitoring)
 
 **Private services** (internal Docker network only):
 - PostgreSQL
 - GenAI (except health and docs endpoints)
+
+Traefik also exposes its own Prometheus metrics on a separate internal `metrics` entrypoint (`:8082`), which is only reachable inside the Docker network and is scraped by Prometheus. It is not bound to the public `web` entrypoint.
 
 ## Routing Table
 
@@ -49,6 +52,8 @@ Alexandria uses [Traefik](https://traefik.io/) as the reverse proxy and API gate
 | `/docs` | GenAI | 8000 | FastAPI documentation UI |
 | `/redoc` | GenAI | 8000 | FastAPI documentation UI (ReDoc) |
 | `/openapi.json` | GenAI | 8000 | FastAPI OpenAPI spec |
+| `/grafana/*` | Grafana | 3000 | Monitoring dashboards |
+| `/prometheus/*` | Prometheus | 9090 | Metrics store and query UI |
 
 ## Local Development
 
@@ -71,6 +76,8 @@ docker compose up -d
 | http://localhost/docs | GenAI API documentation |
 | http://localhost/redoc | GenAI API documentation (ReDoc) |
 | http://localhost/openapi.json | GenAI OpenAPI spec |
+| http://localhost/grafana/ | Grafana dashboards |
+| http://localhost/prometheus/ | Prometheus |
 
 ### Access Traefik Dashboard
 
