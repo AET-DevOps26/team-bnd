@@ -583,12 +583,15 @@ jobs:
 
       - name: Prepare Remote Directory
         run: |
-          ssh -i ~/.ssh/azure_key "${{ env.AZURE_USER }}@${{ env.AZURE_PUBLIC_IP }}" "mkdir -p ~/deploy/infra/oidc"
+          ssh -i ~/.ssh/azure_key "${{ env.AZURE_USER }}@${{ env.AZURE_PUBLIC_IP }}" \
+            "rm -rf ~/deploy/infra/prometheus ~/deploy/infra/grafana && mkdir -p ~/deploy/infra/oidc ~/deploy/infra/prometheus ~/deploy/infra/grafana"
 
       - name: Copy Compose and Config
         run: |
           scp -i ~/.ssh/azure_key docker-compose.yml "${{ env.AZURE_USER }}@${{ env.AZURE_PUBLIC_IP }}:~/deploy/docker-compose.yml"
           scp -i ~/.ssh/azure_key infra/oidc/realm.json "${{ env.AZURE_USER }}@${{ env.AZURE_PUBLIC_IP }}:~/deploy/infra/oidc/realm.json"
+          scp -r -i ~/.ssh/azure_key infra/prometheus/. "${{ env.AZURE_USER }}@${{ env.AZURE_PUBLIC_IP }}:~/deploy/infra/prometheus/"
+          scp -r -i ~/.ssh/azure_key infra/grafana/. "${{ env.AZURE_USER }}@${{ env.AZURE_PUBLIC_IP }}:~/deploy/infra/grafana/"
 
       - name: Deploy
         run: |
