@@ -16,6 +16,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.http.HttpHeaders;
 
 import java.security.Principal;
 import java.util.List;
@@ -43,7 +44,7 @@ public class KnowledgeBaseController {
         return ResponseEntity.ok(knowledgeBaseService.getDocuments(user.getId()));
     }
 
-    @PostMapping(value = "/documents", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @PostMapping(value = "/documents/create", consumes = MediaType.APPLICATION_JSON_VALUE)
     @Operation(summary = "Create a new document with text content")
     @ApiResponse(responseCode = "201", description = "Document created")
     public ResponseEntity<Document> createDocument(@RequestBody CreateDocumentRequest request, Principal principal) {
@@ -88,6 +89,27 @@ public class KnowledgeBaseController {
         User user = getCurrentUser(principal);
         knowledgeBaseService.deleteDocument(id, user.getId());
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/documents/{id}/download")
+    @Operation(summary = "Download document file")
+    @ApiResponse(responseCode = "200", description = "File content")
+    @ApiResponse(responseCode = "404", description = "Document not found")
+    public ResponseEntity<byte[]> downloadDocument(@PathVariable UUID id, Principal principal) {
+        User user = getCurrentUser(principal);
+        Document document = knowledgeBaseService.getDocument(id, user.getId());
+
+        return knowledgeBaseService.getFileContent(id)
+                .map(bytes -> {
+                    HttpHeaders headers = new HttpHeaders();
+                    headers.setContentType(MediaType.parseMediaType(document.getFileType()));
+                    headers.setContentDispositionFormData("attachment", document.getFileName());
+                    headers.setContentLength(bytes.length);
+                    return ResponseEntity.ok()
+                            .headers(headers)
+                            .body(bytes);
+                })
+                .orElse(ResponseEntity.notFound().build());
     }
 
     @GetMapping("/search")

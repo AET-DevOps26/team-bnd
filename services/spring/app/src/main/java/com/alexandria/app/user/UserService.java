@@ -2,6 +2,7 @@ package com.alexandria.app.user;
 
 import com.alexandria.app.exception.UserNotFoundException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -25,11 +26,20 @@ public class UserService {
      * @param email       E-mail of user.
      * @return
      */
+    @Transactional
     public User findOrCreateByOidcSubject(String oidcSubject, String username, String email) {
-        Optional<User> existing = repository.findByOidcSubject(oidcSubject);
-        if (existing.isPresent()) {
-            return existing.get();
+        Optional<User> bySubject = repository.findByOidcSubject(oidcSubject);
+        if (bySubject.isPresent()) {
+            return bySubject.get();
         }
+
+        Optional<User> byEmail = repository.findByEmail(email);
+        if (byEmail.isPresent()) {
+            User user = byEmail.get();
+            user.setOidcSubject(oidcSubject);
+            return repository.save(user);
+        }
+
         return repository.save(new User(oidcSubject, username, email));
     }
 

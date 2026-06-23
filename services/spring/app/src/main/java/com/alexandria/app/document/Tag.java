@@ -1,5 +1,6 @@
 package com.alexandria.app.document;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 
 import java.util.HashSet;
@@ -21,6 +22,7 @@ public class Tag {
     private TagSource source;
 
     @ManyToMany(mappedBy = "tags")
+    @JsonBackReference
     private Set<Document> documents = new HashSet<>();
 
     public Tag() {

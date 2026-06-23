@@ -12,7 +12,7 @@ import org.springframework.context.annotation.Configuration;
 @OpenAPIDefinition(
         info = @Info(
                 title = "Alexandria API",
-                version = "0.2.0",
+                version = "0.3.0",
                 description = "Document management and knowledge extraction platform",
                 license = @License(name = "MIT", identifier = "MIT")
         ),
