@@ -12,7 +12,6 @@ Additional endpoints:
 | http://localhost/api/... | Spring API |
 | http://localhost/swagger-ui/index.html | Spring API documentation |
 | http://localhost/v3/api-docs| Spring API documentation |
-| http://localhost/hello | Spring health check |
 
 
 ## Production
@@ -20,7 +19,7 @@ Additional endpoints:
 Build and run the production image with docker-compose:
 ```bash
 docker compose up -d spring
-# then open e.g. http://localhost/hello
+# then open e.g. http://localhost/swagger-ui/index.html
 ```
 
 ## Local Development
@@ -30,7 +29,7 @@ your local changes instead of pulling the latest image from the repository:
 
 ```bash
 docker compose up -d spring --build
-# then open e.g. http://localhost/hello
+# then open e.g. http://localhost/swagger-ui/index.html
 ```
 
 ## Testing

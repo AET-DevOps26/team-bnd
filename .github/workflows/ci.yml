@@ -388,18 +388,10 @@ jobs:
       - uses: actions/checkout@v6
 
       - name: Bring Stack Up
-        # --wait blocks until every service is healthy (or the timeout hits),
-        # so the checks below are plain assertions, not polling loops.
+        # --wait blocks until every service reports healthy (or the timeout
+        # hits), so a successful up is the smoke test. The per-service
+        # healthchecks in docker-compose.yml are what actually gets asserted.
         run: docker compose up -d --build --wait --wait-timeout 360
-
-      - name: Check Spring Service
-        run: curl -fsS http://localhost/hello | grep -q "Hello World"
-
-      - name: Check Client Service
-        run: curl -fsS http://localhost/ > /dev/null
-
-      - name: Check GenAI Service
-        run: curl -fsS http://localhost/docs > /dev/null
 
       - name: Show Logs on Failure
         if: failure()
