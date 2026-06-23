@@ -388,37 +388,18 @@ jobs:
       - uses: actions/checkout@v6
 
       - name: Bring Stack Up
-        run: docker compose up -d --build --wait --wait-timeout 180
+        # --wait blocks until every service is healthy (or the timeout hits),
+        # so the checks below are plain assertions, not polling loops.
+        run: docker compose up -d --build --wait --wait-timeout 360
 
       - name: Check Spring Service
-        run: |
-          for i in 1 2 3 4 5 6 7 8 9 10; do
-            if curl -fsS http://localhost/hello | grep -q "Hello World"; then
-              echo "spring ok"; break
-            fi
-            echo "waiting for spring service... ($i/10)"
-            sleep 3
-          done
+        run: curl -fsS http://localhost/hello | grep -q "Hello World"
 
       - name: Check Client Service
-        run: |
-          for i in 1 2 3 4 5; do
-            if curl -fsS http://localhost/ > /dev/null; then
-              echo "client ok"; break
-            fi
-            echo "waiting for client... ($i/5)"
-            sleep 2
-          done
+        run: curl -fsS http://localhost/ > /dev/null
 
       - name: Check GenAI Service
-        run: |
-          for i in 1 2 3 4 5; do
-            if curl -fsS http://localhost/genai/health > /dev/null; then
-              echo "genai ok"; break
-            fi
-            echo "waiting for genai... ($i/5)"
-            sleep 2
-          done
+        run: curl -fsS http://localhost/docs > /dev/null
 
       - name: Show Logs on Failure
         if: failure()
@@ -449,17 +430,9 @@ jobs:
       - uses: actions/checkout@v6
 
       - name: Bring Stack Up
-        run: docker compose --profile e2e up -d --build --wait --wait-timeout 180
-
-      - name: Wait for Keycloak Realm
-        run: |
-          for i in $(seq 1 20); do
-            if curl -fsS "http://localhost/auth/realms/alexandria" > /dev/null 2>&1; then
-              echo "keycloak realm ready"; break
-            fi
-            echo "waiting for keycloak... ($i/20)"
-            sleep 5
-          done
+        # --wait gates on healthchecks; Keycloak's reports ready only once the
+        # realm is imported, so no separate realm-polling step is needed.
+        run: docker compose --profile e2e up -d --build --wait --wait-timeout 360
 
       - name: Provision Test User via Keycloak Admin API
         run: |

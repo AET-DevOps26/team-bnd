@@ -19,8 +19,15 @@ services:
       - "traefik.http.routers.client.entrypoints=web"
       - "traefik.http.routers.client.priority=1"
       - "traefik.http.services.client.loadbalancer.server.port=80"
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:80/"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
     depends_on:
-      - traefik
+      spring:
+        condition: service_healthy
 
   client-dev:
     build:
@@ -70,11 +77,19 @@ services:
       - "traefik.http.routers.spring.entrypoints=web"
       - "traefik.http.routers.spring.priority=10"
       - "traefik.http.services.spring.loadbalancer.server.port=8080"
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/actuator/health/readiness"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 80s
     depends_on:
-      - postgres-db
-      - keycloak
-      - genai
-      - traefik
+      postgres-db:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      genai:
+        condition: service_healthy
 
   genai:
     image: ghcr.io/aet-devops26/team-bnd/genai:latest
@@ -101,8 +116,12 @@ services:
       - "traefik.http.routers.genai.entrypoints=web"
       - "traefik.http.routers.genai.priority=20"
       - "traefik.http.services.genai.loadbalancer.server.port=8000"
-    depends_on:
-      - traefik
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/genai/health').read()"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
 
   keycloak:
     image: quay.io/keycloak/keycloak:26.6.2
@@ -111,6 +130,7 @@ services:
     environment:
       KC_BOOTSTRAP_ADMIN_USERNAME: ${KC_BOOTSTRAP_ADMIN_USERNAME:-admin}
       KC_BOOTSTRAP_ADMIN_PASSWORD: ${KC_BOOTSTRAP_ADMIN_PASSWORD:-localkcpassword}
+      KC_HEALTH_ENABLED: "true"
       KC_HTTP_PORT: 8180
       KC_HOSTNAME: http://localhost/auth
       KC_PROXY_HEADERS: xforwarded
@@ -134,8 +154,15 @@ services:
       - "traefik.http.routers.keycloak.entrypoints=web"
       - "traefik.http.routers.keycloak.priority=10"
       - "traefik.http.services.keycloak.loadbalancer.server.port=8180"
-    depends_on:
-      - traefik
+    # The image ships no curl/wget, so we probe the management health endpoint
+    # over bash's /dev/tcp. It lives on port 9000 under KC_HTTP_RELATIVE_PATH,
+    # i.e. /auth/health/ready, and we check for an HTTP 200.
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/9000; echo -e 'GET /auth/health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3; cat <&3 | grep -q '200 OK'"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 120s
 
   postgres-db:
     image: postgres:16-alpine
@@ -150,6 +177,12 @@ services:
       - alexandria
     volumes:
       - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-admin} -d ${POSTGRES_DB:-alexandria} -p ${POSTGRES_PORT:-5432}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     deploy:
       resources:
         limits:
