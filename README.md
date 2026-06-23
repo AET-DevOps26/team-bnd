@@ -30,6 +30,8 @@ All services are accessed through Traefik as the reverse proxy. See [`docs/traef
 | http://localhost/swagger-ui/ | Spring API documentation |
 | http://localhost/genai/docs | GenAI API documentation |
 | http://localhost/auth/ | Keycloak |
+| http://localhost/grafana/ | Grafana dashboards |
+| http://localhost/prometheus/ | Prometheus |
 
 ### Infrastructure & Deployment
 
@@ -77,3 +79,12 @@ For local client development, see [`services/client/README.md`](services/client/
 
 Python/FastAPI service using LangChain to extract entities and summarize documents.
 For local Python dev, see [`services/genai/README.md`](services/genai/README.md).
+
+### Monitoring
+
+Prometheus scrapes metrics from Spring (`/actuator/prometheus`), GenAI (`/genai/metrics`), and Traefik, and Grafana visualizes them. Both run as part of `docker compose up`.
+
+- Grafana: http://localhost/grafana/ (default login `admin` / `admin`, override with `GRAFANA_ADMIN_PASSWORD`)
+- Prometheus: http://localhost/prometheus/
+
+Three dashboards are provisioned automatically under the "Alexandria" folder: an overview (request rate, errors, latency across services), a Spring dashboard (JVM, GC, threads, DB pool), and a GenAI dashboard (request rate, latency, process memory). Dashboard JSON and the Prometheus scrape and alert config live under [`infra/prometheus`](infra/prometheus) and [`infra/grafana`](infra/grafana).
