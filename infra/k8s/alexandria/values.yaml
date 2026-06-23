@@ -21,8 +21,8 @@ spring:
     username: "postgres"
     password: "postgres-password"
   oidc:
-    issuerUri: "https://alexandria.stud.k8s.aet.cit.tum.de/keycloak/realms/alexandria"
-    jwkSetUri: "http://alexandria-keycloak:8080/keycloak/realms/alexandria/protocol/openid-connect/certs"
+    issuerUri: "https://alexandria.stud.k8s.aet.cit.tum.de/auth/realms/alexandria"
+    jwkSetUri: "http://alexandria-keycloak:8080/auth/realms/alexandria/protocol/openid-connect/certs"
     userIdClaim: "sub"
     usernameClaim: "preferred_username"
     rolesClaim: "roles"
@@ -55,13 +55,18 @@ keycloak:
   keycloak:
     adminPassword: "admin"
     proxyHeaders: "xforwarded"
-    hostname: "https://alexandria.stud.k8s.aet.cit.tum.de/keycloak"
-    httpRelativePath: /keycloak
+    hostname: "https://alexandria.stud.k8s.aet.cit.tum.de/auth"
+    httpRelativePath: /auth
     extraArgs:
       - "--hostname-backchannel-dynamic=true"
   realm:
     import: true
     existingSecret: alexandria-oidc-realm
+  extraEnvVars:
+    - name: KEYCLOAK_REDIRECT_URI
+      value: "https://alexandria.stud.k8s.aet.cit.tum.de/*"
+    - name: KEYCLOAK_WEB_ORIGIN
+      value: "https://alexandria.stud.k8s.aet.cit.tum.de"
   database:
     type: postgres
     host: "alexandria-postgres-db"

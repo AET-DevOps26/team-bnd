@@ -22,6 +22,22 @@ services:
     depends_on:
       - traefik
 
+  client-dev:
+    build:
+      context: services/client/
+      dockerfile: Dockerfile.dev
+    container_name: client-dev
+    restart: unless-stopped
+    profiles:
+      - dev
+    networks:
+      - alexandria
+    ports:
+      - 5173:5173
+    volumes:
+      - ./services/client:/app
+      - /app/node_modules
+
   spring:
     image: ghcr.io/aet-devops26/team-bnd/spring:latest
     build: services/spring/
@@ -100,6 +116,8 @@ services:
       KC_PROXY_HEADERS: xforwarded
       KC_HTTP_RELATIVE_PATH: /auth
       KC_HOSTNAME_BACKCHANNEL_DYNAMIC: true
+      KEYCLOAK_REDIRECT_URI: ${KEYCLOAK_REDIRECT_URI:-http://localhost/*}
+      KEYCLOAK_WEB_ORIGIN: ${KEYCLOAK_WEB_ORIGIN:-http://localhost}
     restart: unless-stopped
     networks:
       - alexandria

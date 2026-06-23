@@ -12,8 +12,10 @@
     "test:e2e": "PW_TEST_CONNECT_WS_ENDPOINT=ws://127.0.0.1:3000/ playwright test"
   },
   "dependencies": {
+    "oidc-client-ts": "^3.5.0",
     "react": "^19.2.0",
-    "react-dom": "^19.2.0"
+    "react-dom": "^19.2.0",
+    "react-oidc-context": "^3.3.1"
   },
   "devDependencies": {
     "@playwright/test": "~1.60.0",
