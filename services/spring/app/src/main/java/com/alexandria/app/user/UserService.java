@@ -1,9 +1,17 @@
 package com.alexandria.app.user;
 
+import com.alexandria.app.document.Document;
+import com.alexandria.app.document.DocumentRepository;
 import com.alexandria.app.exception.UserNotFoundException;
+import com.alexandria.app.knowledgebase.ObjectStorageService;
+import com.alexandria.app.qa.QAInteractionRepository;
+import com.alexandria.app.search.SearchQueryRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -12,10 +20,26 @@ import java.util.UUID;
  */
 @Service
 public class UserService {
-    private final UserRepository repository;
 
-    public UserService(UserRepository repository) {
+    private static final Logger log = LoggerFactory.getLogger(UserService.class);
+
+    private final UserRepository repository;
+    private final DocumentRepository documentRepository;
+    private final QAInteractionRepository qaInteractionRepository;
+    private final SearchQueryRepository searchQueryRepository;
+    private final ObjectStorageService objectStorageService;
+
+    public UserService(
+            UserRepository repository,
+            DocumentRepository documentRepository,
+            QAInteractionRepository qaInteractionRepository,
+            SearchQueryRepository searchQueryRepository,
+            ObjectStorageService objectStorageService) {
         this.repository = repository;
+        this.documentRepository = documentRepository;
+        this.qaInteractionRepository = qaInteractionRepository;
+        this.searchQueryRepository = searchQueryRepository;
+        this.objectStorageService = objectStorageService;
     }
 
     /**
@@ -48,15 +72,30 @@ public class UserService {
     }
 
     /**
-     * Deletes user account by ID.
+     * Deletes user account by ID, including all associated data.
      *
      * @param id User UUID.
      * @throws UserNotFoundException If user does not exist.
      */
+    @Transactional
     public void deleteUser(UUID id) {
         if (!repository.existsById(id)) {
             throw new UserNotFoundException(id);
         }
+
+        List<Document> documents = documentRepository.findByOwnerId(id);
+        for (Document doc : documents) {
+            try {
+                objectStorageService.delete(doc.getObjectKey());
+            } catch (Exception e) {
+                log.warn("Failed to delete S3 object for document {}: {}", doc.getId(), e.getMessage());
+            }
+        }
+        documentRepository.deleteByOwnerId(id);
+
+        qaInteractionRepository.deleteByUserId(id);
+        searchQueryRepository.deleteByUserId(id);
+
         repository.deleteById(id);
     }
 }
