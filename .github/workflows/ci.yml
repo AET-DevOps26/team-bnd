@@ -55,7 +55,7 @@ jobs:
       workflows: ${{ steps.filter.outputs.workflows }}
       docs: ${{ steps.filter.outputs.docs }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - id: filter
         uses: dorny/paths-filter@v4
         with:
@@ -91,7 +91,7 @@ jobs:
     if: needs.changes.outputs.api == 'true' || github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
@@ -117,7 +117,7 @@ jobs:
           - services/client/Dockerfile
           - services/genai/Dockerfile
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: hadolint/hadolint-action@v3.3.0
         with:
           dockerfile: ${{ matrix.dockerfile }}
@@ -135,7 +135,7 @@ jobs:
     if: needs.changes.outputs.workflows == 'true' || github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Run actionlint
         # Pinned to the project's actionlint container so the version is reproducible.
         run: |
@@ -164,7 +164,7 @@ jobs:
       contents: read
       checks: write # for test report annotations
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         if: env.RUN_JOB == 'true'
 
       - name: Setup Java
@@ -216,7 +216,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
@@ -252,7 +252,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Setup uv
         uses: astral-sh/setup-uv@v7
@@ -310,7 +310,7 @@ jobs:
       packages: write # needed to push to GHCR on main
       security-events: write # for Trivy SARIF upload
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         if: env.RUN_JOB == 'true'
 
       - name: Setup Buildx
@@ -385,7 +385,7 @@ jobs:
       (needs.changes.outputs.spring == 'true' || needs.changes.outputs.client == 'true' || needs.changes.outputs.genai == 'true' || needs.changes.outputs.docker == 'true' || github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Bring Stack Up
         # --wait blocks until every service reports healthy (or the timeout
@@ -419,7 +419,7 @@ jobs:
       TEST_USER: ${{ vars.TEST_USER }}
       TEST_PASSWORD: ${{ secrets.TEST_PASSWORD }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Bring Stack Up
         # --wait gates on healthchecks; Keycloak's reports ready only once the
@@ -537,7 +537,7 @@ jobs:
     needs: [build-image, ci-summary]
     environment: AZURE
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Setup SSH Key
         run: |
@@ -573,7 +573,7 @@ jobs:
     needs: [build-image, ci-summary]
     environment: STUD
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Setup Helm
         uses: azure/setup-helm@v5
