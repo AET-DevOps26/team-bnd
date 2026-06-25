@@ -90,7 +90,7 @@ services:
       start_period: 80s
     depends_on:
       s3-storage:
-        condition: service_healty
+        condition: service_healthy
       postgres-db:
         condition: service_healthy
       keycloak:
@@ -129,7 +129,7 @@ services:
       timeout: 3s
       retries: 3
       start_period: 5s
-    depends on:
+    depends_on:
       s3-storage:
         condition: service_healty
 
