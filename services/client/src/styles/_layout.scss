@@ -1,0 +1,59 @@
+@use "variables" as *;
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+:root {
+    font-family: $font-family;
+}
+
+body {
+    margin: 0;
+}
+.app {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    background: $color-bg;
+    color: $color-text;
+}
+
+.app-header {
+    padding: 1rem 1.5rem 0.75rem;
+    border-bottom: 1px solid $color-border;
+    background: $color-bg-white;
+    flex-shrink: 0;
+
+    h1 {
+        margin: 0 0 0.25rem;
+        color: $color-primary;
+        font-size: 1.4rem;
+    }
+
+    p {
+        margin: 0;
+        font-size: 0.875rem;
+        color: $color-text-secondary;
+    }
+}
+
+.app-header-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.app-body {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+}
+
+.app-main {
+    flex: 1;
+    overflow-y: auto;
+}

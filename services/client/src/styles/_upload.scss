@@ -1,0 +1,59 @@
+@use "variables" as *;
+
+.upload-area {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid $color-border-light;
+    text-align: center;
+    transition: background 0.15s;
+
+    &--drag-over {
+        background: $color-bg-active;
+    }
+}
+
+.upload-input {
+    display: none;
+}
+
+.upload-button {
+    display: inline-block;
+    padding: 0.45rem 1rem;
+    border: 1px solid $color-primary;
+    border-radius: 4px;
+    background: $color-primary;
+    color: $color-bg-white;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s;
+
+    &:hover {
+        background: $color-primary-dark;
+        border-color: $color-primary-dark;
+    }
+
+    &:focus {
+        outline: 2px solid $color-primary;
+        outline-offset: 2px;
+    }
+}
+
+.upload-hint {
+    margin: 0.4rem 0 0;
+    font-size: 0.72rem;
+    color: $color-text-faint;
+}
+
+.upload-status {
+    margin: 0 0 0.4rem;
+    font-size: 0.8rem;
+    color: $color-text-secondary;
+
+    &--error {
+        color: $color-error;
+    }
+
+    &--success {
+        color: $color-success;
+    }
+}
