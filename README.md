@@ -82,9 +82,9 @@ For local Python dev, see [`services/genai/README.md`](services/genai/README.md)
 
 ### Monitoring
 
-Prometheus scrapes metrics from Spring (`/actuator/prometheus`), GenAI (`/genai/metrics`), and Traefik, and Grafana visualizes them. Both run as part of `docker compose up`.
+Prometheus scrapes metrics from Spring (`/actuator/prometheus`), GenAI (`/genai/metrics`), Traefik, and the SeaweedFS object storage (`s3-storage:9091/metrics`), and Grafana visualizes them. Both run as part of `docker compose up`.
 
 - Grafana: http://localhost/grafana/ (default login `admin` / `admin`, override with `GRAFANA_ADMIN_PASSWORD`)
 - Prometheus: http://localhost/prometheus/
 
-Three dashboards are provisioned automatically under the "Alexandria" folder: an overview (request rate, errors, latency across services), a Spring dashboard (JVM, GC, threads, DB pool), and a GenAI dashboard (request rate, latency, process memory). Dashboard JSON and the Prometheus scrape and alert config live under [`infra/prometheus`](infra/prometheus) and [`infra/grafana`](infra/grafana).
+Four dashboards are provisioned automatically under the "Alexandria" folder: an overview (request rate, errors, latency across services), a Spring dashboard (JVM, GC, threads, DB pool), a GenAI dashboard (request rate, latency, process memory), and an object storage dashboard (S3 request rate and latency, in-flight requests, disk usage). Dashboard JSON and the Prometheus scrape and alert config live under [`infra/prometheus`](infra/prometheus) and [`infra/grafana`](infra/grafana).
