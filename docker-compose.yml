@@ -131,7 +131,7 @@ services:
       start_period: 5s
     depends_on:
       s3-storage:
-        condition: service_healty
+        condition: service_healthy
 
   keycloak:
     image: quay.io/keycloak/keycloak:26.6.2
