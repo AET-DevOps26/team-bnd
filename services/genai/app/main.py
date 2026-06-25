@@ -5,6 +5,7 @@ from pydantic import BaseModel
 
 from app.extract import extract_entities
 from app.qa import answer_question
+from app.storage import ObjectNotFoundError, UnsupportedFileError, fetch_text
 from app.summarize import summarize
 
 SERVICE_NAME = "alexandria-genai"
@@ -37,7 +38,7 @@ Instrumentator(should_group_untemplated=True).instrument(app).expose(
 
 
 class GenAiSummarizeRequest(BaseModel):
-    content: str
+    objectKey: str
 
 
 class GenAiSummarizeResponse(BaseModel):
@@ -52,7 +53,7 @@ class GenAiExtractedEntity(BaseModel):
 
 
 class GenAiExtractRequest(BaseModel):
-    content: str
+    objectKey: str
 
 
 class GenAiExtractResponse(BaseModel):
@@ -60,23 +61,31 @@ class GenAiExtractResponse(BaseModel):
     modelUsed: str
 
 
-class DocumentContent(BaseModel):
-    id: str
-    content: str
-
-
 class GenAiAskRequest(BaseModel):
     question: str
-    documentIds: list[str]
-    # When provided, the answer is grounded in the actual document text.
-    # Spring passes this by fetching rawTextContent for each document ID.
-    documentContents: list[DocumentContent] | None = None
+    objectKeys: list[str]
 
 
 class GenAiAskResponse(BaseModel):
     answer: str
-    sourceDocumentIds: list[str]
+    sourceObjectKeys: list[str]
     modelUsed: str
+
+
+# --- helpers ---
+
+
+def _load_document(object_key: str) -> str:
+    """Fetch a document's text from object storage, mapping failures to HTTP errors."""
+    try:
+        text = fetch_text(object_key)
+    except ObjectNotFoundError:
+        raise HTTPException(status_code=404, detail=f"object not found: {object_key}") from None
+    except UnsupportedFileError as e:
+        raise HTTPException(status_code=415, detail=str(e)) from None
+    if not text.strip():
+        raise HTTPException(status_code=422, detail=f"object has no extractable text: {object_key}")
+    return text
 
 
 # --- endpoints ---
@@ -100,19 +109,17 @@ def hello() -> str:
 
 @app.post("/genai/summarize", tags=["ai"], response_model=GenAiSummarizeResponse, openapi_extra={"security": []})
 def summarize_document(request: GenAiSummarizeRequest) -> GenAiSummarizeResponse:
-    """Generate a concise summary of the provided document text."""
-    if not request.content.strip():
-        raise HTTPException(status_code=422, detail="content must not be empty")
-    summary, model = summarize(request.content)
+    """Summarize the document stored under the given object key."""
+    content = _load_document(request.objectKey)
+    summary, model = summarize(content)
     return GenAiSummarizeResponse(summary=summary, modelUsed=model)
 
 
 @app.post("/genai/extract", tags=["ai"], response_model=GenAiExtractResponse, openapi_extra={"security": []})
 def extract(request: GenAiExtractRequest) -> GenAiExtractResponse:
-    """Extract named entities (people, dates, topics, organizations) from document text."""
-    if not request.content.strip():
-        raise HTTPException(status_code=422, detail="content must not be empty")
-    entities, model = extract_entities(request.content)
+    """Extract named entities from the document stored under the given object key."""
+    content = _load_document(request.objectKey)
+    entities, model = extract_entities(content)
     return GenAiExtractResponse(
         entities=[GenAiExtractedEntity(**e) for e in entities],
         modelUsed=model,
@@ -121,13 +128,20 @@ def extract(request: GenAiExtractRequest) -> GenAiExtractResponse:
 
 @app.post("/genai/ask", tags=["ai"], response_model=GenAiAskResponse, openapi_extra={"security": []})
 def ask(request: GenAiAskRequest) -> GenAiAskResponse:
-    """Answer a natural language question about a set of documents.
+    """Answer a question grounded in the documents stored under the given object keys.
 
-    If documentContents is provided, the answer is grounded in the actual document text.
-    Without it, the model answers from general knowledge and returns all documentIds as sources.
+    Each object key is fetched from storage; keys that cannot be read are skipped so a
+    single missing or unreadable document does not fail the whole request.
     """
     if not request.question.strip():
         raise HTTPException(status_code=422, detail="question must not be empty")
-    doc_contents = [dc.model_dump() for dc in request.documentContents] if request.documentContents else None
-    answer, source_ids, model = answer_question(request.question, request.documentIds, doc_contents)
-    return GenAiAskResponse(answer=answer, sourceDocumentIds=source_ids, modelUsed=model)
+
+    documents: list[dict[str, str]] = []
+    for object_key in request.objectKeys:
+        try:
+            documents.append({"id": object_key, "content": fetch_text(object_key)})
+        except ObjectNotFoundError, UnsupportedFileError:
+            continue
+
+    answer, source_keys, model = answer_question(request.question, request.objectKeys, documents or None)
+    return GenAiAskResponse(answer=answer, sourceObjectKeys=source_keys, modelUsed=model)

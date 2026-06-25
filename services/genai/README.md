@@ -2,16 +2,20 @@
 
 Python/FastAPI microservice for AI-powered document processing. Uses LangChain to call an LLM for summarization, entity extraction, and document Q&A.
 
+The processing endpoints take object keys, not raw text. The service downloads the referenced documents from the S3-compatible object storage (the same SeaweedFS bucket the Spring service uploads to), extracts their text (plain UTF-8 or PDF via pypdf), and feeds that to the LLM.
+
 ## Endpoints
 
-| Method | Path               | Description                                          |
-| ------ | ------------------ | ---------------------------------------------------- |
-| GET    | `/genai/health`    | Liveness/readiness probe                             |
-| GET    | `/genai/hello`     | Sanity check, returns a plain string                 |
-| POST   | `/genai/summarize` | Generate a concise summary of document text          |
-| POST   | `/genai/extract`   | Extract named entities (people, dates, topics, orgs) |
-| POST   | `/genai/ask`       | Answer a question, optionally grounded in documents  |
-| GET    | `/genai/metrics`   | Prometheus metrics (in-network scraping only)        |
+| Method | Path               | Description                                                 |
+| ------ | ------------------ | ----------------------------------------------------------- |
+| GET    | `/genai/health`    | Liveness/readiness probe                                    |
+| GET    | `/genai/hello`     | Sanity check, returns a plain string                        |
+| POST   | `/genai/summarize` | Summarize the document at `objectKey`                       |
+| POST   | `/genai/extract`   | Extract named entities from the document at `objectKey`     |
+| POST   | `/genai/ask`       | Answer a question grounded in the documents at `objectKeys` |
+| GET    | `/genai/metrics`   | Prometheus metrics (in-network scraping only)               |
+
+`summarize` and `extract` take `{"objectKey": "..."}`; `ask` takes `{"question": "...", "objectKeys": [...]}` and returns `sourceObjectKeys`. A key that is missing returns 404 (415 if the object is neither UTF-8 text nor a PDF). For `ask`, unreadable keys are skipped so one bad document does not fail the whole request.
 
 FastAPI also exposes `/openapi.json` and `/docs` (Swagger UI) out of the box.
 
@@ -28,6 +32,18 @@ The service is configured entirely via environment variables. Copy `.env.example
 | `LLM_MODEL`       | `openai/gpt-oss-120b`             | Model identifier                               |
 | `LLM_API_KEY`     | _(required for logos/openai)_     | API key (`lg-...` for Logos, `sk-...` for OAI) |
 | `OLLAMA_BASE_URL` | `http://localhost:11434`          | Ollama server URL (provider=ollama only)       |
+
+## Object storage configuration
+
+The service reads documents from the S3-compatible object storage. These match the variables the Spring service uses so both point at the same bucket.
+
+| Variable        | Default                  | Description                         |
+| --------------- | ------------------------ | ----------------------------------- |
+| `S3_ENDPOINT`   | `http://s3-storage:8333` | S3 gateway URL                      |
+| `S3_REGION`     | `eu-central-1`           | Region label (SeaweedFS ignores it) |
+| `S3_ACCESS_KEY` | `admin`                  | Access key id                       |
+| `S3_SECRET_KEY` | `locals3password`        | Secret access key                   |
+| `S3_BUCKET`     | `alexandria-storage`     | Bucket documents are stored in      |
 
 ### Logos (default -- TUM course API)
 
