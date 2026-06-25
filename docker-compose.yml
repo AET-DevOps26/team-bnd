@@ -200,7 +200,7 @@ services:
           memory: 256M
 
   s3-storage:
-    image: chrislusf/seaweedfs:latest
+    image: chrislusf/seaweedfs:4.36
     container_name: s3-storage
     # start master, volume and S3 gateway in a signle container
     command: "server -s3"
@@ -225,11 +225,10 @@ services:
       - "traefik.http.services.s3.loadbalancer.server.port=8333"
     healthcheck:
       # master port is on 9333
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:9333/"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-      start_period: 5s
+      test: ["CMD", "curl", "--fail", "-I", "http://127.0.0.1:9333/cluster/healthz"]
+      interval: 1s
+      start_period: 10s
+      timeout: 30s
 
   traefik:
     image: traefik:v3.7
