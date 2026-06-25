@@ -23,6 +23,14 @@ export default function DocumentTree({ selectedId, onSelect }: Props) {
     error,
   } = $api.useQuery("get", "/api/v1/knowledgebase/documents");
 
+  const queryError: unknown = error;
+  const errorMessage =
+    queryError instanceof Error
+      ? queryError.message
+      : queryError
+        ? String(queryError)
+        : "";
+
   return (
     <nav className="document-tree" aria-label="Document list">
       <h2 className="tree-heading">Documents</h2>
@@ -31,12 +39,12 @@ export default function DocumentTree({ selectedId, onSelect }: Props) {
       {error && (
         <p
           className={`tree-status ${
-            error.message === "NOT_AUTHENTICATED"
+            errorMessage === "NOT_AUTHENTICATED"
               ? "tree-status--warn"
               : "tree-status--error"
           }`}
         >
-          {error.message === "NOT_AUTHENTICATED" ? (
+          {errorMessage === "NOT_AUTHENTICATED" ? (
             <>
               Not authenticated. Provide an <code>access_token</code> in{" "}
               <code>localStorage</code>.
@@ -51,22 +59,25 @@ export default function DocumentTree({ selectedId, onSelect }: Props) {
       )}
       {!isLoading && !error && documents && documents.length > 0 && (
         <ul className="tree-list">
-          {documents.map((doc) => (
-            <li
-              key={doc.id}
-              className={`tree-item${selectedId === doc.id ? " tree-item--active" : ""}`}
-              onClick={() => onSelect(doc.id)}
-              role="button"
-              tabIndex={0}
-              onKeyDown={(e) => e.key === "Enter" && onSelect(doc.id)}
-              aria-current={selectedId === doc.id ? "true" : undefined}
-            >
-              <span className="tree-item__name">{doc.fileName}</span>
-              <span className="tree-item__date">
-                {formatDate(doc.createdAt)}
-              </span>
-            </li>
-          ))}
+          {documents.map((doc) => {
+            if (!doc.id) return null;
+            return (
+              <li
+                key={doc.id}
+                className={`tree-item${selectedId === doc.id ? " tree-item--active" : ""}`}
+                onClick={() => onSelect(doc.id!)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => e.key === "Enter" && onSelect(doc.id!)}
+                aria-current={selectedId === doc.id ? "true" : undefined}
+              >
+                <span className="tree-item__name">{doc.fileName}</span>
+                <span className="tree-item__date">
+                  {formatDate(doc.createdAt)}
+                </span>
+              </li>
+            );
+          })}
         </ul>
       )}
     </nav>

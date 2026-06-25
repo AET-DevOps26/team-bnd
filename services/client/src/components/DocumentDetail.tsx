@@ -59,10 +59,11 @@ export default function DocumentDetail({ documentId }: Props) {
   }
 
   if (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
     return (
       <div className="document-detail document-detail--error">
         <p>
-          {error.message === "NOT_AUTHENTICATED"
+          {errorMessage === "NOT_AUTHENTICATED"
             ? "Not authenticated."
             : "Failed to load document."}
         </p>
@@ -72,6 +73,9 @@ export default function DocumentDetail({ documentId }: Props) {
 
   if (!document) return null;
 
+  // The API may return rawTextContent even though the schema doesn't declare it
+  const rawTextContent = (document as { rawTextContent?: string })
+    .rawTextContent;
   const tags = document.tags ?? [];
   const entities = document.extractedEntities ?? [];
   const summary = document.summary;
@@ -124,7 +128,8 @@ export default function DocumentDetail({ documentId }: Props) {
               <li key={entity.id} className="entity-item">
                 <span className="entity-name">{entity.name}</span>
                 <span className="entity-type">
-                  {ENTITY_TYPE_LABELS[entity.type] ?? entity.type}
+                  {(entity.type && ENTITY_TYPE_LABELS[entity.type]) ??
+                    entity.type}
                 </span>
               </li>
             ))}
@@ -132,10 +137,10 @@ export default function DocumentDetail({ documentId }: Props) {
         </section>
       )}
 
-      {document.rawTextContent && (
+      {rawTextContent && (
         <section className="detail-section">
           <h3>Full Text</h3>
-          <pre className="detail-raw-text">{document.rawTextContent}</pre>
+          <pre className="detail-raw-text">{rawTextContent}</pre>
         </section>
       )}
     </article>
