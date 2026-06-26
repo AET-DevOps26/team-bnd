@@ -33,18 +33,6 @@ The service is configured entirely via environment variables. Copy `.env.example
 | `LLM_API_KEY`     | _(required for logos/openai)_     | API key (`lg-...` for Logos, `sk-...` for OAI) |
 | `OLLAMA_BASE_URL` | `http://localhost:11434`          | Ollama server URL (provider=ollama only)       |
 
-## Object storage configuration
-
-The service reads documents from the S3-compatible object storage. These match the variables the Spring service uses so both point at the same bucket.
-
-| Variable        | Default                  | Description                         |
-| --------------- | ------------------------ | ----------------------------------- |
-| `S3_ENDPOINT`   | `http://s3-storage:8333` | S3 gateway URL                      |
-| `S3_REGION`     | `eu-central-1`           | Region label (SeaweedFS ignores it) |
-| `S3_ACCESS_KEY` | `admin`                  | Access key id                       |
-| `S3_SECRET_KEY` | `locals3password`        | Secret access key                   |
-| `S3_BUCKET`     | `alexandria-storage`     | Bucket documents are stored in      |
-
 ### Logos (default -- TUM course API)
 
 The course organizers provide [Logos](https://logos.aet.cit.tum.de), an OpenAI-compatible API gateway serving f.e. `openai/gpt-oss-120b`.

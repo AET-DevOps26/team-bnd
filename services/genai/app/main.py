@@ -9,7 +9,7 @@ from app.storage import ObjectNotFoundError, UnsupportedFileError, fetch_text
 from app.summarize import summarize
 
 SERVICE_NAME = "alexandria-genai"
-SERVICE_VERSION = "0.0.1"
+SERVICE_VERSION = "1.4.0"
 
 app = FastAPI(
     title="Alexandria GenAI",
