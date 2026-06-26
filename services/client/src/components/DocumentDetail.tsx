@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import $api from "../api/client";
 
 interface Props {
@@ -41,6 +41,39 @@ export default function DocumentDetail({ documentId }: Props) {
     { params: { path: { id: documentId! } } },
     { enabled: !!documentId },
   );
+
+  const isPdf = document?.fileType === "application/pdf";
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+
+  const {
+    data: pdfData,
+    isLoading: pdfLoading,
+    isError: pdfError,
+  } = $api.useQuery(
+    "get",
+    "/api/v1/knowledgebase/documents/{id}/download",
+    {
+      params: { path: { id: documentId! } },
+      parseAs: "blob",
+    },
+    { enabled: !!documentId && isPdf },
+  );
+
+  useEffect(() => {
+    if (!pdfData) {
+      setPdfUrl(null);
+      return;
+    }
+
+    const url = URL.createObjectURL(
+      new Blob([pdfData as unknown as BlobPart], { type: "application/pdf" }),
+    );
+    setPdfUrl(url);
+
+    return () => {
+      URL.revokeObjectURL(url);
+    };
+  }, [pdfData]);
 
   if (!documentId) {
     return (
@@ -93,6 +126,25 @@ export default function DocumentDetail({ documentId }: Props) {
           <dd>{formatDate(document.createdAt)}</dd>
         </dl>
       </header>
+
+      {isPdf && (
+        <section className="detail-section">
+          <h3>Document Preview</h3>
+          {pdfLoading && <p className="pdf-embed-status">Loading preview…</p>}
+          {pdfError && (
+            <p className="pdf-embed-status pdf-embed-status--error">
+              Failed to load PDF preview.
+            </p>
+          )}
+          {pdfUrl && (
+            <iframe
+              className="pdf-embed"
+              src={pdfUrl}
+              title={`PDF preview of ${document.fileName ?? "document"}`}
+            />
+          )}
+        </section>
+      )}
 
       {tags.length > 0 && (
         <section className="detail-section">
