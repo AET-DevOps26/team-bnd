@@ -1,7 +1,24 @@
 import { test, expect } from "@playwright/test";
+import fs from "fs";
+import path from "path";
+
+// Load the OIDC auth data written by globalSetup and inject it into
+// sessionStorage before the app scripts run, so the app sees an authenticated
+// user on every test.
+const authDataPath = path.resolve(__dirname, ".auth/user.json");
+const { storageKey, oidcUser } = JSON.parse(
+  fs.readFileSync(authDataPath, "utf-8"),
+) as { storageKey: string; oidcUser: object };
 
 test.describe("Alexandria client", () => {
   test.beforeEach(async ({ page }) => {
+    // Inject the OIDC user into sessionStorage before any page script runs.
+    await page.addInitScript(
+      ({ key, value }) => {
+        sessionStorage.setItem(key, value);
+      },
+      { key: storageKey, value: JSON.stringify(oidcUser) },
+    );
     await page.goto("/");
   });
 
