@@ -155,11 +155,11 @@
     },
     {
       "id": "41f9e852-f9ac-45b6-81a7-3e33e1d77b12",
-      "width": 480,
+      "width": 685,
       "height": 200,
       "type": "componentSubsystem",
       "position": {
-        "x": 100,
+        "x": -105,
         "y": 1070
       },
       "data": {
@@ -167,7 +167,7 @@
         "isComponentSubsystemHeaderShown": true
       },
       "measured": {
-        "width": 480,
+        "width": 685,
         "height": 200
       }
     },
@@ -178,7 +178,7 @@
       "type": "component",
       "position": {
         "x": 20,
-        "y": 60
+        "y": 55
       },
       "parentId": "41f9e852-f9ac-45b6-81a7-3e33e1d77b12",
       "data": {
@@ -196,7 +196,7 @@
       "height": 120,
       "type": "component",
       "position": {
-        "x": 280,
+        "x": 485,
         "y": 60
       },
       "parentId": "41f9e852-f9ac-45b6-81a7-3e33e1d77b12",
@@ -392,8 +392,8 @@
       "height": 20,
       "type": "componentInterface",
       "position": {
-        "x": 200,
-        "y": 920
+        "x": -5,
+        "y": 1015
       },
       "data": {
         "name": "JDBC"
@@ -410,7 +410,7 @@
       "type": "componentInterface",
       "position": {
         "x": 460,
-        "y": 1000
+        "y": 1015
       },
       "data": {
         "name": "Vector DB"
@@ -452,6 +452,42 @@
       "measured": {
         "width": 270,
         "height": 60
+      }
+    },
+    {
+      "id": "1934026d-0bee-4db3-89a2-12a98303a631",
+      "width": 180,
+      "height": 120,
+      "type": "component",
+      "position": {
+        "x": 250,
+        "y": 55
+      },
+      "parentId": "41f9e852-f9ac-45b6-81a7-3e33e1d77b12",
+      "data": {
+        "name": "S3 Storage",
+        "isComponentHeaderShown": true
+      },
+      "measured": {
+        "width": 180,
+        "height": 120
+      }
+    },
+    {
+      "id": "45faaa15-84c2-4530-ba4a-4069fc4a3849",
+      "width": 30,
+      "height": 30,
+      "type": "componentInterface",
+      "position": {
+        "x": 220,
+        "y": 1005
+      },
+      "data": {
+        "name": "S3 Client"
+      },
+      "measured": {
+        "width": 30,
+        "height": 30
       }
     }
   ],
@@ -565,7 +601,16 @@
       "sourceHandle": "top",
       "targetHandle": "bottom",
       "data": {
-        "points": []
+        "points": [
+          {
+            "x": 5,
+            "y": 1124
+          },
+          {
+            "x": 5,
+            "y": 1036
+          }
+        ]
       }
     },
     {
@@ -598,12 +643,12 @@
             "y": 684
           },
           {
-            "x": 210,
+            "x": 5,
             "y": 684
           },
           {
-            "x": 210,
-            "y": 915
+            "x": 5,
+            "y": 1010
           }
         ],
         "strokeColor": "#26de81"
@@ -635,15 +680,15 @@
           },
           {
             "x": 600,
-            "y": 968
+            "y": 980
           },
           {
             "x": 470,
-            "y": 968
+            "y": 980
           },
           {
             "x": 470,
-            "y": 995
+            "y": 1010
           }
         ]
       }
@@ -721,15 +766,76 @@
             "y": 684
           },
           {
-            "x": 210,
+            "x": 5,
             "y": 684
           },
           {
-            "x": 210,
-            "y": 915
+            "x": 5,
+            "y": 1010
           }
         ],
         "strokeColor": "#26de81"
+      }
+    },
+    {
+      "id": "9c366307-fdbb-43a2-a784-f176f76ec6ac",
+      "source": "45faaa15-84c2-4530-ba4a-4069fc4a3849",
+      "target": "1934026d-0bee-4db3-89a2-12a98303a631",
+      "type": "ComponentProvidedInterface",
+      "sourceHandle": "bottom",
+      "targetHandle": "top",
+      "data": {
+        "points": []
+      }
+    },
+    {
+      "id": "93f2e936-f3a1-4e0b-bfbb-b8b99a8160d2",
+      "source": "303212eb-329c-4abb-af9c-191e198c6ad1",
+      "target": "45faaa15-84c2-4530-ba4a-4069fc4a3849",
+      "type": "ComponentRequiredInterface",
+      "sourceHandle": "bottom-left",
+      "targetHandle": "top",
+      "data": {
+        "points": []
+      }
+    },
+    {
+      "id": "c107f1c4-77fd-4fff-a9c1-ea2c60898825",
+      "source": "4b3283b2-bd39-4c9b-8b3c-894a23326012",
+      "target": "45faaa15-84c2-4530-ba4a-4069fc4a3849",
+      "type": "ComponentRequiredInterface",
+      "sourceHandle": "bottom-right",
+      "targetHandle": "top",
+      "data": {
+        "points": [
+          {
+            "x": 260,
+            "y": 511
+          },
+          {
+            "x": 260,
+            "y": 541
+          },
+          {
+            "x": 235,
+            "y": 541
+          },
+          {
+            "x": 235,
+            "y": 1000
+          }
+        ]
+      }
+    },
+    {
+      "id": "f59376e2-7aa3-4dea-b88d-8d08ed90aab5",
+      "source": "8a3c9bcd-66c1-4280-bd3e-8ab375429467",
+      "target": "45faaa15-84c2-4530-ba4a-4069fc4a3849",
+      "type": "ComponentRequiredInterface",
+      "sourceHandle": "bottom-left",
+      "targetHandle": "top",
+      "data": {
+        "points": []
       }
     }
   ],
