@@ -1,0 +1,5 @@
+[default.extend-words]
+AKS = "AKS"
+
+[default.extend-identifiers]
+autheticatorFlow = "autheticatorFlow"
