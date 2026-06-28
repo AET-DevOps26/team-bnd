@@ -56,8 +56,10 @@ jobs:
       docs: ${{ steps.filter.outputs.docs }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
       - id: filter
-        uses: dorny/paths-filter@v4
+        uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4
         with:
           filters: |
             api:
@@ -92,6 +94,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
@@ -118,7 +122,9 @@ jobs:
           - services/genai/Dockerfile
     steps:
       - uses: actions/checkout@v7
-      - uses: hadolint/hadolint-action@v3.3.0
+        with:
+          persist-credentials: false
+      - uses: hadolint/hadolint-action@2332a7b74a6de0dda2e2221d575162eba76ba5e5 # v3.3.0
         with:
           dockerfile: ${{ matrix.dockerfile }}
           # The repo-wide config defines our shared rules / ignores.
@@ -136,11 +142,36 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
       - name: Run actionlint
         # Pinned to the project's actionlint container so the version is reproducible.
         run: |
           bash <(curl -fsSL https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash)
           ./actionlint -color
+
+  # ---------------------------------------------------------------------
+  # zizmor: static security analysis for the workflow files themselves.
+  # Runs alongside lint-workflows so a new workflow can't reintroduce a
+  # known class of issue.
+  # ---------------------------------------------------------------------
+  zizmor:
+    name: zizmor (Workflow Security Scan)
+    needs: changes
+    if: needs.changes.outputs.workflows == 'true' || github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read # to clone the repo for scanning
+      actions: read  # to inspect workflow metadata
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Run zizmor
+        uses: zizmorcore/zizmor-action@192e21d79ab29983730a13d1382995c2307fbcaa # v0.5.7
+        with:
+          advanced-security: false
 
   # ---------------------------------------------------------------------
   # Spring service: compile, test, package. Matrix-ready for when there
@@ -166,6 +197,8 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         if: env.RUN_JOB == 'true'
+        with:
+          persist-credentials: false
 
       - name: Setup Java
         if: env.RUN_JOB == 'true'
@@ -176,7 +209,7 @@ jobs:
 
       - name: Setup Gradle (with Build Cache)
         if: env.RUN_JOB == 'true'
-        uses: gradle/actions/setup-gradle@v6
+        uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6
         with:
           cache-read-only: ${{ github.event_name == 'pull_request' }}
 
@@ -217,6 +250,8 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
@@ -253,9 +288,11 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
       - name: Setup uv
-        uses: astral-sh/setup-uv@v7
+        uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
         with:
           enable-cache: true
           cache-dependency-glob: services/genai/uv.lock
@@ -312,15 +349,17 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         if: env.RUN_JOB == 'true'
+        with:
+          persist-credentials: false
 
       - name: Setup Buildx
         if: env.RUN_JOB == 'true'
-        uses: docker/setup-buildx-action@v4
+        uses: docker/setup-buildx-action@d7f5e7f509e45cec5c76c4d5afdd7de93d0b3df5 # v4
 
       - name: Extract Image Metadata
         if: env.RUN_JOB == 'true'
         id: meta
-        uses: docker/metadata-action@v6
+        uses: docker/metadata-action@80c7e94dd9b9319bd5eb7a0e0fe9291e23a2a2e9 # v6
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/${{ matrix.service.name }}
           tags: |
@@ -331,7 +370,7 @@ jobs:
 
       - name: Login to GHCR
         if: github.event_name == 'push' && env.RUN_JOB == 'true'
-        uses: docker/login-action@v4
+        uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
@@ -340,7 +379,7 @@ jobs:
       - name: Build (and Push on main)
         if: env.RUN_JOB == 'true'
         id: build
-        uses: docker/build-push-action@v7
+        uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf # v7
         with:
           context: ${{ matrix.service.context }}
           file: ${{ matrix.service.dockerfile }}
@@ -354,7 +393,7 @@ jobs:
 
       - name: Run Trivy Scan (Image)
         if: env.RUN_JOB == 'true'
-        uses: aquasecurity/trivy-action@v0.36.0
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: ${{ fromJSON(steps.meta.outputs.json).tags[0] }}
           format: sarif
@@ -386,6 +425,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
       - name: Bring Stack Up
         # --wait blocks until every service reports healthy (or the timeout
@@ -420,6 +461,8 @@ jobs:
       TEST_PASSWORD: ${{ secrets.TEST_PASSWORD }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
       - name: Bring Stack Up
         # --wait gates on healthchecks; Keycloak's reports ready only once the
@@ -507,6 +550,7 @@ jobs:
       - lint-openapi
       - lint-dockerfiles
       - lint-workflows
+      - zizmor
       - build-spring
       - build-client
       - build-genai
@@ -538,30 +582,39 @@ jobs:
     environment: AZURE
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
       - name: Setup SSH Key
+        env:
+          AZURE_PRIVATE_KEY: ${{ secrets.AZURE_PRIVATE_KEY }}
         run: |
           install -m 700 -d ~/.ssh
-          echo "${{ secrets.AZURE_PRIVATE_KEY }}" > ~/.ssh/azure_key
+          printf '%s\n' "$AZURE_PRIVATE_KEY" > ~/.ssh/azure_key
           chmod 600 ~/.ssh/azure_key
-          ssh-keyscan -H "${{ env.AZURE_PUBLIC_IP }}" >> ~/.ssh/known_hosts
+          ssh-keyscan -H "$AZURE_PUBLIC_IP" >> ~/.ssh/known_hosts
 
       - name: Prepare Remote Directory
         run: |
-          ssh -i ~/.ssh/azure_key "${{ env.AZURE_USER }}@${{ env.AZURE_PUBLIC_IP }}" \
+          ssh -i ~/.ssh/azure_key "$AZURE_USER@$AZURE_PUBLIC_IP" \
             "rm -rf ~/deploy/infra/prometheus ~/deploy/infra/grafana && mkdir -p ~/deploy/infra/oidc ~/deploy/infra/prometheus ~/deploy/infra/grafana"
 
       - name: Copy Compose and Config
         run: |
-          scp -i ~/.ssh/azure_key docker-compose.yml "${{ env.AZURE_USER }}@${{ env.AZURE_PUBLIC_IP }}:~/deploy/docker-compose.yml"
-          scp -i ~/.ssh/azure_key infra/oidc/realm.json "${{ env.AZURE_USER }}@${{ env.AZURE_PUBLIC_IP }}:~/deploy/infra/oidc/realm.json"
-          scp -r -i ~/.ssh/azure_key infra/prometheus/. "${{ env.AZURE_USER }}@${{ env.AZURE_PUBLIC_IP }}:~/deploy/infra/prometheus/"
-          scp -r -i ~/.ssh/azure_key infra/grafana/. "${{ env.AZURE_USER }}@${{ env.AZURE_PUBLIC_IP }}:~/deploy/infra/grafana/"
+          scp -i ~/.ssh/azure_key docker-compose.yml "$AZURE_USER@$AZURE_PUBLIC_IP:~/deploy/docker-compose.yml"
+          scp -i ~/.ssh/azure_key infra/oidc/realm.json "$AZURE_USER@$AZURE_PUBLIC_IP:~/deploy/infra/oidc/realm.json"
+          scp -r -i ~/.ssh/azure_key infra/prometheus/. "$AZURE_USER@$AZURE_PUBLIC_IP:~/deploy/infra/prometheus/"
+          scp -r -i ~/.ssh/azure_key infra/grafana/. "$AZURE_USER@$AZURE_PUBLIC_IP:~/deploy/infra/grafana/"
 
       - name: Deploy
+        # GITHUB_TOKEN and github.actor are passed through env so an
+        # attacker-controlled username can't escape into the remote shell.
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ACTOR: ${{ github.actor }}
         run: |
-          ssh -i ~/.ssh/azure_key "${{ env.AZURE_USER }}@${{ env.AZURE_PUBLIC_IP }}" \
-            "cd ~/deploy && echo '${{ secrets.GITHUB_TOKEN }}' | docker login ${{ env.REGISTRY }} -u '${{ github.actor }}' --password-stdin && docker compose pull && docker compose up -d"
+          ssh -i ~/.ssh/azure_key "$AZURE_USER@$AZURE_PUBLIC_IP" \
+            "cd ~/deploy && printf '%s\n' \"$GH_TOKEN\" | docker login \"$REGISTRY\" -u \"$ACTOR\" --password-stdin && docker compose pull && docker compose up -d"
 
   # ---------------------------------------------------------------------
   # Deploy to stud cluster (Rancher/k8s)
@@ -574,21 +627,25 @@ jobs:
     environment: STUD
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
       - name: Setup Helm
-        uses: azure/setup-helm@v5
+        uses: azure/setup-helm@9bc31f4ebc9c6b171d7bfbaa5d006ae7abdb4310 # v5
         with:
           version: v3.18.4
 
       - name: Setup kubectl
-        uses: azure/setup-kubectl@v5
+        uses: azure/setup-kubectl@829323503d1be3d00ca8346e5391ca0b07a9ab0d # v5
         with:
           version: v1.32.4
 
       - name: Configure kubeconfig
+        env:
+          KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
         run: |
           mkdir -p ~/.kube
-          echo "${{ secrets.KUBE_CONFIG }}" > ~/.kube/config
+          printf '%s\n' "$KUBE_CONFIG" > ~/.kube/config
           chmod 600 ~/.kube/config
 
       - name: Update Helm Dependencies
@@ -596,16 +653,22 @@ jobs:
         run: helm dependency update
 
       - name: Deploy with Helm
+        # Secrets are passed through env so they don't hit shell expansion.
+        env:
+          IMAGE_TAG: ${{ needs.build-image.outputs.image-tag }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          KC_BOOTSTRAP_ADMIN_USERNAME: ${{ secrets.KC_BOOTSTRAP_ADMIN_USERNAME }}
+          KC_BOOTSTRAP_ADMIN_PASSWORD: ${{ secrets.KC_BOOTSTRAP_ADMIN_PASSWORD }}
         working-directory: infra/k8s/alexandria
         run: |
           helm upgrade --install alexandria . \
             --namespace alexandria \
-            --set "image.tag=${{ needs.build-image.outputs.image-tag }}" \
-            --set "spring.database.password=${{ secrets.POSTGRES_PASSWORD }}" \
-            --set "keycloak.adminUser=${{ secrets.KC_BOOTSTRAP_ADMIN_USERNAME }}" \
-            --set "keycloak.adminPassword=${{ secrets.KC_BOOTSTRAP_ADMIN_PASSWORD }}" \
-            --set "keycloak.database.password=${{ secrets.POSTGRES_PASSWORD }}" \
-            --set "postgres-db.auth.password=${{ secrets.POSTGRES_PASSWORD }}" \
+            --set "image.tag=$IMAGE_TAG" \
+            --set "spring.database.password=$POSTGRES_PASSWORD" \
+            --set "keycloak.adminUser=$KC_BOOTSTRAP_ADMIN_USERNAME" \
+            --set "keycloak.adminPassword=$KC_BOOTSTRAP_ADMIN_PASSWORD" \
+            --set "keycloak.database.password=$POSTGRES_PASSWORD" \
+            --set "postgres-db.auth.password=$POSTGRES_PASSWORD" \
             --wait \
             --timeout 5m
 

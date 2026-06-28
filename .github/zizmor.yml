@@ -1,0 +1,13 @@
+# zizmor audit configuration.
+# Docs: https://docs.zizmor.sh/configuration/
+#
+# Pinning policy: third-party actions are SHA-pinned (we want zizmor to fail
+# if a new third-party use is tag-only). First-party actions/ actions and
+# the CodeQL action are kept on tag refs.
+
+rules:
+  unpinned-uses:
+    config:
+      policies:
+        actions/*: ref-pin
+        github/codeql-action/*: ref-pin
