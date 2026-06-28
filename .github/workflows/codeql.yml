@@ -9,11 +9,15 @@ on:
     branches: [main]
     paths:
       - 'services/spring/**'
+      - 'services/genai/**'
+      - 'services/client/**'
       - '.github/workflows/codeql.yml'
   push:
     branches: [main]
     paths:
       - 'services/spring/**'
+      - 'services/genai/**'
+      - 'services/client/**'
   schedule:
     - cron: '17 4 * * 1'
 
@@ -26,21 +30,32 @@ permissions:
 
 jobs:
   analyze:
-    name: Analyze ${{ matrix.language == 'java-kotlin' && 'Java/Kotlin' }}
+    name: Analyze ${{ matrix.display }}
     runs-on: ubuntu-latest
     permissions:
-      security-events: write
-      packages: read
-      actions: read
-      contents: read
+      security-events: write # upload SARIF findings to the Security tab
+      packages: read         # read GHCR packages during Java autobuild
+      actions: read           # required to read workflow metadata
+      contents: read          # checkout of the repo under test
     strategy:
       fail-fast: false
       matrix:
-        language: [java-kotlin]
+        include:
+          - language: java-kotlin
+            display: Java/Kotlin
+          - language: python
+            display: Python
+          - language: javascript-typescript
+            display: JavaScript/TypeScript
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
       - name: Setup Java
+        # Only the Java/Kotlin path needs Gradle. Python and JS/TS use
+        # CodeQL's no-build analysis, so the autobuild step alone is enough.
+        if: matrix.language == 'java-kotlin'
         uses: actions/setup-java@v5
         with:
           java-version: '21'
@@ -53,6 +68,7 @@ jobs:
           queries: security-and-quality
 
       - name: Build (Manual Mode for Reliability)
+        if: matrix.language == 'java-kotlin'
         working-directory: services/spring/app
         run: ./gradlew --no-daemon assemble
 

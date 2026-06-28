@@ -5,6 +5,10 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    cooldown:
+      default-days: 7
+      semver-patch-days: 3
+      semver-minor-days: 7
     groups:
       gha-minor:
         update-types: [minor, patch]
@@ -14,6 +18,10 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    cooldown:
+      default-days: 7
+      semver-patch-days: 3
+      semver-minor-days: 7
     groups:
       spring-boot:
         patterns:
@@ -23,7 +31,50 @@ updates:
         update-types: [minor, patch]
 
   - package-ecosystem: docker
-    directory: "/services/spring"
+    directories:
+      - "/services/spring"
+      - "/services/genai"
+      - "/services/client"
     schedule:
       interval: weekly
     open-pull-requests-limit: 3
+    cooldown:
+      default-days: 7
+      semver-patch-days: 3
+      semver-minor-days: 7
+
+  - package-ecosystem: npm
+    directory: "/services/client"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    cooldown:
+      default-days: 7
+      semver-patch-days: 3
+      semver-minor-days: 7
+    groups:
+      npm-minor:
+        update-types: [minor, patch]
+
+  - package-ecosystem: uv
+    directory: "/services/genai"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    cooldown:
+      default-days: 7
+      semver-patch-days: 3
+      semver-minor-days: 7
+    groups:
+      uv-minor:
+        update-types: [minor, patch]
+
+  - package-ecosystem: terraform
+    directory: "/infra/azure/terraform"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 3
+    cooldown:
+      default-days: 7
+      semver-patch-days: 3
+      semver-minor-days: 7
