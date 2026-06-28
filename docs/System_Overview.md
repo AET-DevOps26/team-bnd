@@ -22,7 +22,7 @@ The server side consists of three Spring Boot microservices:
 3. Search and Indexing Service
     - Manages document tags (auto-generated as well as user-defined)
     - Performs search queries across the knowledge base
-    - Generates answers to natual language questions based on the knowledge base
+    - Generates answers to natural language questions based on the knowledge base
     - Provides filtered browsing and full-text search
     - Database schema: `search`
 

@@ -1,0 +1,10 @@
+# typos-cli config
+# Docs: https://github.com/crate-ci/typos/blob/master/docs/reference.md
+
+# AKS = Azure Kubernetes Service; typos suggests "ASK".
+[default.extend-words]
+aks = "aks"
+
+# Keycloak realm-export field, misspelled upstream. Renaming breaks the import.
+[default.extend-identifiers]
+autheticatorFlow = "autheticatorFlow"
