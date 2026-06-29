@@ -51,6 +51,21 @@ genai:
       cpu: 500m
       memory: 512Mi
 
+weaviate:
+  url: ""
+  image:
+    repository: semitechnologies/weaviate
+    tag: 1.38.2
+  persistence:
+    size: 2Gi
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
 ingress:
   enabled: true
   className: nginx
