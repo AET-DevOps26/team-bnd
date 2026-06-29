@@ -33,6 +33,19 @@ The service is configured entirely via environment variables. Copy `.env.example
 | `LLM_API_KEY`     | _(required for logos/openai)_     | API key (`lg-...` for Logos, `sk-...` for OAI) |
 | `OLLAMA_BASE_URL` | `http://localhost:11434`          | Ollama server URL (provider=ollama only)       |
 
+## Embeddings and chunking (RAG)
+
+Document text is split into overlapping chunks and embedded into vectors for the RAG pipeline (see `app/embeddings.py`). The embedding provider is selected the same way as the LLM, and the logos/openai providers reuse `LLM_BASE_URL` and `LLM_API_KEY` since embeddings run on the same gateway as the chat model.
+
+| Variable             | Default                   | Description                                           |
+| -------------------- | ------------------------- | ----------------------------------------------------- |
+| `EMBEDDING_PROVIDER` | `logos`                   | `logos`, `openai`, or `ollama`                        |
+| `EMBEDDING_MODEL`    | `Qwen/Qwen3-Embedding-8B` | Embedding model id (provider-specific default)        |
+| `CHUNK_SIZE`         | `1000`                    | Characters per chunk                                  |
+| `CHUNK_OVERLAP`      | `200`                     | Character overlap between consecutive chunks          |
+
+OpenAI defaults to `text-embedding-3-small`, Ollama to `nomic-embed-text`. Each provider/model emits a different vector size, so the Weaviate collection stores whatever the configured embedder produces rather than pinning a fixed dimension.
+
 ### Logos (default -- TUM course API)
 
 The course organizers provide [Logos](https://logos.aet.cit.tum.de), an OpenAI-compatible API gateway serving f.e. `openai/gpt-oss-120b`.
