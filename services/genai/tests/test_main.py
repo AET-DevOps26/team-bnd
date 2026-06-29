@@ -41,6 +41,7 @@ def test_openapi_schema_exposes_all_endpoints():
     assert "/genai/extract" in paths
     assert "/genai/ask" in paths
     assert "/genai/index" in paths
+    assert "/genai/index/{object_key}" in paths
     # metrics is an operational endpoint, not part of the public API surface
     assert "/genai/metrics" not in paths
 
@@ -259,3 +260,23 @@ def test_index_returns_422_for_empty_document():
 def test_index_rejects_missing_object_key():
     response = client.post("/genai/index", json={})
     assert response.status_code == 422
+
+
+# --- delete index ---
+
+
+def test_delete_index_removes_chunks_for_object_key():
+    with patch("app.main.delete_document", return_value=4) as mock_delete:
+        response = client.delete("/genai/index/uploads/abc/report.txt")
+
+    assert response.status_code == 200
+    assert response.json() == {"objectKey": "uploads/abc/report.txt", "chunksDeleted": 4}
+    mock_delete.assert_called_once_with("uploads/abc/report.txt")
+
+
+def test_delete_index_is_idempotent_for_unindexed_document():
+    with patch("app.main.delete_document", return_value=0):
+        response = client.delete("/genai/index/never-indexed.txt")
+
+    assert response.status_code == 200
+    assert response.json()["chunksDeleted"] == 0

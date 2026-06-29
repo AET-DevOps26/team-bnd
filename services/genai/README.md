@@ -55,7 +55,7 @@ OpenAI defaults to `text-embedding-3-small`, Ollama to `nomic-embed-text`. Each 
 
 ### How indexing and Q&A work
 
-`POST /genai/index` pulls the document text from object storage, splits it into chunks, embeds each chunk, and stores them in Weaviate keyed by object key and chunk index. Re-indexing the same key replaces its chunks, so the call is idempotent.
+`POST /genai/index` pulls the document text from object storage, splits it into chunks, embeds each chunk, and stores them in Weaviate keyed by object key and chunk index. Re-indexing the same key replaces its chunks, so the call is idempotent. `DELETE /genai/index/{objectKey}` removes a document's chunks so the index stays in sync when a document is deleted; deleting an unindexed document is a no-op.
 
 `POST /genai/ask` embeds the question, retrieves the `RAG_TOP_K` nearest chunks scoped to the requested `objectKeys`, and asks the LLM to answer from those excerpts. The retrieval is scoped per request, so a user only ever sees answers grounded in the documents they pass in.
 

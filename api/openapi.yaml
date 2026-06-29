@@ -482,6 +482,44 @@ paths:
       summary: Index
       tags:
         - ai
+  /genai/index/{object_key}:
+    delete:
+      description: >-
+        Remove all indexed chunks for the document at the given object key.
+
+
+        Idempotent: deleting a document that was never indexed removes nothing
+        and
+
+        still returns 200. The :path converter keeps object keys that contain
+        slashes
+
+        intact.
+      operationId: delete_index_genai_index__object_key__delete
+      parameters:
+        - in: path
+          name: object_key
+          required: true
+          schema:
+            title: Object Key
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenAiDeleteIndexResponse'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      security: []
+      summary: Delete Index
+      tags:
+        - ai
   /genai/summarize:
     post:
       description: Summarize the document stored under the given object key.
@@ -706,6 +744,19 @@ components:
         - sourceObjectKeys
         - modelUsed
       title: GenAiAskResponse
+      type: object
+    GenAiDeleteIndexResponse:
+      properties:
+        chunksDeleted:
+          title: Chunksdeleted
+          type: integer
+        objectKey:
+          title: Objectkey
+          type: string
+      required:
+        - objectKey
+        - chunksDeleted
+      title: GenAiDeleteIndexResponse
       type: object
     GenAiExtractRequest:
       properties:

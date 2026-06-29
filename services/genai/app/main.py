@@ -10,7 +10,7 @@ from app.extract import extract_entities
 from app.qa import answer_question
 from app.storage import ObjectNotFoundError, UnsupportedFileError, fetch_text
 from app.summarize import summarize
-from app.vectorstore import close_client, index_chunks
+from app.vectorstore import close_client, delete_document, index_chunks
 
 SERVICE_NAME = "alexandria-genai"
 SERVICE_VERSION = "1.4.0"
@@ -92,6 +92,11 @@ class GenAiIndexResponse(BaseModel):
     objectKey: str
     chunksIndexed: int
     embeddingModel: str
+
+
+class GenAiDeleteIndexResponse(BaseModel):
+    objectKey: str
+    chunksDeleted: int
 
 
 # --- helpers ---
@@ -178,3 +183,15 @@ def index(request: GenAiIndexRequest) -> GenAiIndexResponse:
         chunksIndexed=count,
         embeddingModel=get_embedding_model_name(),
     )
+
+
+@app.delete("/genai/index/{object_key:path}", tags=["ai"], response_model=GenAiDeleteIndexResponse, openapi_extra={"security": []})
+def delete_index(object_key: str) -> GenAiDeleteIndexResponse:
+    """Remove all indexed chunks for the document at the given object key.
+
+    Idempotent: deleting a document that was never indexed removes nothing and
+    still returns 200. The :path converter keeps object keys that contain slashes
+    intact.
+    """
+    removed = delete_document(object_key)
+    return GenAiDeleteIndexResponse(objectKey=object_key, chunksDeleted=removed)
