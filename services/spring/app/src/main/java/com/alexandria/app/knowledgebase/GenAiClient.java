@@ -7,7 +7,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
 import java.util.List;
-import java.util.UUID;
 
 @Component
 public class GenAiClient {
@@ -20,44 +19,44 @@ public class GenAiClient {
                 .build();
     }
 
-    public SummarizeResponse summarize(String content) {
+    public SummarizeResponse summarize(String objectKey) {
         return restClient.post()
                 .uri("/genai/summarize")
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(new SummarizeRequest(content))
+                .body(new SummarizeRequest(objectKey))
                 .retrieve()
                 .body(SummarizeResponse.class);
     }
 
-    public ExtractResponse extract(String content) {
+    public ExtractResponse extract(String objectKey) {
         return restClient.post()
                 .uri("/genai/extract")
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(new ExtractRequest(content))
+                .body(new ExtractRequest(objectKey))
                 .retrieve()
                 .body(ExtractResponse.class);
     }
 
-    public AskResponse ask(String question, List<UUID> documentIds) {
+    public AskResponse ask(String question, List<String> objectKeys) {
         return restClient.post()
                 .uri("/genai/ask")
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(new AskRequest(question, documentIds))
+                .body(new AskRequest(question, objectKeys))
                 .retrieve()
                 .body(AskResponse.class);
     }
 
-    public record SummarizeRequest(String content) {}
+    public record SummarizeRequest(String objectKey) {}
 
     public record SummarizeResponse(String summary, String modelUsed) {}
 
-    public record ExtractRequest(String content) {}
+    public record ExtractRequest(String objectKey) {}
 
     public record ExtractResponse(List<ExtractedEntityDto> entities, String modelUsed) {}
 
     public record ExtractedEntityDto(String name, EntityType type, Double confidence) {}
 
-    public record AskRequest(String question, List<UUID> documentIds) {}
+    public record AskRequest(String question, List<String> objectKeys) {}
 
-    public record AskResponse(String answer, List<UUID> sourceDocumentIds, String modelUsed) {}
+    public record AskResponse(String answer, List<String> sourceObjectKeys, String modelUsed) {}
 }

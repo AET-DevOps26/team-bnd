@@ -13,4 +13,6 @@ public interface DocumentRepository extends JpaRepository<Document, UUID> {
     List<Document> findByOwnerIdAndFileNameContainingIgnoreCase(UUID ownerId, String fileName);
 
     boolean existsByIdAndOwnerId(UUID id, UUID ownerId);
+
+    void deleteByOwnerId(UUID ownerId);
 }

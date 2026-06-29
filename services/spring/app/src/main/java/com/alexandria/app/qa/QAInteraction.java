@@ -27,7 +27,7 @@ public class QAInteraction {
     @ElementCollection
     @CollectionTable(name = "qa_source_documents", joinColumns = @JoinColumn(name = "qa_id"))
     @Column(name = "document_id")
-    private List<UUID> sourceDocumentIds;
+    private List<String> sourceObjectKeys;
 
     @Column(nullable = false)
     private Instant timestamp;
@@ -38,11 +38,11 @@ public class QAInteraction {
     public QAInteraction() {
     }
 
-    public QAInteraction(User user, String question, String answer, List<UUID> sourceDocumentIds, String modelUsed) {
+    public QAInteraction(User user, String question, String answer, List<String> sourceObjectKeys, String modelUsed) {
         this.user = user;
         this.question = question;
         this.answer = answer;
-        this.sourceDocumentIds = sourceDocumentIds;
+        this.sourceObjectKeys = sourceObjectKeys;
         this.modelUsed = modelUsed;
         this.timestamp = Instant.now();
     }
@@ -75,12 +75,12 @@ public class QAInteraction {
         this.answer = answer;
     }
 
-    public List<UUID> getSourceDocumentIds() {
-        return sourceDocumentIds;
+    public List<String> getSourceObjectKeys() {
+        return sourceObjectKeys;
     }
 
-    public void setSourceDocumentIds(List<UUID> sourceDocumentIds) {
-        this.sourceDocumentIds = sourceDocumentIds;
+    public void setSourceObjectKeys(List<String> sourceObjectKeys) {
+        this.sourceObjectKeys = sourceObjectKeys;
     }
 
     public Instant getTimestamp() {

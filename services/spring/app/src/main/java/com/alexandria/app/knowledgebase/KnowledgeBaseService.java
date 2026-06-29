@@ -13,10 +13,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import javax.sql.rowset.serial.SerialBlob;
-import java.io.IOException;
-import java.io.InputStream;
-import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -34,6 +30,7 @@ public class KnowledgeBaseService {
     private final QAInteractionRepository qaInteractionRepository;
     private final GenAiClient genAiClient;
     private final TextExtractor textExtractor;
+    private final ObjectStorageService objectStorageService;
 
     public KnowledgeBaseService(
             DocumentRepository documentRepository,
@@ -43,7 +40,8 @@ public class KnowledgeBaseService {
             SearchQueryRepository searchQueryRepository,
             QAInteractionRepository qaInteractionRepository,
             GenAiClient genAiClient,
-            TextExtractor textExtractor) {
+            TextExtractor textExtractor,
+            ObjectStorageService objectStorageService) {
         this.documentRepository = documentRepository;
         this.summaryRepository = summaryRepository;
         this.extractedEntityRepository = extractedEntityRepository;
@@ -52,17 +50,18 @@ public class KnowledgeBaseService {
         this.qaInteractionRepository = qaInteractionRepository;
         this.genAiClient = genAiClient;
         this.textExtractor = textExtractor;
+        this.objectStorageService = objectStorageService;
     }
 
     @Transactional
-    public Document createDocument(User owner, String fileName, String filePath, String fileType, Long fileSize, String textContent) {
-        Document document = new Document(owner, fileName, filePath, fileType, fileSize);
+    public Document createDocument(User owner, String fileName, String objectKey, String fileType, Long fileSize, String textContent) {
+        Document document = new Document(owner, fileName, objectKey, fileType, fileSize);
         document.setRawTextContent(textContent);
         document = documentRepository.save(document);
 
         if (textContent != null && !textContent.isBlank()) {
-            processSummary(document, textContent);
-            processEntities(document, textContent);
+            processSummary(document, objectKey);
+            processEntities(document, objectKey);
         }
 
         return document;
@@ -73,34 +72,24 @@ public class KnowledgeBaseService {
         String fileName = file.getOriginalFilename();
         String fileType = file.getContentType();
         Long fileSize = file.getSize();
-        String filePath = "/uploads/" + UUID.randomUUID() + "/" + fileName;
+        String objectKey = "/uploads/" + UUID.randomUUID() + "/" + fileName;
 
         String textContent = textExtractor.extract(file);
 
-        Document document = new Document(owner, fileName, filePath, fileType, fileSize);
+        Document document = new Document(owner, fileName, objectKey, fileType, fileSize);
         document.setRawTextContent(textContent);
         document = documentRepository.save(document);
+        objectStorageService.upload(objectKey, file);
 
-        try {
-            FileContent fileContent = new FileContent();
-            fileContent.setDocument(document);
-            fileContent.setFileContent(new SerialBlob(file.getBytes()));
-            document.setFileContent(fileContent);
-        } catch (IOException | SQLException e) {
-            log.warn("Failed to store file content for document {}: {}", document.getId(), e.getMessage());
-        }
-
-        if (textContent != null && !textContent.isBlank()) {
-            processSummary(document, textContent);
-            processEntities(document, textContent);
-        }
+        processSummary(document, objectKey);
+        processEntities(document, objectKey);
 
         return document;
     }
 
-    private void processSummary(Document document, String textContent) {
+    private void processSummary(Document document, String objectKey) {
         try {
-            GenAiClient.SummarizeResponse response = genAiClient.summarize(textContent);
+            GenAiClient.SummarizeResponse response = genAiClient.summarize(objectKey);
             Summary summary = new Summary(document, response.summary(), response.modelUsed());
             summaryRepository.save(summary);
             document.setSummary(summary);
@@ -109,9 +98,9 @@ public class KnowledgeBaseService {
         }
     }
 
-    private void processEntities(Document document, String textContent) {
+    private void processEntities(Document document, String objectKey) {
         try {
-            GenAiClient.ExtractResponse response = genAiClient.extract(textContent);
+            GenAiClient.ExtractResponse response = genAiClient.extract(objectKey);
             for (GenAiClient.ExtractedEntityDto dto : response.entities()) {
                 ExtractedEntity entity = new ExtractedEntity(document, dto.name(), dto.type(), dto.confidence());
                 extractedEntityRepository.save(entity);
@@ -136,17 +125,14 @@ public class KnowledgeBaseService {
     }
 
     @Transactional(readOnly = true)
-    public Optional<byte[]> getFileContent(UUID documentId) {
-        return documentRepository.findById(documentId)
-                .map(Document::getFileContent)
-                .map(fileContent -> {
-                    try {
-                        return fileContent.getFileContent().getBinaryStream().readAllBytes();
-                    } catch (SQLException | IOException e) {
-                        log.warn("Failed to read file content for document {}: {}", documentId, e.getMessage());
-                        return null;
-                    }
-                });
+    public Optional<byte[]> getFileContent(UUID documentId, UUID ownerId) {
+        Document document = getDocument(documentId, ownerId);
+        try {
+            return Optional.of(objectStorageService.download(document.getObjectKey()));
+        } catch (Exception e) {
+            log.warn("Failed to download file for document {}: {}", documentId, e.getMessage());
+            return Optional.empty();
+        }
     }
 
     @Transactional
@@ -154,6 +140,7 @@ public class KnowledgeBaseService {
         if (!documentRepository.existsByIdAndOwnerId(id, ownerId)) {
             throw new DocumentNotFoundException(id);
         }
+        documentRepository.findById(id).map(Document::getObjectKey).ifPresent(objectStorageService::delete);
         documentRepository.deleteById(id);
     }
 
@@ -169,18 +156,18 @@ public class KnowledgeBaseService {
 
     @Transactional
     public QAInteraction ask(User user, String question) {
-        List<UUID> documentIds = documentRepository.findByOwnerId(user.getId())
+        List<String> objectKeys = documentRepository.findByOwnerId(user.getId())
                 .stream()
-                .map(Document::getId)
+                .map(Document::getObjectKey)
                 .toList();
 
-        GenAiClient.AskResponse response = genAiClient.ask(question, documentIds);
+        GenAiClient.AskResponse response = genAiClient.ask(question, objectKeys);
 
         QAInteraction interaction = new QAInteraction(
                 user,
                 question,
                 response.answer(),
-                response.sourceDocumentIds(),
+                response.sourceObjectKeys(),
                 response.modelUsed()
         );
         return qaInteractionRepository.save(interaction);

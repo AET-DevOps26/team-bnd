@@ -9,4 +9,6 @@ import java.util.UUID;
 @Repository
 public interface QAInteractionRepository extends JpaRepository<QAInteraction, UUID> {
     List<QAInteraction> findByUserIdOrderByTimestampDesc(UUID userId);
+
+    void deleteByUserId(UUID userId);
 }

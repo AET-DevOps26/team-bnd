@@ -9,4 +9,6 @@ import java.util.UUID;
 @Repository
 public interface SearchQueryRepository extends JpaRepository<SearchQuery, UUID> {
     List<SearchQuery> findByUserIdOrderByTimestampDesc(UUID userId);
+
+    void deleteByUserId(UUID userId);
 }

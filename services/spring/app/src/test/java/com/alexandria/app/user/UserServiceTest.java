@@ -1,12 +1,18 @@
 package com.alexandria.app.user;
 
+import com.alexandria.app.document.Document;
+import com.alexandria.app.document.DocumentRepository;
 import com.alexandria.app.exception.UserNotFoundException;
+import com.alexandria.app.knowledgebase.ObjectStorageService;
+import com.alexandria.app.qa.QAInteractionRepository;
+import com.alexandria.app.search.SearchQueryRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -21,11 +27,28 @@ class UserServiceTest {
     @Mock
     private UserRepository userRepository;
 
+    @Mock
+    private DocumentRepository documentRepository;
+
+    @Mock
+    private QAInteractionRepository qaInteractionRepository;
+
+    @Mock
+    private SearchQueryRepository searchQueryRepository;
+
+    @Mock
+    private ObjectStorageService objectStorageService;
+
     private UserService userService;
 
     @BeforeEach
     void setupUserService() {
-        userService = new UserService(userRepository);
+        userService = new UserService(
+                userRepository,
+                documentRepository,
+                qaInteractionRepository,
+                searchQueryRepository,
+                objectStorageService);
     }
 
     @Test
@@ -79,10 +102,18 @@ class UserServiceTest {
     @Test
     void unit_user_deleteSuccessDeletesExistingUser() {
         UUID userId = UUID.randomUUID();
+        User user = new User("oidc|123", "testuser", "test@example.com");
+        Document doc = new Document(user, "test.pdf", "/uploads/uuid/test.pdf", "application/pdf", 1024L);
+
         when(userRepository.existsById(userId)).thenReturn(true);
+        when(documentRepository.findByOwnerId(userId)).thenReturn(List.of(doc));
 
         userService.deleteUser(userId);
 
+        verify(objectStorageService).delete(doc.getObjectKey());
+        verify(documentRepository).deleteByOwnerId(userId);
+        verify(qaInteractionRepository).deleteByUserId(userId);
+        verify(searchQueryRepository).deleteByUserId(userId);
         verify(userRepository).deleteById(userId);
     }
 

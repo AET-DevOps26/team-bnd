@@ -38,3 +38,17 @@ groups:
         annotations:
           summary: "GenAI p95 latency above 2s"
           description: "The 95th percentile of GenAI request latency has been above 2 seconds for 5 minutes."
+
+      # Object storage volume has less than 10% free space, so uploads will start failing soon.
+      - alert: S3StorageLowDiskSpace
+        expr: |
+          sum(SeaweedFS_volumeServer_resource{type="avail"})
+            /
+          sum(SeaweedFS_volumeServer_resource{type="all"})
+            < 0.10
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Object storage disk space below 10%"
+          description: "The SeaweedFS volume server has less than 10% available disk space for over 5 minutes. Document uploads are at risk."

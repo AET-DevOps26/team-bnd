@@ -41,7 +41,7 @@ class DocumentRepositoryIntegrationTest {
         Optional<Document> found = documentRepository.findById(saved.getId());
         assertThat(found).isPresent();
         assertThat(found.get().getFileName()).isEqualTo("report.docx");
-        assertThat(found.get().getFilePath()).isEqualTo("/files/report.docx");
+        assertThat(found.get().getObjectKey()).isEqualTo("/files/report.docx");
         assertThat(found.get().getFileType()).isEqualTo("application/vnd.openxmlformats-officedocument.wordprocessingml.document");
         assertThat(found.get().getFileSize()).isEqualTo(2048L);
         assertThat(found.get().getCreatedAt()).isNotNull();

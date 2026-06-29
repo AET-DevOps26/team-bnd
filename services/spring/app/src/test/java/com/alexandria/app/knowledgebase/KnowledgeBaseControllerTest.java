@@ -11,9 +11,11 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
+import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -32,6 +34,12 @@ class KnowledgeBaseControllerTest {
 
     @Autowired
     private UserRepository userRepository;
+
+    @MockitoBean
+    private ObjectStorageService objectStorageService;
+
+    @MockitoBean
+    private GenAiClient genAiClient;
 
     private User testUser;
 
@@ -77,6 +85,7 @@ class KnowledgeBaseControllerTest {
         MockMultipartFile file = new MockMultipartFile(
                 "file", "download.txt", "text/plain", "hello world".getBytes());
         Document doc = knowledgeBaseService.uploadDocument(testUser, file);
+        when(objectStorageService.download(doc.getObjectKey())).thenReturn("hello world".getBytes());
 
         mockMvc.perform(get("/api/v1/knowledgebase/documents/" + doc.getId() + "/download")
                         .with(jwt().jwt(j -> j.subject("sub123"))))

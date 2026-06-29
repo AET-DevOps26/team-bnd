@@ -51,6 +51,9 @@ class KnowledgeBaseServiceTest {
     @Mock
     private TextExtractor textExtractor;
 
+    @Mock
+    private ObjectStorageService objectStorageService;
+
     private KnowledgeBaseService knowledgeBaseService;
 
     private User testUser;
@@ -65,7 +68,8 @@ class KnowledgeBaseServiceTest {
                 searchQueryRepository,
                 qaInteractionRepository,
                 genAiClient,
-                textExtractor
+                textExtractor,
+                objectStorageService
         );
         testUser = new User("oidc|123", "testuser", "test@example.com");
         setUserId(testUser, UUID.randomUUID());
@@ -99,38 +103,40 @@ class KnowledgeBaseServiceTest {
 
     @Test
     void unit_kb_createDocumentWithContentCallsGenAi() {
-        Document savedDoc = new Document(testUser, "report.docx", "/files/report.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", 3072L);
+        String objectKey = "/files/report.docx";
+        Document savedDoc = new Document(testUser, "report.docx", objectKey, "application/vnd.openxmlformats-officedocument.wordprocessingml.document", 3072L);
         savedDoc.setRawTextContent("Some text content");
         when(documentRepository.save(any(Document.class))).thenReturn(savedDoc);
 
         GenAiClient.SummarizeResponse summaryResponse = new GenAiClient.SummarizeResponse("Summary text", "gpt-4");
-        when(genAiClient.summarize(anyString())).thenReturn(summaryResponse);
+        when(genAiClient.summarize(objectKey)).thenReturn(summaryResponse);
 
         List<GenAiClient.ExtractedEntityDto> entities = List.of(
                 new GenAiClient.ExtractedEntityDto("John Doe", EntityType.PERSON, 0.95)
         );
         GenAiClient.ExtractResponse extractResponse = new GenAiClient.ExtractResponse(entities, "gpt-4");
-        when(genAiClient.extract(anyString())).thenReturn(extractResponse);
+        when(genAiClient.extract(objectKey)).thenReturn(extractResponse);
 
         Document result = knowledgeBaseService.createDocument(
-                testUser, "report.docx", "/files/report.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", 3072L, "Some text content");
+                testUser, "report.docx", objectKey, "application/vnd.openxmlformats-officedocument.wordprocessingml.document", 3072L, "Some text content");
 
         assertThat(result).isNotNull();
-        verify(genAiClient).summarize("Some text content");
-        verify(genAiClient).extract("Some text content");
+        verify(genAiClient).summarize(objectKey);
+        verify(genAiClient).extract(objectKey);
         verify(summaryRepository).save(any(Summary.class));
         verify(extractedEntityRepository).save(any(ExtractedEntity.class));
     }
 
     @Test
     void unit_kb_createDocumentContinuesWhenGenAiFails() {
-        Document savedDoc = new Document(testUser, "notes.md", "/files/notes.md", "text/markdown", 256L);
+        String objectKey = "/files/notes.md";
+        Document savedDoc = new Document(testUser, "notes.md", objectKey, "text/markdown", 256L);
         when(documentRepository.save(any(Document.class))).thenReturn(savedDoc);
-        when(genAiClient.summarize(anyString())).thenThrow(new RuntimeException("GenAI unavailable"));
-        when(genAiClient.extract(anyString())).thenThrow(new RuntimeException("GenAI unavailable"));
+        when(genAiClient.summarize(objectKey)).thenThrow(new RuntimeException("GenAI unavailable"));
+        when(genAiClient.extract(objectKey)).thenThrow(new RuntimeException("GenAI unavailable"));
 
         Document result = knowledgeBaseService.createDocument(
-                testUser, "notes.md", "/files/notes.md", "text/markdown", 256L, "Some text content");
+                testUser, "notes.md", objectKey, "text/markdown", 256L, "Some text content");
 
         assertThat(result).isNotNull();
         verify(summaryRepository, never()).save(any());
@@ -225,7 +231,7 @@ class KnowledgeBaseServiceTest {
         when(documentRepository.findByOwnerId(testUser.getId())).thenReturn(List.of(doc));
 
         GenAiClient.AskResponse askResponse = new GenAiClient.AskResponse(
-                "The answer is 42", List.of(docId), "gpt-4");
+                "The answer is 42", List.of("/files/manual.html"), "gpt-4");
         when(genAiClient.ask(anyString(), any())).thenReturn(askResponse);
         when(qaInteractionRepository.save(any(QAInteraction.class))).thenAnswer(inv -> inv.getArgument(0));
 
