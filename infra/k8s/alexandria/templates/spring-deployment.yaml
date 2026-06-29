@@ -54,6 +54,16 @@ spec:
                 secretKeyRef:
                   name: {{ include "alexandria.fullname" . }}-spring-secrets
                   key: postgres-password
+            - name: S3_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "alexandria.fullname" . }}-spring-secrets
+                  key: s3-access-key
+            - name: S3_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "alexandria.fullname" . }}-spring-secrets
+                  key: s3-secret-key
           resources:
             {{- toYaml .Values.spring.resources | nindent 12 }}
           livenessProbe:
