@@ -21,7 +21,7 @@ The GenAI service is central to what Alexandria does. Every document that gets u
 2. Entity extraction: The GenAI identifies and tags key entities like dates, names, organizations, and main topics. These tags are used in the search and indexing system to categorize documents without manual tagging.
 3. Question answering (RAG): Users can ask natural-language questions about their documents. Using retrieval-augmented generation with a vector database (Weaviate), the system retrieves relevant document chunks and generates answers with references back to the source material.
 
-Alexandria supports both cloud-based models (OpenAI API) and local models (GPT4All / LLaMA) so it can run in environments where sending data to external APIs is not acceptable.
+Alexandria supports both cloud-based models (the TUM Logos gateway or the OpenAI API) and local models (via Ollama) so it can run in environments where sending data to external APIs is not acceptable. The same applies to the embedding model used for retrieval, which is provider-configurable in the same way.
 
 ## Scenarios
 

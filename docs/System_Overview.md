@@ -44,14 +44,17 @@ Team member responsible for this subsystem: Bjarne Hansen
 
 ### GenAI Service: Python
 
-The GenAI service is an independent Python microservice that handles all AI-related processing:
-- Provides an endpoint that accepts document contents and returns a concise summary
-- Provides an endpoint that accepts document contents and extracts structured entities (dates, names etc.)
-- Provides an endpoint that accepts user questions in natural language and returns an answer based on data in the knowledge base. Also provides backlinks to source documents.
+The GenAI service is an independent Python microservice that handles all AI-related processing. It downloads the referenced document from object storage and extracts its text (plain UTF-8 or PDF) before processing.
 
-The GenAI service supports both cloud-based models (OpenAI API) and local models (GPT4All, LLaMA) via configuration. The active model provider is selected through environment variables so switching between cloud and local requires no code changes.
+- Summarize: returns a concise summary of the document at a given object key.
+- Extract: extracts structured entities (dates, names, organizations, topics).
+- Index: chunks the document, embeds each chunk, and stores the chunks in Weaviate. Re-indexing the same document replaces its chunks, so the call is idempotent.
+- Delete: removes a document's chunks from Weaviate so the index stays in sync when a document is deleted.
+- Ask: answers a natural-language question with retrieval-augmented generation and cites the source documents the answer came from.
 
-For the RAG pipeline, document chunks are stored in Weaviate (vector database). When a user asks a question, relevant chunks are retrieved and then passed as context to the LLM for answer generation.
+Both the chat model and the embedding model are provider-configurable through environment variables, so switching between the TUM Logos gateway, OpenAI, and a local Ollama requires no code changes. Embeddings default to `Qwen/Qwen3-Embedding-8B` via Logos.
+
+For the RAG pipeline, document text is chunked, embedded, and indexed in Weaviate when a document is added. On a question, the GenAI service embeds the question, retrieves the most similar chunks scoped to the user's documents, and passes those chunks to the LLM as context. The answer links back to the documents whose chunks fed it.
 
 Team member responsible for this subsystem: Dominic Prinz
 
@@ -66,7 +69,7 @@ Team member responsible for this subsystem: Niklas Ladurner
 
 ### Vector Database: Weaviate
 
-The Weaviate database stores document chunk embeddings for semantic search. Runs as a separate container, accessed by the GenAI service over HTTP.
+Weaviate stores document chunks for semantic retrieval: the chunk text, an externally supplied embedding vector, and source metadata (object key and chunk index). It runs as a separate in-network container, reached only by the GenAI service. Vectors are produced by the GenAI service rather than a Weaviate vectorizer module, so the collection uses self-provided vectors and is not tied to a specific embedding model. Because Weaviate locks the collection to the first vector's dimension, switching to an embedding model of a different size means re-indexing.
 
 Team member responsible for this subsystem: Dominic Prinz
 
