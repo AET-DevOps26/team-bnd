@@ -1,0 +1,7 @@
+# kics configuration. Used by the kics CI job and runnable locally via
+# `kics scan --config .kics.yml`. See https://docs.kics.io/latest/configuration-file/
+
+# False positives:
+exclude-queries:
+  - "d6355c88-1e8d-49e9-b2f2-f8a1ca12c75b" # Docker Socket Mounted In Container -- Traefik mounts /var/run/docker.sock read-only to discover containers. Expected for a reverse proxy.
+  - "a88baa34-e2ad-44ea-ad6f-8cac87bc7c71" # Passwords And Secrets -- docker-compose.yml uses ${VAR:-default} fallback values for local dev. Not real secrets.

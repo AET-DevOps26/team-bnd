@@ -1,0 +1,12 @@
+# gitleaks allowlist. Each entry is a fingerprint from a previous scan,
+# suppressing that specific finding. Run `gitleaks git --report-format
+# json --report-path - .` to get fingerprints for new findings.
+#
+# Format: <commit-sha>:<file>:<rule-id>:<line>
+
+# Test JWT secret in JwtServiceTest.java. Hardcoded "test-secret-key-
+# that-is-at-least-32-bytes-long-for-hmac" used by unit tests, not a
+# real secret. File was removed in a later commit but gitleaks scans
+# full history so the finding persists.
+9ae8186292100369189714a8e0d7deabbc8bdfde:services/spring/app/src/test/java/com/alexandria/app/auth/JwtServiceTest.java:generic-api-key:39
+9ae8186292100369189714a8e0d7deabbc8bdfde:services/spring/app/src/test/java/com/alexandria/app/auth/JwtServiceTest.java:generic-api-key:100
