@@ -280,6 +280,52 @@ services:
       retries: 5
       start_period: 30s
 
+  # Throwaway Weaviate for the genai integration tests (test profile only).
+  # In-network, no published ports, ephemeral storage -- it holds nothing and is
+  # discarded with the test run, so the suite never touches real data.
+  weaviate-test:
+    image: semitechnologies/weaviate:1.38.2
+    profiles:
+      - test
+    environment:
+      QUERY_DEFAULTS_LIMIT: 25
+      AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED: "true"
+      PERSISTENCE_DATA_PATH: /var/lib/weaviate
+      ENABLE_MODULES: ""
+      DISABLE_TELEMETRY: "true"
+      CLUSTER_HOSTNAME: "node1"
+    networks:
+      - alexandria
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:8080/v1/.well-known/ready"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 20s
+
+  # Runs the genai test suite in a container against weaviate-test. Uses the uv
+  # image with the dev dependency group (the runtime image ships neither uv nor
+  # pytest) and mounts the source, so no Dockerfile change is needed. Run with:
+  #   docker compose run --rm genai-test
+  genai-test:
+    image: ghcr.io/astral-sh/uv:python3.14-alpine
+    profiles:
+      - test
+    working_dir: /app
+    environment:
+      WEAVIATE_URL: http://weaviate-test:8080
+      WEAVIATE_GRPC_PORT: "50051"
+      UV_CACHE_DIR: /tmp/uv-cache
+    volumes:
+      - ./services/genai:/app
+      - /app/.venv
+    networks:
+      - alexandria
+    depends_on:
+      weaviate-test:
+        condition: service_healthy
+    command: ["sh", "-c", "uv sync --frozen && uv run pytest"]
+
   traefik:
     image: traefik:v3.7
     container_name: traefik

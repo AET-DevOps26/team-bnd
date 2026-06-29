@@ -76,10 +76,16 @@ Then: `curl http://localhost:8000/genai/health`.
 
 ## Tests
 
-Tests mock the LLM so no API key or network access is required.
+Most tests mock the LLM and embedder, so they need no API key or network:
 
 ```bash
 uv run pytest -v
+```
+
+The Weaviate integration tests skip when no Weaviate is reachable. To run the full suite including them, use the compose test profile, which starts a throwaway Weaviate (in-network only, ephemeral) and runs the suite in a container against it:
+
+```bash
+docker compose run --rm genai-test
 ```
 
 ## Docker

@@ -447,6 +447,41 @@ paths:
       summary: Hello
       tags:
         - hello
+  /genai/index:
+    post:
+      description: >-
+        Chunk, embed, and index the document at the given object key into
+        Weaviate.
+
+
+        Re-indexing the same key replaces its existing chunks, so the call is
+        safe to
+
+        repeat (e.g. when Spring re-processes a document).
+      operationId: index_genai_index_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenAiIndexRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenAiIndexResponse'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      security: []
+      summary: Index
+      tags:
+        - ai
   /genai/summarize:
     post:
       description: Summarize the document stored under the given object key.
@@ -712,6 +747,32 @@ components:
         - type
         - confidence
       title: GenAiExtractedEntity
+      type: object
+    GenAiIndexRequest:
+      properties:
+        objectKey:
+          title: Objectkey
+          type: string
+      required:
+        - objectKey
+      title: GenAiIndexRequest
+      type: object
+    GenAiIndexResponse:
+      properties:
+        chunksIndexed:
+          title: Chunksindexed
+          type: integer
+        embeddingModel:
+          title: Embeddingmodel
+          type: string
+        objectKey:
+          title: Objectkey
+          type: string
+      required:
+        - objectKey
+        - chunksIndexed
+        - embeddingModel
+      title: GenAiIndexResponse
       type: object
     GenAiSummarizeRequest:
       properties:

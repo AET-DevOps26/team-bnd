@@ -1,15 +1,26 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import PlainTextResponse
 from prometheus_fastapi_instrumentator import Instrumentator
 from pydantic import BaseModel
 
+from app.embeddings import chunk_text, embed_chunks, get_embedding_model_name
 from app.extract import extract_entities
 from app.qa import answer_question
 from app.storage import ObjectNotFoundError, UnsupportedFileError, fetch_text
 from app.summarize import summarize
+from app.vectorstore import close_client, index_chunks
 
 SERVICE_NAME = "alexandria-genai"
 SERVICE_VERSION = "1.4.0"
+
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    yield
+    close_client()
+
 
 app = FastAPI(
     title="Alexandria GenAI",
@@ -21,6 +32,7 @@ app = FastAPI(
         {"name": "ai", "description": "AI-powered document processing"},
     ],
     servers=[{"url": "/"}],
+    lifespan=lifespan,
 )
 
 # should_group_untemplated rolls unmatched URLs (404s, port scans) into one
@@ -70,6 +82,16 @@ class GenAiAskResponse(BaseModel):
     answer: str
     sourceObjectKeys: list[str]
     modelUsed: str
+
+
+class GenAiIndexRequest(BaseModel):
+    objectKey: str
+
+
+class GenAiIndexResponse(BaseModel):
+    objectKey: str
+    chunksIndexed: int
+    embeddingModel: str
 
 
 # --- helpers ---
@@ -145,3 +167,21 @@ def ask(request: GenAiAskRequest) -> GenAiAskResponse:
 
     answer, source_keys, model = answer_question(request.question, request.objectKeys, documents or None)
     return GenAiAskResponse(answer=answer, sourceObjectKeys=source_keys, modelUsed=model)
+
+
+@app.post("/genai/index", tags=["ai"], response_model=GenAiIndexResponse, openapi_extra={"security": []})
+def index(request: GenAiIndexRequest) -> GenAiIndexResponse:
+    """Chunk, embed, and index the document at the given object key into Weaviate.
+
+    Re-indexing the same key replaces its existing chunks, so the call is safe to
+    repeat (e.g. when Spring re-processes a document).
+    """
+    content = _load_document(request.objectKey)
+    chunks = chunk_text(content, request.objectKey)
+    vectors = embed_chunks(chunks)
+    count = index_chunks(request.objectKey, chunks, vectors)
+    return GenAiIndexResponse(
+        objectKey=request.objectKey,
+        chunksIndexed=count,
+        embeddingModel=get_embedding_model_name(),
+    )

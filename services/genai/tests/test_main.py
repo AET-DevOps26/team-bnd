@@ -40,6 +40,7 @@ def test_openapi_schema_exposes_all_endpoints():
     assert "/genai/summarize" in paths
     assert "/genai/extract" in paths
     assert "/genai/ask" in paths
+    assert "/genai/index" in paths
     # metrics is an operational endpoint, not part of the public API surface
     assert "/genai/metrics" not in paths
 
@@ -234,4 +235,60 @@ def test_ask_skips_unreadable_objects():
 
 def test_ask_rejects_empty_question():
     response = client.post("/genai/ask", json={"question": "  ", "objectKeys": ["key-1"]})
+    assert response.status_code == 422
+
+
+# --- index ---
+
+
+def test_index_chunks_embeds_and_stores_document():
+    captured = {}
+
+    def fake_index(object_key, chunks, vectors):
+        captured["object_key"] = object_key
+        captured["num_chunks"] = len(chunks)
+        return len(chunks)
+
+    fake_chunks = [object(), object(), object()]
+
+    with (
+        patch("app.main.fetch_text", return_value="a long document body"),
+        patch("app.main.chunk_text", return_value=fake_chunks),
+        patch("app.main.embed_chunks", return_value=[[0.1], [0.2], [0.3]]),
+        patch("app.main.index_chunks", side_effect=fake_index),
+        patch("app.main.get_embedding_model_name", return_value="Qwen/Qwen3-Embedding-8B"),
+    ):
+        response = client.post("/genai/index", json={"objectKey": "uploads/abc/report.txt"})
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body == {
+        "objectKey": "uploads/abc/report.txt",
+        "chunksIndexed": 3,
+        "embeddingModel": "Qwen/Qwen3-Embedding-8B",
+    }
+    assert captured["object_key"] == "uploads/abc/report.txt"
+    assert captured["num_chunks"] == 3
+
+
+def test_index_returns_404_for_missing_object():
+    with patch("app.main.fetch_text", side_effect=ObjectNotFoundError("missing")):
+        response = client.post("/genai/index", json={"objectKey": "missing"})
+    assert response.status_code == 404
+
+
+def test_index_returns_415_for_unsupported_file():
+    with patch("app.main.fetch_text", side_effect=UnsupportedFileError("not text")):
+        response = client.post("/genai/index", json={"objectKey": "image.png"})
+    assert response.status_code == 415
+
+
+def test_index_returns_422_for_empty_document():
+    with patch("app.main.fetch_text", return_value="   "):
+        response = client.post("/genai/index", json={"objectKey": "blank.txt"})
+    assert response.status_code == 422
+
+
+def test_index_rejects_missing_object_key():
+    response = client.post("/genai/index", json={})
     assert response.status_code == 422
