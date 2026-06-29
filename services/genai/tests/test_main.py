@@ -164,13 +164,10 @@ def test_extract_rejects_missing_object_key():
 # --- ask ---
 
 
-def test_ask_returns_answer_and_sources():
-    with (
-        patch("app.main.fetch_text", return_value="doc body"),
-        patch(
-            "app.main.answer_question",
-            return_value=("The answer is 42.", ["key-1"], "openai/gpt-oss-120b"),
-        ),
+def test_ask_returns_answer_and_cited_sources():
+    with patch(
+        "app.main.answer_question",
+        return_value=("The answer is 42.", ["key-1"], "openai/gpt-oss-120b"),
     ):
         response = client.post(
             "/genai/ask",
@@ -184,53 +181,23 @@ def test_ask_returns_answer_and_sources():
     assert body["modelUsed"] == "openai/gpt-oss-120b"
 
 
-def test_ask_fetches_each_object_and_passes_documents():
+def test_ask_passes_question_and_object_keys_to_retrieval():
     captured = {}
 
-    def fake_answer(question, object_keys, documents):
-        captured["documents"] = documents
-        return ("Revenue grew 15%.", [d["id"] for d in documents], "openai/gpt-oss-120b")
+    def fake_answer(question, object_keys):
+        captured["question"] = question
+        captured["object_keys"] = object_keys
+        return ("answer", ["key-1"], "test-model")
 
-    with (
-        patch("app.main.fetch_text", side_effect=lambda k: f"content of {k}"),
-        patch("app.main.answer_question", side_effect=fake_answer),
-    ):
+    with patch("app.main.answer_question", side_effect=fake_answer):
         response = client.post(
             "/genai/ask",
             json={"question": "What was revenue growth?", "objectKeys": ["key-1", "key-2"]},
         )
 
     assert response.status_code == 200
-    assert captured["documents"] == [
-        {"id": "key-1", "content": "content of key-1"},
-        {"id": "key-2", "content": "content of key-2"},
-    ]
-
-
-def test_ask_skips_unreadable_objects():
-    def flaky_fetch(key):
-        if key == "bad":
-            raise ObjectNotFoundError(key)
-        return "good content"
-
-    captured = {}
-
-    def fake_answer(question, object_keys, documents):
-        captured["documents"] = documents
-        return ("answer", [d["id"] for d in documents], "test-model")
-
-    with (
-        patch("app.main.fetch_text", side_effect=flaky_fetch),
-        patch("app.main.answer_question", side_effect=fake_answer),
-    ):
-        response = client.post(
-            "/genai/ask",
-            json={"question": "Q?", "objectKeys": ["good", "bad"]},
-        )
-
-    assert response.status_code == 200
-    assert captured["documents"] == [{"id": "good", "content": "good content"}]
-    assert response.json()["sourceObjectKeys"] == ["good"]
+    assert captured["question"] == "What was revenue growth?"
+    assert captured["object_keys"] == ["key-1", "key-2"]
 
 
 def test_ask_rejects_empty_question():

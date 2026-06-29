@@ -150,22 +150,15 @@ def extract(request: GenAiExtractRequest) -> GenAiExtractResponse:
 
 @app.post("/genai/ask", tags=["ai"], response_model=GenAiAskResponse, openapi_extra={"security": []})
 def ask(request: GenAiAskRequest) -> GenAiAskResponse:
-    """Answer a question grounded in the documents stored under the given object keys.
+    """Answer a question from chunks retrieved for the given documents.
 
-    Each object key is fetched from storage; keys that cannot be read are skipped so a
-    single missing or unreadable document does not fail the whole request.
+    The question is embedded and matched against the indexed chunks scoped to the
+    requested object keys; the answer cites the documents its chunks came from.
     """
     if not request.question.strip():
         raise HTTPException(status_code=422, detail="question must not be empty")
 
-    documents: list[dict[str, str]] = []
-    for object_key in request.objectKeys:
-        try:
-            documents.append({"id": object_key, "content": fetch_text(object_key)})
-        except ObjectNotFoundError, UnsupportedFileError:
-            continue
-
-    answer, source_keys, model = answer_question(request.question, request.objectKeys, documents or None)
+    answer, source_keys, model = answer_question(request.question, request.objectKeys)
     return GenAiAskResponse(answer=answer, sourceObjectKeys=source_keys, modelUsed=model)
 
 

@@ -6,16 +6,20 @@ The processing endpoints take object keys, not raw text. The service downloads t
 
 ## Endpoints
 
-| Method | Path               | Description                                                 |
-| ------ | ------------------ | ----------------------------------------------------------- |
-| GET    | `/genai/health`    | Liveness/readiness probe                                    |
-| GET    | `/genai/hello`     | Sanity check, returns a plain string                        |
-| POST   | `/genai/summarize` | Summarize the document at `objectKey`                       |
-| POST   | `/genai/extract`   | Extract named entities from the document at `objectKey`     |
-| POST   | `/genai/ask`       | Answer a question grounded in the documents at `objectKeys` |
-| GET    | `/genai/metrics`   | Prometheus metrics (in-network scraping only)               |
+| Method | Path                       | Description                                                  |
+| ------ | -------------------------- | ------------------------------------------------------------ |
+| GET    | `/genai/health`            | Liveness/readiness probe                                     |
+| GET    | `/genai/hello`             | Sanity check, returns a plain string                         |
+| POST   | `/genai/summarize`         | Summarize the document at `objectKey`                        |
+| POST   | `/genai/extract`           | Extract named entities from the document at `objectKey`      |
+| POST   | `/genai/index`             | Chunk, embed, and index the document at `objectKey`          |
+| DELETE | `/genai/index/{objectKey}` | Remove a document's chunks from the index                    |
+| POST   | `/genai/ask`               | Answer a question from indexed chunks of the given documents |
+| GET    | `/genai/metrics`           | Prometheus metrics (in-network scraping only)                |
 
-`summarize` and `extract` take `{"objectKey": "..."}`; `ask` takes `{"question": "...", "objectKeys": [...]}` and returns `sourceObjectKeys`. A key that is missing returns 404 (415 if the object is neither UTF-8 text nor a PDF). For `ask`, unreadable keys are skipped so one bad document does not fail the whole request.
+`summarize`, `extract`, and `index` take `{"objectKey": "..."}`. A key that is missing returns 404 (415 if the object is neither UTF-8 text nor a PDF, 422 if it has no extractable text).
+
+`ask` takes `{"question": "...", "objectKeys": [...]}` and answers with retrieval-augmented generation: the question is embedded, matched against the indexed chunks of the listed documents, and the top matches are passed to the LLM. The response returns `sourceObjectKeys`, the documents whose chunks actually fed the answer. When nothing relevant is found (or no documents are in scope), it says so instead of guessing.
 
 FastAPI also exposes `/openapi.json` and `/docs` (Swagger UI) out of the box.
 
@@ -37,14 +41,23 @@ The service is configured entirely via environment variables. Copy `.env.example
 
 Document text is split into overlapping chunks and embedded into vectors for the RAG pipeline (see `app/embeddings.py`). The embedding provider is selected the same way as the LLM, and the logos/openai providers reuse `LLM_BASE_URL` and `LLM_API_KEY` since embeddings run on the same gateway as the chat model.
 
-| Variable             | Default                   | Description                                           |
-| -------------------- | ------------------------- | ----------------------------------------------------- |
-| `EMBEDDING_PROVIDER` | `logos`                   | `logos`, `openai`, or `ollama`                        |
-| `EMBEDDING_MODEL`    | `Qwen/Qwen3-Embedding-8B` | Embedding model id (provider-specific default)        |
-| `CHUNK_SIZE`         | `1000`                    | Characters per chunk                                  |
-| `CHUNK_OVERLAP`      | `200`                     | Character overlap between consecutive chunks          |
+| Variable             | Default                   | Description                                    |
+| -------------------- | ------------------------- | ---------------------------------------------- |
+| `EMBEDDING_PROVIDER` | `logos`                   | `logos`, `openai`, or `ollama`                 |
+| `EMBEDDING_MODEL`    | `Qwen/Qwen3-Embedding-8B` | Embedding model id (provider-specific default) |
+| `CHUNK_SIZE`         | `1000`                    | Characters per chunk                           |
+| `CHUNK_OVERLAP`      | `200`                     | Character overlap between consecutive chunks   |
+| `WEAVIATE_URL`       | `http://weaviate:8080`    | Weaviate HTTP endpoint                         |
+| `WEAVIATE_GRPC_PORT` | `50051`                   | Weaviate gRPC port (batch/query)               |
+| `RAG_TOP_K`          | `5`                       | Chunks retrieved per question in `/genai/ask`  |
 
-OpenAI defaults to `text-embedding-3-small`, Ollama to `nomic-embed-text`. Each provider/model emits a different vector size, so the Weaviate collection stores whatever the configured embedder produces rather than pinning a fixed dimension.
+OpenAI defaults to `text-embedding-3-small`, Ollama to `nomic-embed-text`. Each provider/model emits a different vector size, and the Weaviate collection stores whatever the configured embedder produces rather than pinning a fixed dimension. Weaviate locks the collection to the first vector's width, so switching embedding providers to one with a different dimension means dropping and re-indexing the collection.
+
+### How indexing and Q&A work
+
+`POST /genai/index` pulls the document text from object storage, splits it into chunks, embeds each chunk, and stores them in Weaviate keyed by object key and chunk index. Re-indexing the same key replaces its chunks, so the call is idempotent.
+
+`POST /genai/ask` embeds the question, retrieves the `RAG_TOP_K` nearest chunks scoped to the requested `objectKeys`, and asks the LLM to answer from those excerpts. The retrieval is scoped per request, so a user only ever sees answers grounded in the documents they pass in.
 
 ### Logos (default -- TUM course API)
 

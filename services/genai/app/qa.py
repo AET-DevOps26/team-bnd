@@ -1,68 +1,82 @@
-"""Question answering over documents using LangChain."""
+"""Retrieval-augmented question answering over indexed document chunks.
+
+Embeds the question, retrieves the most similar chunks from Weaviate scoped to
+the requested documents, and asks the LLM to answer from those chunks. Sources
+are the documents whose chunks actually fed the answer (chunk-level attribution),
+not the whole set the caller passed in.
+
+  RAG_TOP_K   number of chunks to retrieve (default 5)
+"""
+
+import os
 
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 
+from app.embeddings import embed_query
 from app.llm import get_llm, get_model_name
+from app.vectorstore import search
 
-_PROMPT_WITH_CONTEXT = ChatPromptTemplate.from_messages(
+_DEFAULT_TOP_K = 5
+
+_NO_CONTEXT_MESSAGE = "I couldn't find anything relevant in the selected documents to answer that question."
+
+_PROMPT = ChatPromptTemplate.from_messages(
     [
         (
             "system",
             "You are a helpful assistant that answers questions strictly based on the provided document excerpts. "
-            "If the answer cannot be found in the documents, say so clearly. "
-            "When relevant, mention which documents support your answer.",
+            "Each excerpt is labelled with its source. If the answer cannot be found in the excerpts, say so clearly. "
+            "Cite the sources that support your answer.",
         ),
         (
             "human",
-            "Documents:\n{context}\n\nQuestion: {question}",
+            "Excerpts:\n{context}\n\nQuestion: {question}",
         ),
     ]
 )
 
-_PROMPT_NO_CONTEXT = ChatPromptTemplate.from_messages(
-    [
-        (
-            "system",
-            "You are a helpful assistant. Answer the question as best you can. "
-            "Note: no document content was provided, so this answer is based on general knowledge only.",
-        ),
-        ("human", "{question}"),
-    ]
-)
+
+def _top_k() -> int:
+    raw = os.getenv("RAG_TOP_K")
+    return int(raw) if raw else _DEFAULT_TOP_K
 
 
-def answer_question(
-    question: str,
-    object_keys: list[str],
-    documents: list[dict] | None = None,
-) -> tuple[str, list[str], str]:
-    """Answer a question, optionally grounded in document content.
+def _unique_sources(chunks: list[dict]) -> list[str]:
+    """Source object keys in retrieval order, deduplicated."""
+    seen: set[str] = set()
+    sources: list[str] = []
+    for chunk in chunks:
+        key = chunk["object_key"]
+        if key not in seen:
+            seen.add(key)
+            sources.append(key)
+    return sources
+
+
+def answer_question(question: str, object_keys: list[str]) -> tuple[str, list[str], str]:
+    """Answer a question from chunks retrieved for the given documents.
 
     Args:
         question: The user's question.
-        object_keys: Object keys of documents in scope (used as source attribution).
-        documents: Optional list of {"id": <object key>, "content": ...} dicts.
-                   When provided, answers are grounded in the document text and only
-                   the keys that were actually readable are returned as sources.
+        object_keys: Object keys of the documents to search within. Retrieval is
+                     scoped to these, so an empty list means "nothing to search".
 
     Returns:
-        (answer, source_object_keys, model_name)
+        (answer, source_object_keys, model_name). source_object_keys are the
+        documents whose chunks fed the answer; empty when nothing was retrieved.
     """
-    llm = get_llm()
+    model = get_model_name()
 
-    if documents:
-        context_parts = []
-        for doc in documents:
-            context_parts.append(f"[Document {doc['id']}]\n{doc['content']}")
-        context = "\n\n---\n\n".join(context_parts)
+    if not object_keys:
+        return _NO_CONTEXT_MESSAGE, [], model
 
-        chain = _PROMPT_WITH_CONTEXT | llm | StrOutputParser()
-        answer = chain.invoke({"context": context, "question": question})
-        source_keys = [doc["id"] for doc in documents]
-    else:
-        chain = _PROMPT_NO_CONTEXT | llm | StrOutputParser()
-        answer = chain.invoke({"question": question})
-        source_keys = object_keys
+    retrieved = search(embed_query(question), object_keys, _top_k())
+    if not retrieved:
+        return _NO_CONTEXT_MESSAGE, [], model
 
-    return answer.strip(), source_keys, get_model_name()
+    context = "\n\n---\n\n".join(f"[Source: {chunk['object_key']}]\n{chunk['text']}" for chunk in retrieved)
+    chain = _PROMPT | get_llm() | StrOutputParser()
+    answer = chain.invoke({"context": context, "question": question})
+
+    return answer.strip(), _unique_sources(retrieved), model
