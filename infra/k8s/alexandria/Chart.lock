@@ -5,5 +5,8 @@ dependencies:
 - name: postgres
   repository: oci://registry-1.docker.io/cloudpirates
   version: 0.19.5
-digest: sha256:6513f06cd4a184113073a7f0e65c5f9aabeaa63f2e3c18ec6db7cbbd96a558f3
-generated: "2026-05-27T17:01:19.084076962+02:00"
+- name: seaweedfs
+  repository: https://seaweedfs.github.io/seaweedfs/helm
+  version: 4.37.0
+digest: sha256:a534c8b10c58f19a561d65340e4fc222fa715dbab5599af92aaa70ab4c4c20fd
+generated: "2026-06-29T13:11:26.918653469+02:00"

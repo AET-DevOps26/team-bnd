@@ -1,3 +1,7 @@
+global:
+  seaweedfs:
+    createClusterRole: false
+
 replicaCount: 1
 
 image:
@@ -128,3 +132,77 @@ postgres-db:
     limits:
       memory: "2Gi"
       cpu: "1000m"
+
+s3:
+  endpoint: "http://alexandria-seaweedfs-s3:8333"
+  region: "eu-central-1"
+  bucket: "alexandria-storage"
+  accessKey: "admin"
+  secretKey: "s3-secret-password"
+
+seaweedfs:
+  enabled: true
+  master:
+    enabled: true
+    replicas: 1
+    data:
+      type: "persistentVolumeClaim"
+      size: "1Gi"
+    logs:
+      type: "emptyDir"
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        cpu: 100m
+        memory: 128Mi
+  volume:
+    enabled: true
+    replicas: 1
+    dataDirs:
+      - name: data
+        type: "persistentVolumeClaim"
+        size: "10Gi"
+        maxVolumes: 0
+    logs:
+      type: "emptyDir"
+    resources:
+      requests:
+        cpu: 50m
+        memory: 128Mi
+      limits:
+        cpu: 200m
+        memory: 256Mi
+  filer:
+    enabled: true
+    data:
+      type: "persistentVolumeClaim"
+      size: "2Gi"
+    logs:
+      type: "emptyDir"
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        cpu: 100m
+        memory: 128Mi
+  s3:
+    enabled: true
+    port: 8333
+    enableAuth: true
+    credentials:
+      admin:
+        accessKey: "admin"
+        secretKey: "s3-secret-password"
+    createBuckets:
+      - name: "alexandria-storage"
+        anonymousRead: false
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        cpu: 100m
+        memory: 128Mi

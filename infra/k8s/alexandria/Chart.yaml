@@ -15,3 +15,7 @@ dependencies:
     version: 0.19.5
     repository: oci://registry-1.docker.io/cloudpirates
     alias: postgres-db
+  - name: seaweedfs
+    version: "4.37.0"
+    repository: "https://seaweedfs.github.io/seaweedfs/helm"
+    condition: seaweedfs.enabled
