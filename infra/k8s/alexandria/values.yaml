@@ -201,6 +201,14 @@ seaweedfs:
     createBuckets:
       - name: "alexandria-storage"
         anonymousRead: false
+    createBucketsHook:
+      resources:
+        requests:
+          cpu: 50m
+          memory: 64Mi
+        limits:
+          cpu: 100m
+          memory: 128Mi
     resources:
       requests:
         cpu: 50m
