@@ -6,6 +6,7 @@ metadata:
     {{- include "alexandria.labels" . | nindent 4 }}
     app: spring
 data:
+  SPRING_LOG_LEVEL: {{ .Values.spring.logLevel | quote }}
   POSTGRES_HOST: {{ .Values.spring.database.host | quote }}
   POSTGRES_PORT: {{ .Values.spring.database.port | quote }}
   POSTGRES_DB: {{ .Values.spring.database.name | quote }}

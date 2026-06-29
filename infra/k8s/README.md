@@ -77,7 +77,7 @@ kubectl -n alexandria get ingress
 
 # Kubernetes Troubleshooting
 
-**Spring or Keycloak fail postgres password authentication after a reinstall**
+### Spring or Keycloak fail postgres password authentication after a reinstall
 
 The postgres subchart creates a PersistentVolumeClaim that survives `helm uninstall`. On a subsequent install, postgres reuses the existing data directory (with the old password) and ignores the new `POSTGRES_PASSWORD` value, causing spring and keycloak to fail authentication.
 
@@ -90,4 +90,9 @@ helm install alexandria infra/k8s/alexandria \
   --namespace alexandria --create-namespace \
   --dependency-update \
   -f infra/k8s/alexandria/values-secrets.yaml
+```
+### Getting Pod Logs from Cluster Deployment
+To show logs from a remote cluster, you can run
+```bash
+kubectl -n alexandria logs <pod name>
 ```
