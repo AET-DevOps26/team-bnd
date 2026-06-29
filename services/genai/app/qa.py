@@ -34,34 +34,35 @@ _PROMPT_NO_CONTEXT = ChatPromptTemplate.from_messages(
 
 def answer_question(
     question: str,
-    document_ids: list[str],
-    document_contents: list[dict] | None = None,
+    object_keys: list[str],
+    documents: list[dict] | None = None,
 ) -> tuple[str, list[str], str]:
     """Answer a question, optionally grounded in document content.
 
     Args:
         question: The user's question.
-        document_ids: IDs of documents in scope (used as source attribution).
-        document_contents: Optional list of {"id": ..., "content": ...} dicts.
-                           When provided, answers are grounded in the document text.
+        object_keys: Object keys of documents in scope (used as source attribution).
+        documents: Optional list of {"id": <object key>, "content": ...} dicts.
+                   When provided, answers are grounded in the document text and only
+                   the keys that were actually readable are returned as sources.
 
     Returns:
-        (answer, source_document_ids, model_name)
+        (answer, source_object_keys, model_name)
     """
     llm = get_llm()
 
-    if document_contents:
+    if documents:
         context_parts = []
-        for doc in document_contents:
+        for doc in documents:
             context_parts.append(f"[Document {doc['id']}]\n{doc['content']}")
         context = "\n\n---\n\n".join(context_parts)
 
         chain = _PROMPT_WITH_CONTEXT | llm | StrOutputParser()
         answer = chain.invoke({"context": context, "question": question})
-        source_ids = [doc["id"] for doc in document_contents]
+        source_keys = [doc["id"] for doc in documents]
     else:
         chain = _PROMPT_NO_CONTEXT | llm | StrOutputParser()
         answer = chain.invoke({"question": question})
-        source_ids = document_ids
+        source_keys = object_keys
 
-    return answer.strip(), source_ids, get_model_name()
+    return answer.strip(), source_keys, get_model_name()

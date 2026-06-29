@@ -5,7 +5,7 @@ info:
   license:
     name: MIT
     identifier: MIT
-  version: 1.3.0
+  version: 1.4.0
 servers:
   - url: /
     description: Current server
@@ -353,14 +353,14 @@ paths:
   /genai/ask:
     post:
       description: >-
-        Answer a natural language question about a set of documents.
+        Answer a question grounded in the documents stored under the given
+        object keys.
 
 
-        If documentContents is provided, the answer is grounded in the actual
-        document text.
+        Each object key is fetched from storage; keys that cannot be read are
+        skipped so a
 
-        Without it, the model answers from general knowledge and returns all
-        documentIds as sources.
+        single missing or unreadable document does not fail the whole request.
       operationId: ask_genai_ask_post
       requestBody:
         content:
@@ -388,8 +388,8 @@ paths:
   /genai/extract:
     post:
       description: >-
-        Extract named entities (people, dates, topics, organizations) from
-        document text.
+        Extract named entities from the document stored under the given object
+        key.
       operationId: extract_genai_extract_post
       requestBody:
         content:
@@ -449,7 +449,7 @@ paths:
         - hello
   /genai/summarize:
     post:
-      description: Generate a concise summary of the provided document text.
+      description: Summarize the document stored under the given object key.
       operationId: summarize_document_genai_summarize_post
       requestBody:
         content:
@@ -638,39 +638,19 @@ components:
         resultCount:
           type: integer
           format: int32
-    DocumentContent:
-      properties:
-        content:
-          title: Content
-          type: string
-        id:
-          title: Id
-          type: string
-      required:
-        - id
-        - content
-      title: DocumentContent
-      type: object
     GenAiAskRequest:
       properties:
-        documentContents:
-          anyOf:
-            - items:
-                $ref: '#/components/schemas/DocumentContent'
-              type: array
-            - type: 'null'
-          title: Documentcontents
-        documentIds:
+        objectKeys:
           items:
             type: string
-          title: Documentids
+          title: Objectkeys
           type: array
         question:
           title: Question
           type: string
       required:
         - question
-        - documentIds
+        - objectKeys
       title: GenAiAskRequest
       type: object
     GenAiAskResponse:
@@ -681,24 +661,24 @@ components:
         modelUsed:
           title: Modelused
           type: string
-        sourceDocumentIds:
+        sourceObjectKeys:
           items:
             type: string
-          title: Sourcedocumentids
+          title: Sourceobjectkeys
           type: array
       required:
         - answer
-        - sourceDocumentIds
+        - sourceObjectKeys
         - modelUsed
       title: GenAiAskResponse
       type: object
     GenAiExtractRequest:
       properties:
-        content:
-          title: Content
+        objectKey:
+          title: Objectkey
           type: string
       required:
-        - content
+        - objectKey
       title: GenAiExtractRequest
       type: object
     GenAiExtractResponse:
@@ -735,11 +715,11 @@ components:
       type: object
     GenAiSummarizeRequest:
       properties:
-        content:
-          title: Content
+        objectKey:
+          title: Objectkey
           type: string
       required:
-        - content
+        - objectKey
       title: GenAiSummarizeRequest
       type: object
     GenAiSummarizeResponse:

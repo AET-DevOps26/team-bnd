@@ -16,14 +16,14 @@ def test_ask_without_document_contents_returns_answer():
     with patch("app.qa.get_llm", return_value=fake_llm), patch("app.qa.get_model_name", return_value="openai/gpt-oss-120b"):
         from app.qa import answer_question
 
-        answer, source_ids, model = answer_question(
+        answer, source_keys, model = answer_question(
             question="What is the answer?",
-            document_ids=["id-1", "id-2"],
-            document_contents=None,
+            object_keys=["id-1", "id-2"],
+            documents=None,
         )
 
     assert answer == "The answer is 42."
-    assert source_ids == ["id-1", "id-2"]
+    assert source_keys == ["id-1", "id-2"]
     assert model == "openai/gpt-oss-120b"
 
 
@@ -33,17 +33,17 @@ def test_ask_with_document_contents_uses_context():
     with patch("app.qa.get_llm", return_value=fake_llm), patch("app.qa.get_model_name", return_value="openai/gpt-oss-120b"):
         from app.qa import answer_question
 
-        answer, source_ids, model = answer_question(
+        answer, source_keys, model = answer_question(
             question="What was the revenue growth?",
-            document_ids=["doc-1", "doc-2"],
-            document_contents=[
+            object_keys=["doc-1", "doc-2"],
+            documents=[
                 {"id": "doc-1", "content": "Q4 revenue grew by 15% year-over-year."},
                 {"id": "doc-2", "content": "Operating costs remained stable."},
             ],
         )
 
     assert "15%" in answer
-    assert set(source_ids) == {"doc-1", "doc-2"}
+    assert set(source_keys) == {"doc-1", "doc-2"}
     assert model == "openai/gpt-oss-120b"
 
 
@@ -53,14 +53,14 @@ def test_ask_with_document_contents_returns_only_content_ids():
     with patch("app.qa.get_llm", return_value=fake_llm), patch("app.qa.get_model_name", return_value="test-model"):
         from app.qa import answer_question
 
-        _, source_ids, _ = answer_question(
+        _, source_keys, _ = answer_question(
             question="Something?",
-            document_ids=["all-1", "all-2", "all-3"],
-            document_contents=[{"id": "content-doc", "content": "relevant text"}],
+            object_keys=["all-1", "all-2", "all-3"],
+            documents=[{"id": "content-doc", "content": "relevant text"}],
         )
 
-    # when content is provided, source_ids come from the content, not document_ids
-    assert source_ids == ["content-doc"]
+    # when content is provided, source_keys come from the content, not document_ids
+    assert source_keys == ["content-doc"]
 
 
 def test_ask_strips_whitespace_from_answer():

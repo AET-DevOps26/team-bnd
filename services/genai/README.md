@@ -2,16 +2,20 @@
 
 Python/FastAPI microservice for AI-powered document processing. Uses LangChain to call an LLM for summarization, entity extraction, and document Q&A.
 
+The processing endpoints take object keys, not raw text. The service downloads the referenced documents from the S3-compatible object storage (the same SeaweedFS bucket the Spring service uploads to), extracts their text (plain UTF-8 or PDF via pypdf), and feeds that to the LLM.
+
 ## Endpoints
 
-| Method | Path               | Description                                          |
-| ------ | ------------------ | ---------------------------------------------------- |
-| GET    | `/genai/health`    | Liveness/readiness probe                             |
-| GET    | `/genai/hello`     | Sanity check, returns a plain string                 |
-| POST   | `/genai/summarize` | Generate a concise summary of document text          |
-| POST   | `/genai/extract`   | Extract named entities (people, dates, topics, orgs) |
-| POST   | `/genai/ask`       | Answer a question, optionally grounded in documents  |
-| GET    | `/genai/metrics`   | Prometheus metrics (in-network scraping only)        |
+| Method | Path               | Description                                                 |
+| ------ | ------------------ | ----------------------------------------------------------- |
+| GET    | `/genai/health`    | Liveness/readiness probe                                    |
+| GET    | `/genai/hello`     | Sanity check, returns a plain string                        |
+| POST   | `/genai/summarize` | Summarize the document at `objectKey`                       |
+| POST   | `/genai/extract`   | Extract named entities from the document at `objectKey`     |
+| POST   | `/genai/ask`       | Answer a question grounded in the documents at `objectKeys` |
+| GET    | `/genai/metrics`   | Prometheus metrics (in-network scraping only)               |
+
+`summarize` and `extract` take `{"objectKey": "..."}`; `ask` takes `{"question": "...", "objectKeys": [...]}` and returns `sourceObjectKeys`. A key that is missing returns 404 (415 if the object is neither UTF-8 text nor a PDF). For `ask`, unreadable keys are skipped so one bad document does not fail the whole request.
 
 FastAPI also exposes `/openapi.json` and `/docs` (Swagger UI) out of the box.
 
