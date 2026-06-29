@@ -134,7 +134,8 @@ postgres-db:
       cpu: "1000m"
 
 s3:
-  endpoint: "http://alexandria-seaweedfs-s3:8333"
+  # endpoint: override to use external S3 (e.g. AWS). Leave empty to auto-derive from release name.
+  endpoint: ""
   region: "eu-central-1"
   bucket: "alexandria-storage"
   accessKey: "admin"

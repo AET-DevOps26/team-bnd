@@ -44,3 +44,7 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- define "alexandria.image" -}}
 {{ .Values.image.registry }}/{{ .Values.image.repository }}/{{ .service }}:{{ .Values.image.tag }}
 {{- end }}
+
+{{- define "alexandria.s3Endpoint" -}}
+http://{{ .Release.Name }}-seaweedfs-s3:{{ .Values.seaweedfs.s3.port }}
+{{- end }}
