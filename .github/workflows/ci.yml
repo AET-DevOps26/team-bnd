@@ -462,6 +462,7 @@ jobs:
           cache-from: type=gha,scope=${{ matrix.service.name }}
           cache-to: type=gha,mode=max,scope=${{ matrix.service.name }}
           provenance: false
+          sbom: ${{ github.event_name == 'push' }}
 
       - name: Run Trivy Scan (Image)
         if: env.RUN_JOB == 'true'
