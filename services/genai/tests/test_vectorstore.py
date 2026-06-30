@@ -16,8 +16,11 @@ import os
 import uuid
 
 import pytest
+from weaviate.exceptions import WeaviateConnectionError, WeaviateGRPCUnavailableError, WeaviateStartUpError
 
 from app.embeddings import Chunk
+
+_UNREACHABLE = (WeaviateConnectionError, WeaviateStartUpError, WeaviateGRPCUnavailableError)
 
 pytestmark = pytest.mark.integration
 
@@ -36,7 +39,7 @@ def store():
     vectorstore = pytest.importorskip("app.vectorstore")
     try:
         vectorstore._client()
-    except Exception as e:  # noqa: BLE001 - any connection failure means "no Weaviate, skip"
+    except _UNREACHABLE as e:
         pytest.skip(f"Weaviate not reachable: {e}")
 
     yield vectorstore
@@ -86,6 +89,7 @@ def test_search_is_scoped_to_requested_keys(store):
         store.index_chunks(key_b, [Chunk(key_b, 0, "b")], [_vec(1.0, 0.0)])
 
         hits = store.search(_vec(1.0, 0.0), [key_a], 10)
+        assert hits
         assert all(h["object_key"] == key_a for h in hits)
     finally:
         store.delete_document(key_a)

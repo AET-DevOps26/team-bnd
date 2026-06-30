@@ -7,7 +7,12 @@ metadata:
     app: weaviate
     app.kubernetes.io/component: vector-database
 spec:
-  replicas: {{ .Values.replicaCount }}
+  # Single replica against one ReadWriteOnce PVC. Recreate (not the default
+  # RollingUpdate) so the old pod releases the volume before the new one starts,
+  # otherwise an update deadlocks on the volume attachment.
+  replicas: {{ .Values.weaviate.replicaCount | default 1 }}
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       {{- include "alexandria.selectorLabels" . | nindent 6 }}

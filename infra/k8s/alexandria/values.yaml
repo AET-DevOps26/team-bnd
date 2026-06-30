@@ -53,6 +53,8 @@ genai:
 
 weaviate:
   url: ""
+  grpcPort: 50051
+  replicaCount: 1
   image:
     repository: semitechnologies/weaviate
     tag: 1.38.2

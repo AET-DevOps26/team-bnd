@@ -98,7 +98,9 @@ def index_chunks(object_key: str, chunks: list[Chunk], vectors: list[list[float]
         )
         for chunk, vector in zip(chunks, vectors, strict=True)
     ]
-    collection.data.insert_many(objects)
+    result = collection.data.insert_many(objects)
+    if result.has_errors:
+        raise RuntimeError(f"failed to index {len(result.errors)} of {len(objects)} chunks for {object_key}: {result.errors}")
     return len(objects)
 
 
