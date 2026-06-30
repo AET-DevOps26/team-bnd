@@ -5,7 +5,7 @@ info:
   license:
     name: MIT
     identifier: MIT
-  version: 1.5.0
+  version: 1.5.1
 servers:
   - url: /
     description: Current server
@@ -129,6 +129,39 @@ paths:
                 $ref: '#/components/schemas/QAInteraction'
       security:
         - bearerAuth: []
+  /api/v1/users/me/preferences:
+    patch:
+      tags:
+        - Users
+      summary: Update user preferences
+      operationId: updateUserPreferences
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePreferencesRequest'
+        required: true
+      responses:
+        '200':
+          description: User preferences updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserPreferencesDto'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserPreferencesDto'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserPreferencesDto'
+      security:
+        - bearerAuth: []
   /hello:
     get:
       tags:
@@ -150,6 +183,27 @@ paths:
               schema:
                 type: string
       security: []
+  /api/v1/users/me:
+    get:
+      tags:
+        - Users
+      summary: Get user profile
+      operationId: userProfile
+      responses:
+        '200':
+          description: User profile retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfileDto'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfileDto'
+      security:
+        - bearerAuth: []
   /api/v1/knowledgebase/search:
     get:
       tags:
@@ -706,6 +760,39 @@ components:
           type: string
           format: date-time
         modelUsed:
+          type: string
+    UpdatePreferencesRequest:
+      type: object
+      properties:
+        darkTheme:
+          type: boolean
+        language:
+          type: string
+          maxLength: 5
+          minLength: 2
+    UserPreferencesDto:
+      type: object
+      properties:
+        darkTheme:
+          type: boolean
+        language:
+          type: string
+    UserProfileDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        oidcSubject:
+          type: string
+        username:
+          type: string
+        email:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        preferences:
           type: string
     SearchQuery:
       type: object
