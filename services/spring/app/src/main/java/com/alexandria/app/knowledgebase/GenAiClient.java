@@ -18,8 +18,10 @@ public class GenAiClient {
     public GenAiClient(@Value("${genai.base-url:http://localhost:8000}") String baseUrl) {
         HttpClient httpClient = HttpClient.newBuilder()
                 .version(HttpClient.Version.HTTP_1_1)
+                .connectTimeout(java.time.Duration.ofSeconds(5))
                 .build();
         JdkClientHttpRequestFactory factory = new JdkClientHttpRequestFactory(httpClient);
+        factory.setReadTimeout(java.time.Duration.ofSeconds(30));
         this.restClient = RestClient.builder()
                 .requestFactory(factory)
                 .baseUrl(baseUrl)
