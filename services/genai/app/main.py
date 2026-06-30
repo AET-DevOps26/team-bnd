@@ -115,6 +115,14 @@ def _load_document(object_key: str) -> str:
     return text
 
 
+# Error responses _load_document can return, declared so they show up in the
+# OpenAPI spec for every endpoint that loads a document.
+_DOCUMENT_ERROR_RESPONSES = {
+    404: {"description": "Object not found"},
+    415: {"description": "Object is not a supported file type"},
+}
+
+
 # --- endpoints ---
 
 
@@ -134,7 +142,7 @@ def hello() -> str:
     return "Hello from Alexandria GenAI!"
 
 
-@app.post("/genai/summarize", tags=["ai"], response_model=GenAiSummarizeResponse, openapi_extra={"security": []})
+@app.post("/genai/summarize", tags=["ai"], response_model=GenAiSummarizeResponse, responses=_DOCUMENT_ERROR_RESPONSES, openapi_extra={"security": []})
 def summarize_document(request: GenAiSummarizeRequest) -> GenAiSummarizeResponse:
     """Summarize the document stored under the given object key."""
     content = _load_document(request.objectKey)
@@ -142,7 +150,7 @@ def summarize_document(request: GenAiSummarizeRequest) -> GenAiSummarizeResponse
     return GenAiSummarizeResponse(summary=summary, modelUsed=model)
 
 
-@app.post("/genai/extract", tags=["ai"], response_model=GenAiExtractResponse, openapi_extra={"security": []})
+@app.post("/genai/extract", tags=["ai"], response_model=GenAiExtractResponse, responses=_DOCUMENT_ERROR_RESPONSES, openapi_extra={"security": []})
 def extract(request: GenAiExtractRequest) -> GenAiExtractResponse:
     """Extract named entities from the document stored under the given object key."""
     content = _load_document(request.objectKey)
@@ -167,7 +175,7 @@ def ask(request: GenAiAskRequest) -> GenAiAskResponse:
     return GenAiAskResponse(answer=answer, sourceObjectKeys=source_keys, modelUsed=model)
 
 
-@app.post("/genai/index", tags=["ai"], response_model=GenAiIndexResponse, openapi_extra={"security": []})
+@app.post("/genai/index", tags=["ai"], response_model=GenAiIndexResponse, responses=_DOCUMENT_ERROR_RESPONSES, openapi_extra={"security": []})
 def index(request: GenAiIndexRequest) -> GenAiIndexResponse:
     """Chunk, embed, and index the document at the given object key into Weaviate.
 

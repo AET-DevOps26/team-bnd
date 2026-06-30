@@ -7,6 +7,7 @@ running services are needed.
 import os
 from unittest.mock import patch
 
+import pytest
 from langchain_core.messages import AIMessage
 from langchain_core.runnables import RunnableLambda
 
@@ -94,6 +95,17 @@ def test_top_k_is_read_from_env():
         answer_question("q", ["doc-1"])
 
     assert captured["k"] == 9
+
+
+def test_answer_question_rejects_invalid_top_k():
+    with (
+        patch.dict(os.environ, {"RAG_TOP_K": "abc"}),
+        patch("app.qa.embed_query", return_value=[0.1]),
+        patch("app.qa.search", return_value=[]),
+        patch("app.qa.get_model_name", return_value="m"),
+    ):
+        with pytest.raises(RuntimeError, match="RAG_TOP_K"):
+            answer_question("q", ["doc-1"])
 
 
 def test_answer_is_stripped():

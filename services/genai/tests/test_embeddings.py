@@ -7,6 +7,8 @@ mirroring the LLM-mocked tests for summarize/qa.
 import os
 from unittest.mock import patch
 
+import pytest
+
 from app.embeddings import (
     Chunk,
     chunk_text,
@@ -61,6 +63,12 @@ def test_chunk_text_single_short_chunk():
     assert chunks[0].chunk_index == 0
 
 
+def test_chunk_text_rejects_invalid_chunk_size():
+    with patch.dict(os.environ, {"CHUNK_SIZE": "abc"}):
+        with pytest.raises(RuntimeError, match="CHUNK_SIZE"):
+            chunk_text("some text to split", "k")
+
+
 # --- provider selection ---
 
 
@@ -70,6 +78,45 @@ def test_get_embeddings_defaults_to_logos():
         client = get_embeddings()
 
     assert type(client).__name__ == "OpenAIEmbeddings"
+
+
+def test_embedding_creds_default_to_provider_when_nothing_set():
+    with patch("langchain_openai.OpenAIEmbeddings") as mock_emb, patch.dict(os.environ, {"EMBEDDING_PROVIDER": "logos"}, clear=False):
+        for var in ("EMBEDDING_BASE_URL", "LLM_BASE_URL", "EMBEDDING_API_KEY", "LLM_API_KEY"):
+            os.environ.pop(var, None)
+        get_embeddings()
+
+    kwargs = mock_emb.call_args.kwargs
+    assert kwargs["base_url"] == "https://logos.aet.cit.tum.de/v1"
+    assert kwargs["api_key"] == ""
+
+
+def test_embedding_creds_reuse_llm_vars_when_no_override():
+    env = {"EMBEDDING_PROVIDER": "logos", "LLM_BASE_URL": "http://llm.local/v1", "LLM_API_KEY": "lg-llm"}
+    with patch("langchain_openai.OpenAIEmbeddings") as mock_emb, patch.dict(os.environ, env, clear=False):
+        os.environ.pop("EMBEDDING_BASE_URL", None)
+        os.environ.pop("EMBEDDING_API_KEY", None)
+        get_embeddings()
+
+    kwargs = mock_emb.call_args.kwargs
+    assert kwargs["base_url"] == "http://llm.local/v1"
+    assert kwargs["api_key"] == "lg-llm"
+
+
+def test_embedding_specific_vars_override_llm_vars():
+    env = {
+        "EMBEDDING_PROVIDER": "openai",
+        "LLM_BASE_URL": "http://llm.local/v1",
+        "LLM_API_KEY": "lg-llm",
+        "EMBEDDING_BASE_URL": "https://api.openai.com/v1",
+        "EMBEDDING_API_KEY": "sk-emb",
+    }
+    with patch("langchain_openai.OpenAIEmbeddings") as mock_emb, patch.dict(os.environ, env):
+        get_embeddings()
+
+    kwargs = mock_emb.call_args.kwargs
+    assert kwargs["base_url"] == "https://api.openai.com/v1"
+    assert kwargs["api_key"] == "sk-emb"
 
 
 def test_get_embeddings_ollama_selectable():

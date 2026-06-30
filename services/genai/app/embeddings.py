@@ -30,6 +30,8 @@ from dataclasses import dataclass
 from langchain_core.embeddings import Embeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
+from app.env import int_env
+
 _LOGOS_BASE_URL = "https://logos.aet.cit.tum.de/v1"
 _OPENAI_BASE_URL = "https://api.openai.com/v1"
 
@@ -50,11 +52,6 @@ class Chunk:
     text: str
 
 
-def _int_env(name: str, default: int) -> int:
-    raw = os.getenv(name)
-    return int(raw) if raw else default
-
-
 def chunk_text(text: str, object_key: str) -> list[Chunk]:
     """Split a document's text into overlapping chunks tagged with their source.
 
@@ -65,8 +62,8 @@ def chunk_text(text: str, object_key: str) -> list[Chunk]:
         return []
 
     splitter = RecursiveCharacterTextSplitter(
-        chunk_size=_int_env("CHUNK_SIZE", _DEFAULT_CHUNK_SIZE),
-        chunk_overlap=_int_env("CHUNK_OVERLAP", _DEFAULT_CHUNK_OVERLAP),
+        chunk_size=int_env("CHUNK_SIZE", _DEFAULT_CHUNK_SIZE, minimum=1),
+        chunk_overlap=int_env("CHUNK_OVERLAP", _DEFAULT_CHUNK_OVERLAP, minimum=0),
     )
     pieces = splitter.split_text(text)
     return [Chunk(object_key=object_key, chunk_index=i, text=piece) for i, piece in enumerate(pieces)]
@@ -80,18 +77,24 @@ def get_embeddings() -> Embeddings:
         from langchain_openai import OpenAIEmbeddings
 
         if provider == "logos":
-            base_url = os.getenv("LLM_BASE_URL", _LOGOS_BASE_URL)
+            default_base_url = _LOGOS_BASE_URL
             model = os.getenv("EMBEDDING_MODEL", _DEFAULT_LOGOS_MODEL)
         else:
-            base_url = os.getenv("LLM_BASE_URL", _OPENAI_BASE_URL)
+            default_base_url = _OPENAI_BASE_URL
             model = os.getenv("EMBEDDING_MODEL", _DEFAULT_OPENAI_MODEL)
+
+        # Embeddings can run on a different endpoint than the chat model. Prefer
+        # the embedding-specific vars, fall back to the chat client's, then the
+        # provider default, so existing single-provider setups keep working.
+        base_url = os.getenv("EMBEDDING_BASE_URL") or os.getenv("LLM_BASE_URL", default_base_url)
+        api_key = os.getenv("EMBEDDING_API_KEY") or os.getenv("LLM_API_KEY", "")
 
         # check_embedding_ctx_length forces a tiktoken tokenization pass that
         # assumes an OpenAI model. The Logos-hosted Qwen model isn't one, so we
         # disable it and rely on our own chunking to keep inputs within range.
         return OpenAIEmbeddings(
             base_url=base_url,
-            api_key=os.getenv("LLM_API_KEY", ""),
+            api_key=api_key,
             model=model,
             check_embedding_ctx_length=False,
         )

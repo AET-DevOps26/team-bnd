@@ -39,17 +39,19 @@ The service is configured entirely via environment variables. Copy `.env.example
 
 ## Embeddings and chunking (RAG)
 
-Document text is split into overlapping chunks and embedded into vectors for the RAG pipeline (see `app/embeddings.py`). The embedding provider is selected the same way as the LLM, and the logos/openai providers reuse `LLM_BASE_URL` and `LLM_API_KEY` since embeddings run on the same gateway as the chat model.
+Document text is split into overlapping chunks and embedded into vectors for the RAG pipeline (see `app/embeddings.py`). The embedding provider is selected the same way as the LLM. By default the logos/openai providers reuse `LLM_BASE_URL` and `LLM_API_KEY` (so a single-provider setup needs no extra config), but you can point embeddings at a different endpoint/key via `EMBEDDING_BASE_URL` / `EMBEDDING_API_KEY`, e.g. to run chat on Logos and embeddings on OpenAI.
 
-| Variable             | Default                   | Description                                    |
-| -------------------- | ------------------------- | ---------------------------------------------- |
-| `EMBEDDING_PROVIDER` | `logos`                   | `logos`, `openai`, or `ollama`                 |
-| `EMBEDDING_MODEL`    | `Qwen/Qwen3-Embedding-8B` | Embedding model id (provider-specific default) |
-| `CHUNK_SIZE`         | `1000`                    | Characters per chunk                           |
-| `CHUNK_OVERLAP`      | `200`                     | Character overlap between consecutive chunks   |
-| `WEAVIATE_URL`       | `http://weaviate:8080`    | Weaviate HTTP endpoint                         |
-| `WEAVIATE_GRPC_PORT` | `50051`                   | Weaviate gRPC port (batch/query)               |
-| `RAG_TOP_K`          | `5`                       | Chunks retrieved per question in `/genai/ask`  |
+| Variable             | Default                          | Description                                    |
+| -------------------- | -------------------------------- | ---------------------------------------------- |
+| `EMBEDDING_PROVIDER` | `logos`                          | `logos`, `openai`, or `ollama`                 |
+| `EMBEDDING_MODEL`    | `Qwen/Qwen3-Embedding-8B`        | Embedding model id (provider-specific default) |
+| `EMBEDDING_BASE_URL` | _(falls back to `LLM_BASE_URL`)_ | Override the embedding endpoint                |
+| `EMBEDDING_API_KEY`  | _(falls back to `LLM_API_KEY`)_  | Override the embedding API key                 |
+| `CHUNK_SIZE`         | `1000`                           | Characters per chunk                           |
+| `CHUNK_OVERLAP`      | `200`                            | Character overlap between consecutive chunks   |
+| `WEAVIATE_URL`       | `http://weaviate:8080`           | Weaviate HTTP endpoint                         |
+| `WEAVIATE_GRPC_PORT` | `50051`                          | Weaviate gRPC port (batch/query)               |
+| `RAG_TOP_K`          | `5`                              | Chunks retrieved per question in `/genai/ask`  |
 
 OpenAI defaults to `text-embedding-3-small`, Ollama to `nomic-embed-text`. Each provider/model emits a different vector size, and the Weaviate collection stores whatever the configured embedder produces rather than pinning a fixed dimension. Weaviate locks the collection to the first vector's width, so switching embedding providers to one with a different dimension means dropping and re-indexing the collection.
 

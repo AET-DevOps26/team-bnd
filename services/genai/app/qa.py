@@ -8,12 +8,11 @@ not the whole set the caller passed in.
   RAG_TOP_K   number of chunks to retrieve (default 5)
 """
 
-import os
-
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 
 from app.embeddings import embed_query
+from app.env import int_env
 from app.llm import get_llm, get_model_name
 from app.vectorstore import search
 
@@ -38,8 +37,7 @@ _PROMPT = ChatPromptTemplate.from_messages(
 
 
 def _top_k() -> int:
-    raw = os.getenv("RAG_TOP_K")
-    return int(raw) if raw else _DEFAULT_TOP_K
+    return int_env("RAG_TOP_K", _DEFAULT_TOP_K, minimum=1)
 
 
 def _unique_sources(chunks: list[dict]) -> list[str]:

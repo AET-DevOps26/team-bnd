@@ -102,3 +102,11 @@ def test_delete_is_idempotent(store):
 
     assert store.delete_document(key) == 1
     assert store.delete_document(key) == 0
+
+
+def test_index_chunks_rejects_mismatched_object_key():
+    # Validation happens before any Weaviate call, so this needs no live instance.
+    from app import vectorstore
+
+    with pytest.raises(ValueError, match="must belong to object_key"):
+        vectorstore.index_chunks("doc-a", [Chunk("doc-b", 0, "x")], [_vec(1.0)])

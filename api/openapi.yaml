@@ -404,6 +404,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/GenAiExtractResponse'
           description: Successful Response
+        '404':
+          description: Object not found
+        '415':
+          description: Object is not a supported file type
         '422':
           content:
             application/json:
@@ -472,6 +476,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/GenAiIndexResponse'
           description: Successful Response
+        '404':
+          description: Object not found
+        '415':
+          description: Object is not a supported file type
         '422':
           content:
             application/json:
@@ -537,6 +545,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/GenAiSummarizeResponse'
           description: Successful Response
+        '404':
+          description: Object not found
+        '415':
+          description: Object is not a supported file type
         '422':
           content:
             application/json:

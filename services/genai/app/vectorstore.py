@@ -21,9 +21,11 @@ import weaviate
 from weaviate.classes.config import Configure, DataType, Property
 from weaviate.classes.data import DataObject
 from weaviate.classes.query import Filter, MetadataQuery
+from weaviate.exceptions import UnexpectedStatusCodeError
 from weaviate.util import generate_uuid5
 
 from app.embeddings import Chunk
+from app.env import int_env
 
 COLLECTION_NAME = "DocumentChunk"
 
@@ -36,7 +38,7 @@ def _connection_params() -> dict:
     secure = parsed.scheme == "https"
     host = parsed.hostname or "weaviate"
     http_port = parsed.port or (443 if secure else 80)
-    grpc_port = int(os.getenv("WEAVIATE_GRPC_PORT", str(_DEFAULT_GRPC_PORT)))
+    grpc_port = int_env("WEAVIATE_GRPC_PORT", _DEFAULT_GRPC_PORT, minimum=1)
     return {
         "http_host": host,
         "http_port": http_port,
@@ -55,18 +57,27 @@ def _client() -> weaviate.WeaviateClient:
 
 
 def _ensure_collection(client: weaviate.WeaviateClient) -> None:
-    """Create the chunk collection on first use if it doesn't exist yet."""
+    """Create the chunk collection on first use if it doesn't exist yet.
+
+    exists() + create() isn't atomic, so two concurrent first requests can race
+    to create it. If create fails but the collection now exists, another worker
+    won the race and we treat it as success; otherwise the failure is real.
+    """
     if client.collections.exists(COLLECTION_NAME):
         return
-    client.collections.create(
-        name=COLLECTION_NAME,
-        vector_config=Configure.Vectors.self_provided(),
-        properties=[
-            Property(name="text", data_type=DataType.TEXT),
-            Property(name="object_key", data_type=DataType.TEXT),
-            Property(name="chunk_index", data_type=DataType.INT),
-        ],
-    )
+    try:
+        client.collections.create(
+            name=COLLECTION_NAME,
+            vector_config=Configure.Vectors.self_provided(),
+            properties=[
+                Property(name="text", data_type=DataType.TEXT),
+                Property(name="object_key", data_type=DataType.TEXT),
+                Property(name="chunk_index", data_type=DataType.INT),
+            ],
+        )
+    except UnexpectedStatusCodeError:
+        if not client.collections.exists(COLLECTION_NAME):
+            raise
 
 
 def _chunk_uuid(object_key: str, chunk_index: int) -> str:
@@ -83,6 +94,8 @@ def index_chunks(object_key: str, chunks: list[Chunk], vectors: list[list[float]
     """
     if len(chunks) != len(vectors):
         raise ValueError(f"chunks ({len(chunks)}) and vectors ({len(vectors)}) length mismatch")
+    if any(chunk.object_key != object_key for chunk in chunks):
+        raise ValueError(f"all chunks must belong to object_key {object_key!r}")
 
     collection = _client().collections.get(COLLECTION_NAME)
     delete_document(object_key)
@@ -92,9 +105,9 @@ def index_chunks(object_key: str, chunks: list[Chunk], vectors: list[list[float]
 
     objects = [
         DataObject(
-            properties={"text": chunk.text, "object_key": chunk.object_key, "chunk_index": chunk.chunk_index},
+            properties={"text": chunk.text, "object_key": object_key, "chunk_index": chunk.chunk_index},
             vector=vector,
-            uuid=_chunk_uuid(chunk.object_key, chunk.chunk_index),
+            uuid=_chunk_uuid(object_key, chunk.chunk_index),
         )
         for chunk, vector in zip(chunks, vectors, strict=True)
     ]
