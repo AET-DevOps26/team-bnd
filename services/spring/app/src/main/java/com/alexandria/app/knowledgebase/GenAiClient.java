@@ -5,8 +5,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
+import org.springframework.http.client.JdkClientHttpRequestFactory;
 
 import java.util.List;
+import java.net.http.HttpClient;
 
 @Component
 public class GenAiClient {
@@ -14,7 +16,12 @@ public class GenAiClient {
     private final RestClient restClient;
 
     public GenAiClient(@Value("${genai.base-url:http://localhost:8000}") String baseUrl) {
+        HttpClient httpClient = HttpClient.newBuilder()
+                .version(HttpClient.Version.HTTP_1_1)
+                .build();
+        JdkClientHttpRequestFactory factory = new JdkClientHttpRequestFactory(httpClient);
         this.restClient = RestClient.builder()
+                .requestFactory(factory)
                 .baseUrl(baseUrl)
                 .build();
     }
@@ -46,17 +53,24 @@ public class GenAiClient {
                 .body(AskResponse.class);
     }
 
-    public record SummarizeRequest(String objectKey) {}
+    public record SummarizeRequest(String objectKey) {
+    }
 
-    public record SummarizeResponse(String summary, String modelUsed) {}
+    public record SummarizeResponse(String summary, String modelUsed) {
+    }
 
-    public record ExtractRequest(String objectKey) {}
+    public record ExtractRequest(String objectKey) {
+    }
 
-    public record ExtractResponse(List<ExtractedEntityDto> entities, String modelUsed) {}
+    public record ExtractResponse(List<ExtractedEntityDto> entities, String modelUsed) {
+    }
 
-    public record ExtractedEntityDto(String name, EntityType type, Double confidence) {}
+    public record ExtractedEntityDto(String name, EntityType type, Double confidence) {
+    }
 
-    public record AskRequest(String question, List<String> objectKeys) {}
+    public record AskRequest(String question, List<String> objectKeys) {
+    }
 
-    public record AskResponse(String answer, List<String> sourceObjectKeys, String modelUsed) {}
+    public record AskResponse(String answer, List<String> sourceObjectKeys, String modelUsed) {
+    }
 }
