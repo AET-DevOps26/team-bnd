@@ -1,4 +1,4 @@
-package com.alexandria.app.user;
+package com.alexandria.app.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.context.annotation.Bean;

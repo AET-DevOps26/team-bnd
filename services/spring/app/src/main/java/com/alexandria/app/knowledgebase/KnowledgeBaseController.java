@@ -1,8 +1,13 @@
 package com.alexandria.app.knowledgebase;
 
 import com.alexandria.app.document.Document;
+import com.alexandria.app.document.ExtractedEntity;
+import com.alexandria.app.document.Summary;
 import com.alexandria.app.document.TagSource;
 import com.alexandria.app.exception.UserNotFoundException;
+import com.alexandria.app.knowledgebase.dto.DocumentEntityDto;
+import com.alexandria.app.knowledgebase.dto.DocumentEntityResponseDto;
+import com.alexandria.app.knowledgebase.dto.DocumentSummaryDto;
 import com.alexandria.app.qa.QAInteraction;
 import com.alexandria.app.search.SearchQuery;
 import com.alexandria.app.user.User;
@@ -149,6 +154,65 @@ public class KnowledgeBaseController {
       @PathVariable UUID documentId, @PathVariable UUID tagId, Principal principal) {
     User user = getCurrentUser(principal);
     knowledgeBaseService.removeTag(documentId, user.getId(), tagId);
+    return ResponseEntity.noContent().build();
+  }
+
+  @GetMapping("/documents/{id}/summary")
+  @Operation(summary = "Get document summary")
+  @ApiResponse(responseCode = "200", description = "Document summary retrieved")
+  @ApiResponse(responseCode = "401", description = "Unauthorized")
+  @ApiResponse(responseCode = "404", description = "Document not found")
+  public ResponseEntity<DocumentSummaryDto> getSummary(@PathVariable UUID id, Principal principal) {
+    User user = getCurrentUser(principal);
+    Summary summary = knowledgeBaseService.getDocumentSummary(id, user.getId());
+    DocumentSummaryDto summaryDto =
+        new DocumentSummaryDto(
+            summary.getContent(), summary.getModelUsed(), summary.getGeneratedAt());
+    return ResponseEntity.ok(summaryDto);
+  }
+
+  @GetMapping("/documents/{id}/entities")
+  @Operation(summary = "Get document entities")
+  @ApiResponse(responseCode = "200", description = "Document entities retrieved")
+  @ApiResponse(responseCode = "401", description = "Unauthorized")
+  @ApiResponse(responseCode = "404", description = "Document not found")
+  public ResponseEntity<DocumentEntityResponseDto> getEntities(
+      @PathVariable UUID id, Principal principal) {
+    User user = getCurrentUser(principal);
+    List<ExtractedEntity> extractedEntities =
+        knowledgeBaseService.getDocumentEntities(id, user.getId());
+    List<DocumentEntityDto> entityList =
+        extractedEntities.stream()
+            .map(
+                entity ->
+                    new DocumentEntityDto(
+                        entity.getName(), entity.getType(), entity.getConfidence()))
+            .toList();
+
+    DocumentEntityResponseDto documentEntityResponseDto =
+        new DocumentEntityResponseDto(id, entityList);
+    return ResponseEntity.ok(documentEntityResponseDto);
+  }
+
+  @PostMapping("/documents/{id}/reprocess/summary")
+  @Operation(summary = "Reprocess document summary")
+  @ApiResponse(responseCode = "200", description = "Document summary reprocessed")
+  @ApiResponse(responseCode = "401", description = "Unauthorized")
+  @ApiResponse(responseCode = "404", description = "Document not found")
+  public ResponseEntity<Void> reprocessSummary(@PathVariable UUID id, Principal principal) {
+    User user = getCurrentUser(principal);
+    knowledgeBaseService.reprocessSummary(id, user.getId());
+    return ResponseEntity.noContent().build();
+  }
+
+  @PostMapping("/documents/{id}/reprocess/entities")
+  @Operation(summary = "Reprocess document entities")
+  @ApiResponse(responseCode = "200", description = "Document entities reprocessed")
+  @ApiResponse(responseCode = "401", description = "Unauthorized")
+  @ApiResponse(responseCode = "404", description = "Document not found")
+  public ResponseEntity<Void> reprocessEntities(@PathVariable UUID id, Principal principal) {
+    User user = getCurrentUser(principal);
+    knowledgeBaseService.reprocessEntities(id, user.getId());
     return ResponseEntity.noContent().build();
   }
 

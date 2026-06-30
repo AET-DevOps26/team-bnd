@@ -65,8 +65,8 @@ public class KnowledgeBaseService {
     document = documentRepository.save(document);
 
     if (textContent != null && !textContent.isBlank()) {
-      processSummary(document, objectKey);
-      processEntities(document, objectKey);
+      processSummary(document);
+      processEntities(document);
     }
 
     return document;
@@ -86,15 +86,15 @@ public class KnowledgeBaseService {
     document = documentRepository.save(document);
     objectStorageService.upload(objectKey, file);
 
-    processSummary(document, objectKey);
-    processEntities(document, objectKey);
+    processSummary(document);
+    processEntities(document);
 
     return document;
   }
 
-  private void processSummary(Document document, String objectKey) {
+  private void processSummary(Document document) {
     try {
-      GenAiClient.SummarizeResponse response = genAiClient.summarize(objectKey);
+      GenAiClient.SummarizeResponse response = genAiClient.summarize(document.getObjectKey());
       Summary summary = new Summary(document, response.summary(), response.modelUsed());
       summaryRepository.save(summary);
       document.setSummary(summary);
@@ -103,9 +103,9 @@ public class KnowledgeBaseService {
     }
   }
 
-  private void processEntities(Document document, String objectKey) {
+  private void processEntities(Document document) {
     try {
-      GenAiClient.ExtractResponse response = genAiClient.extract(objectKey);
+      GenAiClient.ExtractResponse response = genAiClient.extract(document.getObjectKey());
       for (GenAiClient.ExtractedEntityDto dto : response.entities()) {
         ExtractedEntity entity =
             new ExtractedEntity(document, dto.name(), dto.type(), dto.confidence());
@@ -129,6 +129,26 @@ public class KnowledgeBaseService {
       throw new DocumentNotFoundException(id);
     }
     return document;
+  }
+
+  public void reprocessSummary(UUID id, UUID ownerId) {
+    Document document = getDocument(id, ownerId);
+    processSummary(document);
+  }
+
+  public void reprocessEntities(UUID id, UUID ownerId) {
+    Document document = getDocument(id, ownerId);
+    processEntities(document);
+  }
+
+  public Summary getDocumentSummary(UUID id, UUID ownerId) {
+    Document document = getDocument(id, ownerId);
+    return document.getSummary();
+  }
+
+  public List<ExtractedEntity> getDocumentEntities(UUID id, UUID ownerId) {
+    Document document = getDocument(id, ownerId);
+    return document.getExtractedEntities();
   }
 
   @Transactional(readOnly = true)

@@ -55,6 +55,50 @@ paths:
           description: Document not found
       security:
         - bearerAuth: []
+  /api/v1/knowledgebase/documents/{id}/reprocess/summary:
+    post:
+      tags:
+        - KnowledgeBase
+      summary: Reprocess document summary
+      operationId: reprocessSummary
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Document summary reprocessed
+        '401':
+          description: Unauthorized
+        '404':
+          description: Document not found
+      security:
+        - bearerAuth: []
+  /api/v1/knowledgebase/documents/{id}/reprocess/entities:
+    post:
+      tags:
+        - KnowledgeBase
+      summary: Reprocess document entities
+      operationId: reprocessEntities
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Document entities reprocessed
+        '401':
+          description: Unauthorized
+        '404':
+          description: Document not found
+      security:
+        - bearerAuth: []
   /api/v1/knowledgebase/documents/upload:
     post:
       tags:
@@ -347,6 +391,74 @@ paths:
           description: Document deleted
         '404':
           description: Document not found
+      security:
+        - bearerAuth: []
+  /api/v1/knowledgebase/documents/{id}/summary:
+    get:
+      tags:
+        - KnowledgeBase
+      summary: Get document summary
+      operationId: getSummary
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Document summary retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentSummaryDto'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentSummaryDto'
+        '404':
+          description: Document not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentSummaryDto'
+      security:
+        - bearerAuth: []
+  /api/v1/knowledgebase/documents/{id}/entities:
+    get:
+      tags:
+        - KnowledgeBase
+      summary: Get document entities
+      operationId: getEntities
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Document entities retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentEntityResponseDto'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentEntityResponseDto'
+        '404':
+          description: Document not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentEntityResponseDto'
       security:
         - bearerAuth: []
   /api/v1/knowledgebase/documents/{id}/download:
@@ -834,6 +946,41 @@ components:
         resultCount:
           type: integer
           format: int32
+    DocumentSummaryDto:
+      type: object
+      properties:
+        summary:
+          type: string
+        modelUsed:
+          type: string
+        generatedAt:
+          type: string
+          format: date-time
+    DocumentEntityDto:
+      type: object
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+          enum:
+            - PERSON
+            - DATE
+            - TOPIC
+            - ORGANIZATION
+        confidence:
+          type: number
+          format: double
+    DocumentEntityResponseDto:
+      type: object
+      properties:
+        documentId:
+          type: string
+          format: uuid
+        entities:
+          type: array
+          items:
+            $ref: '#/components/schemas/DocumentEntityDto'
     GenAiAskRequest:
       properties:
         objectKeys:
