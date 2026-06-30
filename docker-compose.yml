@@ -49,6 +49,7 @@ services:
     image: ghcr.io/aet-devops26/team-bnd/spring:latest
     build: services/spring/
     container_name: spring
+    # kics-scan ignore-block
     environment:
       SPRING_LOG_LEVEL: ${SPRING_LOG_LEVEL:-INFO}
       GENAI_BASE_URL: ${GENAI_BASE_URL:-http://genai:8000}
@@ -102,6 +103,7 @@ services:
     image: ghcr.io/aet-devops26/team-bnd/genai:latest
     build: services/genai/
     container_name: genai
+    # kics-scan ignore-block
     environment:
       GENAI_LOG_LEVEL: ${GENAI_LOG_LEVEL:-info}
       LLM_PROVIDER: ${LLM_PROVIDER:-logos}
@@ -142,6 +144,7 @@ services:
     image: quay.io/keycloak/keycloak:26.6.2
     container_name: keycloak
     command: start-dev --import-realm
+    # kics-scan ignore-block
     environment:
       KC_BOOTSTRAP_ADMIN_USERNAME: ${KC_BOOTSTRAP_ADMIN_USERNAME:-admin}
       KC_BOOTSTRAP_ADMIN_PASSWORD: ${KC_BOOTSTRAP_ADMIN_PASSWORD:-localkcpassword}
@@ -182,6 +185,7 @@ services:
   postgres-db:
     image: postgres:16-alpine
     container_name: postgres-db
+    # kics-scan ignore-block
     environment:
       PGPORT: ${POSTGRES_PORT:-5432}
       POSTGRES_DB: ${POSTGRES_DB:-alexandria}
@@ -256,6 +260,7 @@ services:
     ports:
       - "80:80"
     volumes:
+      # kics-scan ignore-block
       - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:
       - alexandria
@@ -314,6 +319,7 @@ services:
   grafana:
     image: grafana/grafana:13.0.2
     container_name: grafana
+    # kics-scan ignore-block
     environment:
       GF_SERVER_ROOT_URL: /grafana
       GF_SERVER_SERVE_FROM_SUB_PATH: "true"

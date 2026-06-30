@@ -52,6 +52,7 @@ jobs:
       client: ${{ steps.filter.outputs.client }}
       genai: ${{ steps.filter.outputs.genai }}
       docker: ${{ steps.filter.outputs.docker }}
+      infra: ${{ steps.filter.outputs.infra }}
       workflows: ${{ steps.filter.outputs.workflows }}
       docs: ${{ steps.filter.outputs.docs }}
     steps:
@@ -78,6 +79,11 @@ jobs:
               - '**/Dockerfile.*'
               - 'docker-compose.yml'
               - 'docker-compose.*.yml'
+            infra:
+              - 'docker-compose.yml'
+              - 'docker-compose.*.yml'
+              - 'infra/k8s/**'
+              - 'infra/azure/**'
             workflows:
               - '.github/workflows/**'
             docs:
@@ -172,6 +178,72 @@ jobs:
         uses: zizmorcore/zizmor-action@192e21d79ab29983730a13d1382995c2307fbcaa # v0.5.7
         with:
           advanced-security: false
+
+  # ---------------------------------------------------------------------
+  # gitleaks: secret scanning across the full git history. Runs on every
+  # PR and push because a leaked secret can land in any file. Gates the
+  # build: a real secret is a hard stop.
+  # ---------------------------------------------------------------------
+  gitleaks:
+    name: gitleaks (Secret Scan)
+    needs: changes
+    if: github.event_name == 'pull_request' || github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Run gitleaks
+        run: |
+          docker run --rm -v "$PWD:/repo" -w /repo ghcr.io/gitleaks/gitleaks:v8.30.1 \
+            git --verbose --redact --report-format sarif --report-path gitleaks.sarif .
+
+      - name: Upload gitleaks SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: gitleaks.sarif
+          category: gitleaks
+
+  # ---------------------------------------------------------------------
+  # kics: IaC misconfiguration scanner for docker-compose, Helm, and
+  # Terraform. Starts non-gating (report-only) with an allowlist for the
+  # false positives documented in #172. SARIF goes to the Security tab
+  # alongside trivy, gitleaks, and CodeQL.
+  # ---------------------------------------------------------------------
+  kics:
+    name: kics (IaC Security Scan)
+    needs: changes
+    if: needs.changes.outputs.infra == 'true' || github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Run kics Scan
+        uses: checkmarx/kics-action@05aa5eb70eede1355220f4ca5238d96b397e30a6 # v2.1.20
+        with:
+          path: 'docker-compose.yml,infra/k8s/alexandria,infra/azure/terraform'
+          config_path: .kics.yml
+          output_formats: 'sarif'
+          output_path: 'kics-results/'
+          ignore_on_exit: 'results'
+
+      - name: Upload kics SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: kics-results/results.sarif
+          category: kics
 
   # ---------------------------------------------------------------------
   # Spring service: compile, test, package. Matrix-ready for when there
@@ -551,6 +623,8 @@ jobs:
       - lint-dockerfiles
       - lint-workflows
       - zizmor
+      - gitleaks
+      - kics
       - build-spring
       - build-client
       - build-genai

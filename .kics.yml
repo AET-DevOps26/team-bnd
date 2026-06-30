@@ -1,0 +1,6 @@
+# kics configuration. Used by the kics CI job and runnable locally via
+# `kics scan --config .kics.yml`. See https://docs.kics.io/latest/configuration-file/
+
+# Suppressions are applied inline using `# kics-scan ignore-block` comments in the
+# relevant files (docker-compose.yml) rather than global exclusions. This keeps
+# suppressions scoped to the specific findings they address.
