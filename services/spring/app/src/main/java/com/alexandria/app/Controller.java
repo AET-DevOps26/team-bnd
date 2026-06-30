@@ -7,16 +7,15 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-
 @RestController
 @Tag(name = "Health", description = "Liveness and smoke endpoints")
 public class Controller {
-    @GetMapping(path = "/hello", produces = "text/plain")
-    @Operation(summary = "Health check", description = "Returns 'Hello World!' if service is running")
-    @SecurityRequirements
-    @ApiResponse(responseCode = "200", description = "Service is running")
-    @ApiResponse(responseCode = "404", description = "Endpoint not found")
-    public String helloEndpoint() {
-        return "Hello World!";
-    }
+  @GetMapping(path = "/hello", produces = "text/plain")
+  @Operation(summary = "Health check", description = "Returns 'Hello World!' if service is running")
+  @SecurityRequirements
+  @ApiResponse(responseCode = "200", description = "Service is running")
+  @ApiResponse(responseCode = "404", description = "Endpoint not found")
+  public String helloEndpoint() {
+    return "Hello World!";
+  }
 }
