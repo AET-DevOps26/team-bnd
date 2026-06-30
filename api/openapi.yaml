@@ -244,6 +244,18 @@ paths:
                   $ref: '#/components/schemas/SearchQuery'
       security:
         - bearerAuth: []
+    delete:
+      tags:
+        - KnowledgeBase
+      summary: Delete search history
+      operationId: deleteSearchHistory
+      responses:
+        '204':
+          description: Search history deleted
+        '500':
+          description: Internal Server Error
+      security:
+        - bearerAuth: []
   /api/v1/knowledgebase/history/qa:
     get:
       tags:
@@ -259,6 +271,18 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/QAInteraction'
+      security:
+        - bearerAuth: []
+    delete:
+      tags:
+        - KnowledgeBase
+      summary: Delete Q&A history
+      operationId: deleteQAHistory
+      responses:
+        '204':
+          description: Q&A history deleted
+        '500':
+          description: Internal Server Error
       security:
         - bearerAuth: []
   /api/v1/knowledgebase/documents:

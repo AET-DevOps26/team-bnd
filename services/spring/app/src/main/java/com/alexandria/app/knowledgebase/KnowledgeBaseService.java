@@ -206,7 +206,15 @@ public class KnowledgeBaseService {
     return qaInteractionRepository.findByUserIdOrderByTimestampDesc(userId);
   }
 
+  public void deleteQAHistory(UUID userId) {
+    qaInteractionRepository.deleteByUserId(userId);
+  }
+
   public List<SearchQuery> getSearchHistory(UUID userId) {
     return searchQueryRepository.findByUserIdOrderByTimestampDesc(userId);
+  }
+
+  public void deleteSearchHistory(UUID userId) {
+    searchQueryRepository.deleteByUserId(userId);
   }
 }

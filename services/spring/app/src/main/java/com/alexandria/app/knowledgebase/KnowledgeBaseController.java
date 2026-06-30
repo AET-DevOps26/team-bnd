@@ -160,12 +160,32 @@ public class KnowledgeBaseController {
     return ResponseEntity.ok(knowledgeBaseService.getQAHistory(user.getId()));
   }
 
+  @DeleteMapping("/history/qa")
+  @Operation(summary = "Delete Q&A history")
+  @ApiResponse(responseCode = "204", description = "Q&A history deleted")
+  @ApiResponse(responseCode = "500", description = "Internal Server Error")
+  public ResponseEntity<Void> deleteQAHistory(Principal principal) {
+    User user = getCurrentUser(principal);
+    knowledgeBaseService.deleteQAHistory(user.getId());
+    return ResponseEntity.noContent().build();
+  }
+
   @GetMapping("/history/search")
   @Operation(summary = "Get search history")
   @ApiResponse(responseCode = "200", description = "Search history retrieved")
   public ResponseEntity<List<SearchQuery>> getSearchHistory(Principal principal) {
     User user = getCurrentUser(principal);
     return ResponseEntity.ok(knowledgeBaseService.getSearchHistory(user.getId()));
+  }
+
+  @DeleteMapping("/history/search")
+  @Operation(summary = "Delete search history")
+  @ApiResponse(responseCode = "204", description = "Search history deleted")
+  @ApiResponse(responseCode = "500", description = "Internal Server Error")
+  public ResponseEntity<Void> deleteSearchHistory(Principal principal) {
+    User user = getCurrentUser(principal);
+    knowledgeBaseService.deleteSearchHistory(user.getId());
+    return ResponseEntity.noContent().build();
   }
 
   private User getCurrentUser(Principal principal) {
