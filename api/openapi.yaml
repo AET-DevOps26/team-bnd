@@ -5,7 +5,7 @@ info:
   license:
     name: MIT
     identifier: MIT
-  version: 1.4.0
+  version: 1.5.0
 servers:
   - url: /
     description: Current server
