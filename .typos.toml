@@ -1,6 +1,10 @@
 # typos-cli config
 # Docs: https://github.com/crate-ci/typos/blob/master/docs/reference.md
 
+[files]
+# Eclipse format contains misspelled fields. These typos won't be fixed upstream.
+extend-exclude = ["services/spring/app/intellij-style.xml"]
+
 # AKS = Azure Kubernetes Service; typos suggests "ASK".
 [default.extend-words]
 aks = "aks"

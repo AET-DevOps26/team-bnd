@@ -42,13 +42,6 @@ repos:
     hooks:
       - id: gitleaks-docker
 
-  - repo: https://gitlab.developers.cam.ac.uk/uis/devops/continuous-delivery/precommit-google-java-format
-    rev: v1.2.0
-    hooks:
-      - id: google-java-format
-        files: "\\.java$"
-        args: ["-i"]
-
   - repo: local
     hooks:
       - id: genai-openapi
@@ -69,6 +62,12 @@ repos:
         language: node
         additional_dependencies: ["@redocly/cli@2.30.3"]
         files: '^(services/genai/.*\.py|services/spring/.*\.java)$'
+        pass_filenames: false
+      - id: format-java
+        name: Format Java with Spotless
+        entry: services/spring/app/gradlew -p services/spring/app spotlessApply
+        language: system
+        files: "\\.java$"
         pass_filenames: false
       - id: redocly-lint
         name: redocly-lint
