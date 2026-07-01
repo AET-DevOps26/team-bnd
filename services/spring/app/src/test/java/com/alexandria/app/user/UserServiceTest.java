@@ -6,6 +6,7 @@ import com.alexandria.app.exception.UserNotFoundException;
 import com.alexandria.app.knowledgebase.ObjectStorageService;
 import com.alexandria.app.qa.QAInteractionRepository;
 import com.alexandria.app.search.SearchQueryRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -39,6 +40,9 @@ class UserServiceTest {
     @Mock
     private ObjectStorageService objectStorageService;
 
+    @Mock
+    private ObjectMapper objectMapper;
+
     private UserService userService;
 
     @BeforeEach
@@ -48,7 +52,8 @@ class UserServiceTest {
                 documentRepository,
                 qaInteractionRepository,
                 searchQueryRepository,
-                objectStorageService);
+                objectStorageService,
+                objectMapper);
     }
 
     @Test
