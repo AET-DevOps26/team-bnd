@@ -5,9 +5,7 @@ import com.alexandria.app.document.ExtractedEntity;
 import com.alexandria.app.document.Summary;
 import com.alexandria.app.document.TagSource;
 import com.alexandria.app.exception.UserNotFoundException;
-import com.alexandria.app.knowledgebase.dto.DocumentEntityDto;
-import com.alexandria.app.knowledgebase.dto.DocumentEntityResponseDto;
-import com.alexandria.app.knowledgebase.dto.DocumentSummaryDto;
+import com.alexandria.app.knowledgebase.dto.*;
 import com.alexandria.app.qa.QAInteraction;
 import com.alexandria.app.search.SearchQuery;
 import com.alexandria.app.user.User;
@@ -16,8 +14,10 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import java.security.Principal;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -96,6 +96,20 @@ public class KnowledgeBaseController {
     User user = getCurrentUser(principal);
     knowledgeBaseService.deleteDocument(id, user.getId());
     return ResponseEntity.noContent().build();
+  }
+
+  @PatchMapping("/documents/{id}")
+  @Operation(summary = "Update document metadata")
+  @ApiResponse(responseCode = "200", description = "Document updated")
+  @ApiResponse(responseCode = "400", description = "Bad Request")
+  @ApiResponse(responseCode = "404", description = "Document not found")
+  public ResponseEntity<Document> updateDocument(
+      @PathVariable UUID id,
+      @Valid @RequestBody UpdateDocumentRequest request,
+      Principal principal) {
+    User user = getCurrentUser(principal);
+    Document updatedDocument = knowledgeBaseService.updateDocument(id, request, user.getId());
+    return ResponseEntity.ok(updatedDocument);
   }
 
   @GetMapping("/documents/{id}/download")
@@ -245,11 +259,26 @@ public class KnowledgeBaseController {
   @DeleteMapping("/history/search")
   @Operation(summary = "Delete search history")
   @ApiResponse(responseCode = "204", description = "Search history deleted")
-  @ApiResponse(responseCode = "500", description = "Internal Server Error")
   public ResponseEntity<Void> deleteSearchHistory(Principal principal) {
     User user = getCurrentUser(principal);
     knowledgeBaseService.deleteSearchHistory(user.getId());
     return ResponseEntity.noContent().build();
+  }
+
+  @GetMapping("/tags")
+  @Operation(summary = "Get all unique tags for user")
+  @ApiResponse(responseCode = "200", description = "Tags retrieved successfully")
+  public ResponseEntity<TagListDto> getTags(Principal principal) {
+    User user = getCurrentUser(principal);
+    Map<String, Long> tagsWithCount = knowledgeBaseService.getTagsForUserWithCount(user.getId());
+
+    List<TagDto> tagDtos =
+        tagsWithCount.entrySet().stream()
+            .map(entry -> new TagDto(entry.getKey(), entry.getValue()))
+            .sorted((a, b) -> Long.compare(b.documentCount(), a.documentCount()))
+            .toList();
+
+    return ResponseEntity.ok(new TagListDto(tagDtos));
   }
 
   private User getCurrentUser(Principal principal) {

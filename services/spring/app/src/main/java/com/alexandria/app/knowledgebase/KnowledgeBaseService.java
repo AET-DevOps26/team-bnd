@@ -2,14 +2,15 @@ package com.alexandria.app.knowledgebase;
 
 import com.alexandria.app.document.*;
 import com.alexandria.app.exception.DocumentNotFoundException;
+import com.alexandria.app.knowledgebase.dto.UpdateDocumentRequest;
 import com.alexandria.app.qa.QAInteraction;
 import com.alexandria.app.qa.QAInteractionRepository;
 import com.alexandria.app.search.SearchQuery;
 import com.alexandria.app.search.SearchQueryRepository;
 import com.alexandria.app.user.User;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import jakarta.validation.Valid;
+import java.util.*;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -174,6 +175,14 @@ public class KnowledgeBaseService {
     documentRepository.deleteById(id);
   }
 
+  public Document updateDocument(UUID id, @Valid UpdateDocumentRequest request, UUID ownerId) {
+    Document document = getDocument(id, ownerId);
+    if (request.fileName() != null) {
+      document.setFileName(request.fileName());
+    }
+    return documentRepository.save(document);
+  }
+
   public List<Document> search(User user, String queryText) {
     List<Document> results =
         documentRepository.findByOwnerIdAndFileNameContainingIgnoreCase(user.getId(), queryText);
@@ -236,5 +245,17 @@ public class KnowledgeBaseService {
 
   public void deleteSearchHistory(UUID userId) {
     searchQueryRepository.deleteByUserId(userId);
+  }
+
+  public Map<String, Long> getTagsForUserWithCount(UUID userId) {
+    List<Document> documents = documentRepository.findByOwnerId(userId);
+
+    Map<String, Long> tagsWithCount =
+        documents.stream()
+            .map(Document::getTags)
+            .flatMap(Set::stream)
+            .map(Tag::getLabel)
+            .collect(Collectors.groupingBy(tagLabel -> tagLabel, Collectors.counting()));
+    return tagsWithCount;
   }
 }

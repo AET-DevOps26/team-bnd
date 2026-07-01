@@ -206,6 +206,92 @@ paths:
                 $ref: '#/components/schemas/UserPreferencesDto'
       security:
         - bearerAuth: []
+  /api/v1/knowledgebase/documents/{id}:
+    get:
+      tags:
+        - KnowledgeBase
+      summary: Get document by ID
+      operationId: getDocument
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Document retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Document'
+        '404':
+          description: Document not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Document'
+      security:
+        - bearerAuth: []
+    delete:
+      tags:
+        - KnowledgeBase
+      summary: Delete document
+      operationId: deleteDocument
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Document deleted
+        '404':
+          description: Document not found
+      security:
+        - bearerAuth: []
+    patch:
+      tags:
+        - KnowledgeBase
+      summary: Update document metadata
+      operationId: updateDocument
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateDocumentRequest'
+        required: true
+      responses:
+        '200':
+          description: Document updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Document'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Document'
+        '404':
+          description: Document not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Document'
+      security:
+        - bearerAuth: []
   /hello:
     get:
       tags:
@@ -246,6 +332,21 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserProfileDto'
+      security:
+        - bearerAuth: []
+  /api/v1/knowledgebase/tags:
+    get:
+      tags:
+        - KnowledgeBase
+      summary: Get all unique tags for user
+      operationId: getTags
+      responses:
+        '200':
+          description: Tags retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TagListDto'
       security:
         - bearerAuth: []
   /api/v1/knowledgebase/search:
@@ -296,8 +397,6 @@ paths:
       responses:
         '204':
           description: Search history deleted
-        '500':
-          description: Internal Server Error
       security:
         - bearerAuth: []
   /api/v1/knowledgebase/history/qa:
@@ -344,53 +443,6 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Document'
-      security:
-        - bearerAuth: []
-  /api/v1/knowledgebase/documents/{id}:
-    get:
-      tags:
-        - KnowledgeBase
-      summary: Get document by ID
-      operationId: getDocument
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-      responses:
-        '200':
-          description: Document retrieved
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Document'
-        '404':
-          description: Document not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Document'
-      security:
-        - bearerAuth: []
-    delete:
-      tags:
-        - KnowledgeBase
-      summary: Delete document
-      operationId: deleteDocument
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-      responses:
-        '204':
-          description: Document deleted
-        '404':
-          description: Document not found
       security:
         - bearerAuth: []
   /api/v1/knowledgebase/documents/{id}/summary:
@@ -913,6 +965,11 @@ components:
           type: boolean
         language:
           type: string
+    UpdateDocumentRequest:
+      type: object
+      properties:
+        fileName:
+          type: string
     UserProfileDto:
       type: object
       properties:
@@ -930,6 +987,21 @@ components:
           format: date-time
         preferences:
           type: string
+    TagDto:
+      type: object
+      properties:
+        name:
+          type: string
+        documentCount:
+          type: integer
+          format: int64
+    TagListDto:
+      type: object
+      properties:
+        tags:
+          type: array
+          items:
+            $ref: '#/components/schemas/TagDto'
     SearchQuery:
       type: object
       properties:
