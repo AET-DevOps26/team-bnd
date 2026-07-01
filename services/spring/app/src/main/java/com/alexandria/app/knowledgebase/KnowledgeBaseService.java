@@ -175,6 +175,7 @@ public class KnowledgeBaseService {
     documentRepository.deleteById(id);
   }
 
+  @Transactional
   public Document updateDocument(UUID id, @Valid UpdateDocumentRequest request, UUID ownerId) {
     Document document = getDocument(id, ownerId);
     if (request.fileName() != null) {
@@ -235,6 +236,7 @@ public class KnowledgeBaseService {
     return qaInteractionRepository.findByUserIdOrderByTimestampDesc(userId);
   }
 
+  @Transactional
   public void deleteQAHistory(UUID userId) {
     qaInteractionRepository.deleteByUserId(userId);
   }
@@ -243,6 +245,7 @@ public class KnowledgeBaseService {
     return searchQueryRepository.findByUserIdOrderByTimestampDesc(userId);
   }
 
+  @Transactional
   public void deleteSearchHistory(UUID userId) {
     searchQueryRepository.deleteByUserId(userId);
   }
