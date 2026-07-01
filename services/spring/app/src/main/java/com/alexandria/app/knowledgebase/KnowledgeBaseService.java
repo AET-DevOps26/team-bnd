@@ -9,15 +9,14 @@ import com.alexandria.app.search.SearchQuery;
 import com.alexandria.app.search.SearchQueryRepository;
 import com.alexandria.app.user.User;
 import jakarta.validation.Valid;
-
-import java.util.*;
-import java.util.stream.Collectors;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class KnowledgeBaseService {
