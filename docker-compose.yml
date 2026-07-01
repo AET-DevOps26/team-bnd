@@ -249,10 +249,7 @@ services:
       start_period: 10s
       timeout: 30s
 
-  # Vector database for the RAG pipeline. In-network only -- no Traefik route
-  # and no published ports. Only the genai service talks to it over the
-  # alexandria network. ENABLE_MODULES is empty because embeddings come from
-  # the genai service (see #182), not a Weaviate-side vectorizer.
+  # Vector store for RAG. In-network only, no published ports.
   weaviate:
     image: semitechnologies/weaviate:1.38.2
     container_name: weaviate
@@ -283,8 +280,6 @@ services:
       start_period: 30s
 
   # Throwaway Weaviate for the genai integration tests (test profile only).
-  # In-network, no published ports, ephemeral storage -- it holds nothing and is
-  # discarded with the test run, so the suite never touches real data.
   weaviate-test:
     image: semitechnologies/weaviate:1.38.2
     profiles:
@@ -305,10 +300,7 @@ services:
       retries: 12
       start_period: 20s
 
-  # Runs the genai test suite in a container against weaviate-test. Uses the uv
-  # image with the dev dependency group (the runtime image ships neither uv nor
-  # pytest) and mounts the source, so no Dockerfile change is needed. Run with:
-  #   docker compose run --rm genai-test
+  # Runs the genai test suite against weaviate-test (test profile only, see the genai README).
   genai-test:
     image: ghcr.io/astral-sh/uv:python3.14-alpine
     profiles:

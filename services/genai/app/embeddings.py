@@ -2,9 +2,9 @@
 
 Splits extracted document text into overlapping chunks and turns each chunk
 into an embedding vector via a provider-configurable client, mirroring the
-provider selection in app/llm.py. Indexing (#183) and retrieval (#184) both
-build on this module; it works on plain text and knows nothing about object
-storage or Weaviate.
+provider selection in app/llm.py. Indexing and retrieval both build on this
+module; it works on plain text and knows nothing about object storage or
+Weaviate.
 
 Chunking:
   CHUNK_SIZE      characters per chunk (default 1000)
@@ -14,14 +14,16 @@ Embeddings:
   EMBEDDING_PROVIDER  "logos" (default) | "openai" | "ollama"
   EMBEDDING_MODEL     model id (provider-specific default)
 
-The logos/openai providers reuse the LLM gateway credentials (LLM_BASE_URL,
-LLM_API_KEY) because embeddings run on the same OpenAI-compatible endpoint as
-the chat model; ollama reuses OLLAMA_BASE_URL.
+The logos/openai providers default to the LLM gateway credentials
+(LLM_BASE_URL, LLM_API_KEY) because embeddings usually run on the same
+OpenAI-compatible endpoint as the chat model; EMBEDDING_BASE_URL /
+EMBEDDING_API_KEY override that when embeddings should run elsewhere. Ollama
+reuses OLLAMA_BASE_URL.
 
 Vector dimensions differ per provider/model (Qwen3-Embedding-8B, OpenAI's
 text-embedding-3-small and the Ollama models all emit different sizes), so the
-Weaviate collection in #183 must not pin a fixed dimension -- it stores
-whatever the configured embedder produces.
+Weaviate collection must not pin a fixed dimension -- it stores whatever the
+configured embedder produces.
 """
 
 import os
