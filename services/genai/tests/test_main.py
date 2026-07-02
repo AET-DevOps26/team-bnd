@@ -40,6 +40,8 @@ def test_openapi_schema_exposes_all_endpoints():
     assert "/genai/summarize" in paths
     assert "/genai/extract" in paths
     assert "/genai/ask" in paths
+    assert "/genai/index" in paths
+    assert "/genai/index/{object_key}" in paths
     # metrics is an operational endpoint, not part of the public API surface
     assert "/genai/metrics" not in paths
 
@@ -163,13 +165,10 @@ def test_extract_rejects_missing_object_key():
 # --- ask ---
 
 
-def test_ask_returns_answer_and_sources():
-    with (
-        patch("app.main.fetch_text", return_value="doc body"),
-        patch(
-            "app.main.answer_question",
-            return_value=("The answer is 42.", ["key-1"], "openai/gpt-oss-120b"),
-        ),
+def test_ask_returns_answer_and_cited_sources():
+    with patch(
+        "app.main.answer_question",
+        return_value=("The answer is 42.", ["key-1"], "openai/gpt-oss-120b"),
     ):
         response = client.post(
             "/genai/ask",
@@ -183,55 +182,101 @@ def test_ask_returns_answer_and_sources():
     assert body["modelUsed"] == "openai/gpt-oss-120b"
 
 
-def test_ask_fetches_each_object_and_passes_documents():
+def test_ask_passes_question_and_object_keys_to_retrieval():
     captured = {}
 
-    def fake_answer(question, object_keys, documents):
-        captured["documents"] = documents
-        return ("Revenue grew 15%.", [d["id"] for d in documents], "openai/gpt-oss-120b")
+    def fake_answer(question, object_keys):
+        captured["question"] = question
+        captured["object_keys"] = object_keys
+        return ("answer", ["key-1"], "test-model")
 
-    with (
-        patch("app.main.fetch_text", side_effect=lambda k: f"content of {k}"),
-        patch("app.main.answer_question", side_effect=fake_answer),
-    ):
+    with patch("app.main.answer_question", side_effect=fake_answer):
         response = client.post(
             "/genai/ask",
             json={"question": "What was revenue growth?", "objectKeys": ["key-1", "key-2"]},
         )
 
     assert response.status_code == 200
-    assert captured["documents"] == [
-        {"id": "key-1", "content": "content of key-1"},
-        {"id": "key-2", "content": "content of key-2"},
-    ]
-
-
-def test_ask_skips_unreadable_objects():
-    def flaky_fetch(key):
-        if key == "bad":
-            raise ObjectNotFoundError(key)
-        return "good content"
-
-    captured = {}
-
-    def fake_answer(question, object_keys, documents):
-        captured["documents"] = documents
-        return ("answer", [d["id"] for d in documents], "test-model")
-
-    with (
-        patch("app.main.fetch_text", side_effect=flaky_fetch),
-        patch("app.main.answer_question", side_effect=fake_answer),
-    ):
-        response = client.post(
-            "/genai/ask",
-            json={"question": "Q?", "objectKeys": ["good", "bad"]},
-        )
-
-    assert response.status_code == 200
-    assert captured["documents"] == [{"id": "good", "content": "good content"}]
-    assert response.json()["sourceObjectKeys"] == ["good"]
+    assert captured["question"] == "What was revenue growth?"
+    assert captured["object_keys"] == ["key-1", "key-2"]
 
 
 def test_ask_rejects_empty_question():
     response = client.post("/genai/ask", json={"question": "  ", "objectKeys": ["key-1"]})
     assert response.status_code == 422
+
+
+# --- index ---
+
+
+def test_index_chunks_embeds_and_stores_document():
+    captured = {}
+
+    def fake_index(object_key, chunks, vectors):
+        captured["object_key"] = object_key
+        captured["num_chunks"] = len(chunks)
+        return len(chunks)
+
+    fake_chunks = [object(), object(), object()]
+
+    with (
+        patch("app.main.fetch_text", return_value="a long document body"),
+        patch("app.main.chunk_text", return_value=fake_chunks),
+        patch("app.main.embed_chunks", return_value=[[0.1], [0.2], [0.3]]),
+        patch("app.main.index_chunks", side_effect=fake_index),
+        patch("app.main.get_embedding_model_name", return_value="Qwen/Qwen3-Embedding-8B"),
+    ):
+        response = client.post("/genai/index", json={"objectKey": "uploads/abc/report.txt"})
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body == {
+        "objectKey": "uploads/abc/report.txt",
+        "chunksIndexed": 3,
+        "embeddingModel": "Qwen/Qwen3-Embedding-8B",
+    }
+    assert captured["object_key"] == "uploads/abc/report.txt"
+    assert captured["num_chunks"] == 3
+
+
+def test_index_returns_404_for_missing_object():
+    with patch("app.main.fetch_text", side_effect=ObjectNotFoundError("missing")):
+        response = client.post("/genai/index", json={"objectKey": "missing"})
+    assert response.status_code == 404
+
+
+def test_index_returns_415_for_unsupported_file():
+    with patch("app.main.fetch_text", side_effect=UnsupportedFileError("not text")):
+        response = client.post("/genai/index", json={"objectKey": "image.png"})
+    assert response.status_code == 415
+
+
+def test_index_returns_422_for_empty_document():
+    with patch("app.main.fetch_text", return_value="   "):
+        response = client.post("/genai/index", json={"objectKey": "blank.txt"})
+    assert response.status_code == 422
+
+
+def test_index_rejects_missing_object_key():
+    response = client.post("/genai/index", json={})
+    assert response.status_code == 422
+
+
+# --- delete index ---
+
+
+def test_delete_index_removes_chunks_for_object_key():
+    with patch("app.main.delete_document", return_value=4) as mock_delete:
+        response = client.delete("/genai/index/uploads/abc/report.txt")
+
+    assert response.status_code == 200
+    assert response.json() == {"objectKey": "uploads/abc/report.txt", "chunksDeleted": 4}
+    mock_delete.assert_called_once_with("uploads/abc/report.txt")
+
+
+def test_delete_index_is_idempotent_for_unindexed_document():
+    with patch("app.main.delete_document", return_value=0):
+        response = client.delete("/genai/index/never-indexed.txt")
+
+    assert response.status_code == 200
+    assert response.json()["chunksDeleted"] == 0

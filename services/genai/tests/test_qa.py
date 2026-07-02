@@ -1,74 +1,120 @@
-"""Unit tests for the Q&A module."""
+"""Unit tests for the retrieval-augmented Q&A module.
 
+Weaviate retrieval, the embedder, and the LLM are all mocked, so no network or
+running services are needed.
+"""
+
+import os
 from unittest.mock import patch
 
+import pytest
 from langchain_core.messages import AIMessage
 from langchain_core.runnables import RunnableLambda
 
+from app.qa import _NO_CONTEXT_MESSAGE, answer_question
 
-def _make_fake_llm(response: str):
+
+def _fake_llm(response: str):
     return RunnableLambda(lambda _: AIMessage(content=response))
 
 
-def test_ask_without_document_contents_returns_answer():
-    fake_llm = _make_fake_llm("The answer is 42.")
+def _hit(object_key: str, chunk_index: int, text: str) -> dict:
+    return {"object_key": object_key, "chunk_index": chunk_index, "text": text, "distance": 0.1}
 
-    with patch("app.qa.get_llm", return_value=fake_llm), patch("app.qa.get_model_name", return_value="openai/gpt-oss-120b"):
-        from app.qa import answer_question
 
-        answer, source_keys, model = answer_question(
-            question="What is the answer?",
-            object_keys=["id-1", "id-2"],
-            documents=None,
-        )
+def test_answer_uses_retrieved_chunks_and_cites_sources():
+    hits = [_hit("doc-1", 0, "Revenue grew 15%."), _hit("doc-2", 3, "Costs were flat.")]
 
-    assert answer == "The answer is 42."
-    assert source_keys == ["id-1", "id-2"]
+    with (
+        patch("app.qa.embed_query", return_value=[0.1, 0.2]),
+        patch("app.qa.search", return_value=hits),
+        patch("app.qa.get_llm", return_value=_fake_llm("Revenue grew by 15%.")),
+        patch("app.qa.get_model_name", return_value="openai/gpt-oss-120b"),
+    ):
+        answer, sources, model = answer_question("How did revenue change?", ["doc-1", "doc-2"])
+
+    assert answer == "Revenue grew by 15%."
+    assert sources == ["doc-1", "doc-2"]
     assert model == "openai/gpt-oss-120b"
 
 
-def test_ask_with_document_contents_uses_context():
-    fake_llm = _make_fake_llm("Based on the documents, the revenue grew by 15%.")
+def test_sources_are_deduplicated_in_retrieval_order():
+    hits = [_hit("doc-2", 0, "a"), _hit("doc-1", 1, "b"), _hit("doc-2", 2, "c")]
 
-    with patch("app.qa.get_llm", return_value=fake_llm), patch("app.qa.get_model_name", return_value="openai/gpt-oss-120b"):
-        from app.qa import answer_question
+    with (
+        patch("app.qa.embed_query", return_value=[0.0]),
+        patch("app.qa.search", return_value=hits),
+        patch("app.qa.get_llm", return_value=_fake_llm("answer")),
+        patch("app.qa.get_model_name", return_value="m"),
+    ):
+        _, sources, _ = answer_question("q", ["doc-1", "doc-2"])
 
-        answer, source_keys, model = answer_question(
-            question="What was the revenue growth?",
-            object_keys=["doc-1", "doc-2"],
-            documents=[
-                {"id": "doc-1", "content": "Q4 revenue grew by 15% year-over-year."},
-                {"id": "doc-2", "content": "Operating costs remained stable."},
-            ],
-        )
-
-    assert "15%" in answer
-    assert set(source_keys) == {"doc-1", "doc-2"}
-    assert model == "openai/gpt-oss-120b"
+    assert sources == ["doc-2", "doc-1"]
 
 
-def test_ask_with_document_contents_returns_only_content_ids():
-    fake_llm = _make_fake_llm("Some answer.")
+def test_empty_object_keys_returns_fallback_without_searching():
+    with (
+        patch("app.qa.search", side_effect=AssertionError("must not search")),
+        patch("app.qa.embed_query", side_effect=AssertionError("must not embed")),
+        patch("app.qa.get_model_name", return_value="m"),
+    ):
+        answer, sources, model = answer_question("q", [])
 
-    with patch("app.qa.get_llm", return_value=fake_llm), patch("app.qa.get_model_name", return_value="test-model"):
-        from app.qa import answer_question
-
-        _, source_keys, _ = answer_question(
-            question="Something?",
-            object_keys=["all-1", "all-2", "all-3"],
-            documents=[{"id": "content-doc", "content": "relevant text"}],
-        )
-
-    # when content is provided, source_keys come from the content, not document_ids
-    assert source_keys == ["content-doc"]
+    assert answer == _NO_CONTEXT_MESSAGE
+    assert sources == []
+    assert model == "m"
 
 
-def test_ask_strips_whitespace_from_answer():
-    fake_llm = _make_fake_llm("  Answer with spaces.  ")
+def test_empty_retrieval_returns_fallback_without_calling_llm():
+    with (
+        patch("app.qa.embed_query", return_value=[0.1]),
+        patch("app.qa.search", return_value=[]),
+        patch("app.qa.get_llm", side_effect=AssertionError("must not call llm")),
+        patch("app.qa.get_model_name", return_value="m"),
+    ):
+        answer, sources, _ = answer_question("q", ["doc-1"])
 
-    with patch("app.qa.get_llm", return_value=fake_llm), patch("app.qa.get_model_name", return_value="test-model"):
-        from app.qa import answer_question
+    assert answer == _NO_CONTEXT_MESSAGE
+    assert sources == []
 
-        answer, _, _ = answer_question("Question?", ["id-1"], None)
 
-    assert answer == "Answer with spaces."
+def test_top_k_is_read_from_env():
+    captured = {}
+
+    def fake_search(vector, keys, k):
+        captured["k"] = k
+        return [_hit("doc-1", 0, "x")]
+
+    with (
+        patch.dict(os.environ, {"RAG_TOP_K": "9"}),
+        patch("app.qa.embed_query", return_value=[0.1]),
+        patch("app.qa.search", side_effect=fake_search),
+        patch("app.qa.get_llm", return_value=_fake_llm("a")),
+        patch("app.qa.get_model_name", return_value="m"),
+    ):
+        answer_question("q", ["doc-1"])
+
+    assert captured["k"] == 9
+
+
+def test_answer_question_rejects_invalid_top_k():
+    with (
+        patch.dict(os.environ, {"RAG_TOP_K": "abc"}),
+        patch("app.qa.embed_query", return_value=[0.1]),
+        patch("app.qa.search", return_value=[]),
+        patch("app.qa.get_model_name", return_value="m"),
+    ):
+        with pytest.raises(RuntimeError, match="RAG_TOP_K"):
+            answer_question("q", ["doc-1"])
+
+
+def test_answer_is_stripped():
+    with (
+        patch("app.qa.embed_query", return_value=[0.1]),
+        patch("app.qa.search", return_value=[_hit("doc-1", 0, "x")]),
+        patch("app.qa.get_llm", return_value=_fake_llm("  spaced answer  ")),
+        patch("app.qa.get_model_name", return_value="m"),
+    ):
+        answer, _, _ = answer_question("q", ["doc-1"])
+
+    assert answer == "spaced answer"

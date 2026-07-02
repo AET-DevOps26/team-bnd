@@ -9,3 +9,5 @@ data:
   S3_ENDPOINT: {{ .Values.s3.endpoint | default (include "alexandria.s3Endpoint" .) | quote }}
   S3_REGION: {{ .Values.s3.region | quote }}
   S3_BUCKET: {{ .Values.s3.bucket | quote }}
+  WEAVIATE_URL: {{ .Values.weaviate.url | default (printf "http://%s-weaviate:8080" (include "alexandria.fullname" .)) | quote }}
+  WEAVIATE_GRPC_PORT: {{ .Values.weaviate.grpcPort | default 50051 | quote }}
