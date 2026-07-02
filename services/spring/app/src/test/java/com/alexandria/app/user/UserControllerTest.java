@@ -50,7 +50,9 @@ class UserControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.username").value("testuser"))
                 .andExpect(jsonPath("$.email").value("test@example.com"))
-                .andExpect(jsonPath("$.oidcSubject").value("sub123"));
+                .andExpect(jsonPath("$.oidcSubject").value("sub123"))
+                .andExpect(jsonPath("$.preferences.darkTheme").value(false))
+                .andExpect(jsonPath("$.preferences.language").value("en"));
     }
 
     @Test

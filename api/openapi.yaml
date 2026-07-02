@@ -986,7 +986,7 @@ components:
           type: string
           format: date-time
         preferences:
-          type: string
+          $ref: '#/components/schemas/UserPreferencesDto'
     TagDto:
       type: object
       properties:

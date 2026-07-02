@@ -62,6 +62,9 @@ public class UserController {
                         .findByOidcSubject(oidcSubject)
                         .orElseThrow(() -> new UserNotFoundException(oidcSubject));
 
+        UserPreferences prefs = userService.getPreferences(currentUser);
+        UserPreferencesDto prefsDto = new UserPreferencesDto(prefs.darkTheme(), prefs.language());
+
         UserProfileDto profileDto =
                 new UserProfileDto(
                         currentUser.getId(),
@@ -69,7 +72,7 @@ public class UserController {
                         currentUser.getUsername(),
                         currentUser.getEmail(),
                         currentUser.getCreatedAt(),
-                        currentUser.getPreferences());
+                        prefsDto);
 
         return ResponseEntity.ok(profileDto);
     }

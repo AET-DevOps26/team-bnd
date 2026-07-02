@@ -9,5 +9,5 @@ public record UserProfileDto(
         String username,
         String email,
         Instant createdAt,
-        String preferences) {
+        UserPreferencesDto preferences) {
 }

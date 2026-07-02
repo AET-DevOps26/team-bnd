@@ -77,6 +77,10 @@ public class UserService {
         return repository.findByOidcSubject(oidcSubject);
     }
 
+    public UserPreferences getPreferences(User user) {
+        return parsePreferences(user.getPreferences());
+    }
+
     /**
      * Deletes user account by ID, including all associated data.
      *
