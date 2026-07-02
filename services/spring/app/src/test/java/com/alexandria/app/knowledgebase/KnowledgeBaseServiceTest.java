@@ -8,6 +8,7 @@ import static org.mockito.Mockito.*;
 
 import com.alexandria.app.document.*;
 import com.alexandria.app.exception.DocumentNotFoundException;
+import com.alexandria.app.knowledgebase.dto.UpdateDocumentRequest;
 import com.alexandria.app.qa.QAInteraction;
 import com.alexandria.app.qa.QAInteractionRepository;
 import com.alexandria.app.search.SearchQuery;
@@ -15,6 +16,7 @@ import com.alexandria.app.search.SearchQueryRepository;
 import com.alexandria.app.user.User;
 import java.lang.reflect.Field;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -337,11 +339,144 @@ class KnowledgeBaseServiceTest {
   void unit_kb_getSearchHistoryReturnsUserHistory() {
     SearchQuery query = new SearchQuery(testUser, "search term", 5);
     when(searchQueryRepository.findByUserIdOrderByTimestampDesc(testUser.getId()))
-        .thenReturn(List.of(query));
+         .thenReturn(List.of(query));
 
     List<SearchQuery> result = knowledgeBaseService.getSearchHistory(testUser.getId());
 
     assertThat(result).hasSize(1);
     assertThat(result.get(0).getQueryText()).isEqualTo("search term");
+  }
+
+  @Test
+  void unit_kb_updateDocumentRenamesFile() throws Exception {
+    UUID documentId = UUID.randomUUID();
+    Document document =
+        new Document(testUser, "old-name.pdf", "/files/old.pdf", "application/pdf", 1024L);
+    setDocumentId(document, documentId);
+    when(documentRepository.findById(documentId)).thenReturn(Optional.of(document));
+    when(documentRepository.save(any(Document.class))).thenAnswer(inv -> inv.getArgument(0));
+
+    UpdateDocumentRequest request = new UpdateDocumentRequest("new-name.pdf");
+    Document result = knowledgeBaseService.updateDocument(documentId, request, testUser.getId());
+
+    assertThat(result.getFileName()).isEqualTo("new-name.pdf");
+    verify(documentRepository).save(document);
+  }
+
+  @Test
+  void unit_kb_updateDocumentIgnoresNullFileName() throws Exception {
+    UUID documentId = UUID.randomUUID();
+    Document document =
+        new Document(testUser, "keep.pdf", "/files/keep.pdf", "application/pdf", 1024L);
+    setDocumentId(document, documentId);
+    when(documentRepository.findById(documentId)).thenReturn(Optional.of(document));
+    when(documentRepository.save(any(Document.class))).thenAnswer(inv -> inv.getArgument(0));
+
+    UpdateDocumentRequest request = new UpdateDocumentRequest(null);
+    Document result = knowledgeBaseService.updateDocument(documentId, request, testUser.getId());
+
+    assertThat(result.getFileName()).isEqualTo("keep.pdf");
+  }
+
+  @Test
+  void unit_kb_getDocumentSummaryReturnsSummary() throws Exception {
+    UUID documentId = UUID.randomUUID();
+    Document document =
+        new Document(testUser, "paper.pdf", "/files/paper.pdf", "application/pdf", 4096L);
+    setDocumentId(document, documentId);
+    Summary summary = new Summary(document, "This is a summary", "gpt-4");
+    document.setSummary(summary);
+    when(documentRepository.findById(documentId)).thenReturn(Optional.of(document));
+
+    Summary result = knowledgeBaseService.getDocumentSummary(documentId, testUser.getId());
+
+    assertThat(result.getContent()).isEqualTo("This is a summary");
+    assertThat(result.getModelUsed()).isEqualTo("gpt-4");
+  }
+
+  @Test
+  void unit_kb_getDocumentEntitiesReturnsList() throws Exception {
+    UUID documentId = UUID.randomUUID();
+    Document document =
+        new Document(testUser, "report.pdf", "/files/report.pdf", "application/pdf", 2048L);
+    setDocumentId(document, documentId);
+    ExtractedEntity entity =
+        new ExtractedEntity(document, "Acme Corp", EntityType.ORGANIZATION, 0.9);
+    document.setExtractedEntities(List.of(entity));
+    when(documentRepository.findById(documentId)).thenReturn(Optional.of(document));
+
+    List<ExtractedEntity> result =
+        knowledgeBaseService.getDocumentEntities(documentId, testUser.getId());
+
+    assertThat(result).hasSize(1);
+    assertThat(result.get(0).getName()).isEqualTo("Acme Corp");
+  }
+
+  @Test
+  void unit_kb_reprocessSummaryCallsGenAi() throws Exception {
+    UUID documentId = UUID.randomUUID();
+    Document document =
+        new Document(testUser, "doc.pdf", "/files/doc.pdf", "application/pdf", 1024L);
+    setDocumentId(document, documentId);
+    when(documentRepository.findById(documentId)).thenReturn(Optional.of(document));
+    GenAiClient.SummarizeResponse response =
+        new GenAiClient.SummarizeResponse("New summary", "gpt-4");
+    when(genAiClient.summarize("/files/doc.pdf")).thenReturn(response);
+
+    knowledgeBaseService.reprocessSummary(documentId, testUser.getId());
+
+    verify(genAiClient).summarize("/files/doc.pdf");
+    verify(summaryRepository).save(any(Summary.class));
+  }
+
+  @Test
+  void unit_kb_reprocessEntitiesCallsGenAi() throws Exception {
+    UUID documentId = UUID.randomUUID();
+    Document document =
+        new Document(testUser, "doc.pdf", "/files/doc.pdf", "application/pdf", 1024L);
+    setDocumentId(document, documentId);
+    when(documentRepository.findById(documentId)).thenReturn(Optional.of(document));
+    List<GenAiClient.ExtractedEntityDto> entities =
+        List.of(new GenAiClient.ExtractedEntityDto("Entity", EntityType.TOPIC, 0.8));
+    GenAiClient.ExtractResponse response = new GenAiClient.ExtractResponse(entities, "gpt-4");
+    when(genAiClient.extract("/files/doc.pdf")).thenReturn(response);
+
+    knowledgeBaseService.reprocessEntities(documentId, testUser.getId());
+
+    verify(genAiClient).extract("/files/doc.pdf");
+    verify(extractedEntityRepository).save(any(ExtractedEntity.class));
+  }
+
+  @Test
+  void unit_kb_deleteQAHistoryDeletesByUserId() {
+    knowledgeBaseService.deleteQAHistory(testUser.getId());
+
+    verify(qaInteractionRepository).deleteByUserId(testUser.getId());
+  }
+
+  @Test
+  void unit_kb_deleteSearchHistoryDeletesByUserId() {
+    knowledgeBaseService.deleteSearchHistory(testUser.getId());
+
+    verify(searchQueryRepository).deleteByUserId(testUser.getId());
+  }
+
+  @Test
+  void unit_kb_getTagsForUserWithCountReturnsCounts() {
+    Document doc1 =
+        new Document(testUser, "a.pdf", "/files/a.pdf", "application/pdf", 1024L);
+    Document doc2 =
+        new Document(testUser, "b.pdf", "/files/b.pdf", "application/pdf", 2048L);
+    Tag tag1 = new Tag("finance", TagSource.USER);
+    Tag tag2 = new Tag("legal", TagSource.USER);
+    doc1.addTag(tag1);
+    doc1.addTag(tag2);
+    doc2.addTag(tag1);
+    when(documentRepository.findByOwnerId(testUser.getId())).thenReturn(List.of(doc1, doc2));
+
+    Map<String, Long> result = knowledgeBaseService.getTagsForUserWithCount(testUser.getId());
+
+    assertThat(result).containsEntry("finance", 2L);
+    assertThat(result).containsEntry("legal", 1L);
   }
 }
