@@ -32,21 +32,17 @@ test.describe("Alexandria client", () => {
     test("displays the main heading", async ({ page }) => {
       const heading = page.getByRole("heading", { level: 1 });
       await expect(heading).toBeVisible();
-      await expect(heading).toHaveText("Alexandria — Document Summarization");
+      await expect(heading).toHaveText("Alexandria");
     });
 
-    test("displays the product description", async ({ page }) => {
-      const description = page.getByText(
-        "Alexandria helps users upload documents and get concise summaries",
-      );
-      await expect(description).toBeVisible();
+    test("displays the logged-in user name", async ({ page }) => {
+      const userName = page.locator(".user-name");
+      await expect(userName).toBeVisible();
     });
 
-    test("description mentions key features", async ({ page }) => {
-      const body = page.locator("body");
-      await expect(body).toContainText("summaries");
-      await expect(body).toContainText("extracted tags");
-      await expect(body).toContainText("searchable knowledge");
+    test("displays the logout button", async ({ page }) => {
+      const logoutButton = page.getByRole("button", { name: "Logout" });
+      await expect(logoutButton).toBeVisible();
     });
   });
 
