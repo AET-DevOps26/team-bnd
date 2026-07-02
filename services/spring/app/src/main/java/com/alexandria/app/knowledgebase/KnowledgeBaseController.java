@@ -180,6 +180,9 @@ public class KnowledgeBaseController {
     public ResponseEntity<DocumentSummaryDto> getSummary(@PathVariable UUID id, Principal principal) {
         User user = getCurrentUser(principal);
         Summary summary = knowledgeBaseService.getDocumentSummary(id, user.getId());
+        if (summary == null) {
+            return ResponseEntity.notFound().build();
+        }
         DocumentSummaryDto summaryDto =
                 new DocumentSummaryDto(
                         summary.getContent(), summary.getModelUsed(), summary.getGeneratedAt());
@@ -211,7 +214,7 @@ public class KnowledgeBaseController {
 
     @PostMapping("/documents/{id}/reprocess/summary")
     @Operation(summary = "Reprocess document summary")
-    @ApiResponse(responseCode = "200", description = "Document summary reprocessed")
+    @ApiResponse(responseCode = "204", description = "Document summary reprocessed")
     @ApiResponse(responseCode = "401", description = "Unauthorized")
     @ApiResponse(responseCode = "404", description = "Document not found")
     public ResponseEntity<Void> reprocessSummary(@PathVariable UUID id, Principal principal) {
@@ -222,7 +225,7 @@ public class KnowledgeBaseController {
 
     @PostMapping("/documents/{id}/reprocess/entities")
     @Operation(summary = "Reprocess document entities")
-    @ApiResponse(responseCode = "200", description = "Document entities reprocessed")
+    @ApiResponse(responseCode = "204", description = "Document entities reprocessed")
     @ApiResponse(responseCode = "401", description = "Unauthorized")
     @ApiResponse(responseCode = "404", description = "Document not found")
     public ResponseEntity<Void> reprocessEntities(@PathVariable UUID id, Principal principal) {
