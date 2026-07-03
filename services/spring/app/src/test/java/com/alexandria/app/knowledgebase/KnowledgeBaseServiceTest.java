@@ -413,7 +413,30 @@ class KnowledgeBaseServiceTest {
   }
 
   @Test
-  void unit_kb_reprocessSummaryCallsGenAi() throws Exception {
+  void unit_kb_reprocessSummaryDeletesOldAndCallsGenAi() throws Exception {
+    UUID documentId = UUID.randomUUID();
+    Document document =
+        new Document(testUser, "doc.pdf", "/files/doc.pdf", "application/pdf", 1024L);
+    setDocumentId(document, documentId);
+    Summary oldSummary = new Summary(document, "Old summary", "gpt-3");
+    document.setSummary(oldSummary);
+    when(documentRepository.findById(documentId)).thenReturn(Optional.of(document));
+    GenAiClient.SummarizeResponse response =
+        new GenAiClient.SummarizeResponse("New summary", "gpt-4");
+    when(genAiClient.summarize("/files/doc.pdf")).thenReturn(response);
+
+    knowledgeBaseService.reprocessSummary(documentId, testUser.getId());
+
+    verify(summaryRepository).delete(oldSummary);
+    verify(summaryRepository).flush();
+    verify(genAiClient).summarize("/files/doc.pdf");
+    verify(summaryRepository).save(any(Summary.class));
+    assertThat(document.getSummary()).isNotNull();
+    assertThat(document.getSummary().getContent()).isEqualTo("New summary");
+  }
+
+  @Test
+  void unit_kb_reprocessSummaryWithoutExistingSkipsDelete() throws Exception {
     UUID documentId = UUID.randomUUID();
     Document document =
         new Document(testUser, "doc.pdf", "/files/doc.pdf", "application/pdf", 1024L);
@@ -425,12 +448,12 @@ class KnowledgeBaseServiceTest {
 
     knowledgeBaseService.reprocessSummary(documentId, testUser.getId());
 
-    verify(genAiClient).summarize("/files/doc.pdf");
+    verify(summaryRepository, never()).delete(any(Summary.class));
     verify(summaryRepository).save(any(Summary.class));
   }
 
   @Test
-  void unit_kb_reprocessEntitiesCallsGenAi() throws Exception {
+  void unit_kb_reprocessEntitiesDeletesOldAndCallsGenAi() throws Exception {
     UUID documentId = UUID.randomUUID();
     Document document =
         new Document(testUser, "doc.pdf", "/files/doc.pdf", "application/pdf", 1024L);
@@ -443,6 +466,8 @@ class KnowledgeBaseServiceTest {
 
     knowledgeBaseService.reprocessEntities(documentId, testUser.getId());
 
+    verify(extractedEntityRepository).deleteByDocumentId(documentId);
+    verify(extractedEntityRepository).flush();
     verify(genAiClient).extract("/files/doc.pdf");
     verify(extractedEntityRepository).save(any(ExtractedEntity.class));
   }
@@ -462,21 +487,20 @@ class KnowledgeBaseServiceTest {
   }
 
   @Test
-  void unit_kb_getTagsForUserWithCountReturnsCounts() {
-    Document doc1 =
-        new Document(testUser, "a.pdf", "/files/a.pdf", "application/pdf", 1024L);
-    Document doc2 =
-        new Document(testUser, "b.pdf", "/files/b.pdf", "application/pdf", 2048L);
-    Tag tag1 = new Tag("finance", TagSource.USER);
-    Tag tag2 = new Tag("legal", TagSource.USER);
-    doc1.addTag(tag1);
-    doc1.addTag(tag2);
-    doc2.addTag(tag1);
-    when(documentRepository.findByOwnerId(testUser.getId())).thenReturn(List.of(doc1, doc2));
+  void unit_kb_getTagsForUserWithCountDelegatesToDatabase() {
+    TagRepository.TagCountProjection financeCount = mock(TagRepository.TagCountProjection.class);
+    when(financeCount.getLabel()).thenReturn("finance");
+    when(financeCount.getDocumentCount()).thenReturn(2L);
+    TagRepository.TagCountProjection legalCount = mock(TagRepository.TagCountProjection.class);
+    when(legalCount.getLabel()).thenReturn("legal");
+    when(legalCount.getDocumentCount()).thenReturn(1L);
+    when(tagRepository.findTagCountsByOwnerId(testUser.getId()))
+        .thenReturn(List.of(financeCount, legalCount));
 
     Map<String, Long> result = knowledgeBaseService.getTagsForUserWithCount(testUser.getId());
 
     assertThat(result).containsEntry("finance", 2L);
     assertThat(result).containsEntry("legal", 1L);
+    verify(documentRepository, never()).findByOwnerId(any());
   }
 }

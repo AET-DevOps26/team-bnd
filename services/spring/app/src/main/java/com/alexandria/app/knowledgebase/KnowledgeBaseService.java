@@ -1,6 +1,14 @@
 package com.alexandria.app.knowledgebase;
 
-import com.alexandria.app.document.*;
+import com.alexandria.app.document.Document;
+import com.alexandria.app.document.DocumentRepository;
+import com.alexandria.app.document.ExtractedEntity;
+import com.alexandria.app.document.ExtractedEntityRepository;
+import com.alexandria.app.document.Summary;
+import com.alexandria.app.document.SummaryRepository;
+import com.alexandria.app.document.Tag;
+import com.alexandria.app.document.TagRepository;
+import com.alexandria.app.document.TagSource;
 import com.alexandria.app.exception.DocumentNotFoundException;
 import com.alexandria.app.knowledgebase.dto.UpdateDocumentRequest;
 import com.alexandria.app.qa.QAInteraction;
@@ -15,7 +23,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -133,13 +144,23 @@ public class KnowledgeBaseService {
         return document;
     }
 
+    @Transactional
     public void reprocessSummary(UUID id, UUID ownerId) {
         Document document = getDocument(id, ownerId);
+        Summary existing = document.getSummary();
+        if (existing != null) {
+            document.setSummary(null);
+            summaryRepository.delete(existing);
+            summaryRepository.flush();
+        }
         processSummary(document);
     }
 
+    @Transactional
     public void reprocessEntities(UUID id, UUID ownerId) {
         Document document = getDocument(id, ownerId);
+        extractedEntityRepository.deleteByDocumentId(id);
+        extractedEntityRepository.flush();
         processEntities(document);
     }
 
@@ -252,14 +273,10 @@ public class KnowledgeBaseService {
     }
 
     public Map<String, Long> getTagsForUserWithCount(UUID userId) {
-        List<Document> documents = documentRepository.findByOwnerId(userId);
-
-        Map<String, Long> tagsWithCount =
-                documents.stream()
-                        .map(Document::getTags)
-                        .flatMap(Set::stream)
-                        .map(Tag::getLabel)
-                        .collect(Collectors.groupingBy(tagLabel -> tagLabel, Collectors.counting()));
-        return tagsWithCount;
+        return tagRepository.findTagCountsByOwnerId(userId).stream()
+                .collect(
+                        Collectors.toMap(
+                                TagRepository.TagCountProjection::getLabel,
+                                TagRepository.TagCountProjection::getDocumentCount));
     }
 }

@@ -465,6 +465,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DocumentSummaryDto'
+        '204':
+          description: Summary not yet available
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentSummaryDto'
         '401':
           description: Unauthorized
           content:

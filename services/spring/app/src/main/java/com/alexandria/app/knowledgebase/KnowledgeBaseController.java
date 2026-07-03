@@ -175,13 +175,14 @@ public class KnowledgeBaseController {
     @GetMapping("/documents/{id}/summary")
     @Operation(summary = "Get document summary")
     @ApiResponse(responseCode = "200", description = "Document summary retrieved")
+    @ApiResponse(responseCode = "204", description = "Summary not yet available")
     @ApiResponse(responseCode = "401", description = "Unauthorized")
     @ApiResponse(responseCode = "404", description = "Document not found")
     public ResponseEntity<DocumentSummaryDto> getSummary(@PathVariable UUID id, Principal principal) {
         User user = getCurrentUser(principal);
         Summary summary = knowledgeBaseService.getDocumentSummary(id, user.getId());
         if (summary == null) {
-            return ResponseEntity.notFound().build();
+            return ResponseEntity.noContent().build();
         }
         DocumentSummaryDto summaryDto =
                 new DocumentSummaryDto(

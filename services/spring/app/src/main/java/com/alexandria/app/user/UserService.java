@@ -2,6 +2,7 @@ package com.alexandria.app.user;
 
 import com.alexandria.app.document.Document;
 import com.alexandria.app.document.DocumentRepository;
+import com.alexandria.app.exception.PreferencesSerializationException;
 import com.alexandria.app.exception.UserNotFoundException;
 import com.alexandria.app.knowledgebase.ObjectStorageService;
 import com.alexandria.app.qa.QAInteractionRepository;
@@ -109,10 +110,7 @@ public class UserService {
         repository.deleteById(id);
     }
 
-    public record UserPreferences(
-            // additional fields may be added in later API versions
-            boolean darkTheme, String language) {
-        // provide sensible defaults for new users
+    public record UserPreferences(boolean darkTheme, String language) {
         public static UserPreferences defaultPreferences() {
             return new UserPreferences(false, "en");
         }
@@ -135,10 +133,14 @@ public class UserService {
             currentUser.setPreferences(updatedJson);
             this.repository.save(currentUser);
         } catch (JsonProcessingException e) {
-            throw new RuntimeException("Failed to serialize user preferences", e);
+            log.error(
+                    "Failed to serialize preferences for user {}: {}",
+                    currentUser.getId(),
+                    e.getMessage(),
+                    e);
+            throw new PreferencesSerializationException("Failed to serialize user preferences", e);
         }
 
-        // 5. Return the updated domain object to the controller
         return updatedPrefs;
     }
 
@@ -149,8 +151,10 @@ public class UserService {
         try {
             return objectMapper.readValue(json, UserPreferences.class);
         } catch (JsonProcessingException e) {
-            // Fallback to defaults if the database JSON is somehow corrupted
-            // Alternatively, you could throw a custom exception here
+            log.error(
+                    "Corrupted preferences JSON detected, falling back to defaults: {}",
+                    e.getMessage(),
+                    e);
             return UserPreferences.defaultPreferences();
         }
     }

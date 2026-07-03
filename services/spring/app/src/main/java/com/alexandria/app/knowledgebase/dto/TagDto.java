@@ -1,5 +1,8 @@
 package com.alexandria.app.knowledgebase.dto;
 
-public record TagDto(String name, long documentCount // number of documents using this tag
-) {
+/**
+ * @param name          tag label
+ * @param documentCount number of documents using this tag
+ */
+public record TagDto(String name, long documentCount) {
 }
