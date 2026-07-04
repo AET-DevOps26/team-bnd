@@ -73,6 +73,7 @@ public class KnowledgeBaseService {
             String fileType,
             Long fileSize,
             String textContent) {
+        FileNameValidator.validate(fileName);
         Document document = new Document(owner, fileName, objectKey, fileType, fileSize);
         document.setRawTextContent(textContent);
         document = documentRepository.save(document);
@@ -88,6 +89,7 @@ public class KnowledgeBaseService {
     @Transactional
     public Document uploadDocument(User owner, MultipartFile file) {
         String fileName = file.getOriginalFilename();
+        FileNameValidator.validate(fileName);
         String fileType = file.getContentType();
         Long fileSize = file.getSize();
         String objectKey = "/uploads/" + UUID.randomUUID() + "/" + fileName;
@@ -201,6 +203,7 @@ public class KnowledgeBaseService {
     public Document updateDocument(UUID id, @Valid UpdateDocumentRequest request, UUID ownerId) {
         Document document = getDocument(id, ownerId);
         if (request.fileName() != null) {
+            FileNameValidator.validate(request.fileName());
             document.setFileName(request.fileName());
         }
         return documentRepository.save(document);

@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.mock.web.MockMultipartFile;
 
 @ExtendWith(MockitoExtension.class)
 class KnowledgeBaseServiceTest {
@@ -376,6 +377,75 @@ class KnowledgeBaseServiceTest {
     Document result = knowledgeBaseService.updateDocument(documentId, request, testUser.getId());
 
     assertThat(result.getFileName()).isEqualTo("keep.pdf");
+  }
+
+  @Test
+  void unit_kb_updateDocumentRejectsUnsafeFileName() throws Exception {
+    UUID documentId = UUID.randomUUID();
+    Document document =
+        new Document(testUser, "keep.pdf", "/files/keep.pdf", "application/pdf", 1024L);
+    setDocumentId(document, documentId);
+    when(documentRepository.findById(documentId)).thenReturn(Optional.of(document));
+
+    UpdateDocumentRequest request = new UpdateDocumentRequest("../etc/passwd");
+
+    assertThatThrownBy(
+            () -> knowledgeBaseService.updateDocument(documentId, request, testUser.getId()))
+        .isInstanceOf(IllegalArgumentException.class);
+    verify(documentRepository, never()).save(any(Document.class));
+  }
+
+  @Test
+  void unit_kb_updateDocumentRejectsBlankFileName() throws Exception {
+    UUID documentId = UUID.randomUUID();
+    Document document =
+        new Document(testUser, "keep.pdf", "/files/keep.pdf", "application/pdf", 1024L);
+    setDocumentId(document, documentId);
+    when(documentRepository.findById(documentId)).thenReturn(Optional.of(document));
+
+    UpdateDocumentRequest request = new UpdateDocumentRequest("   ");
+
+    assertThatThrownBy(
+            () -> knowledgeBaseService.updateDocument(documentId, request, testUser.getId()))
+        .isInstanceOf(IllegalArgumentException.class);
+    verify(documentRepository, never()).save(any(Document.class));
+  }
+
+  @Test
+  void unit_kb_uploadDocumentRejectsUnsafeOriginalFileName() {
+    MockMultipartFile evilFile =
+        new MockMultipartFile(
+            "file", "../../etc/passwd", "text/plain", "content".getBytes());
+
+    assertThatThrownBy(() -> knowledgeBaseService.uploadDocument(testUser, evilFile))
+        .isInstanceOf(IllegalArgumentException.class);
+    verify(documentRepository, never()).save(any(Document.class));
+    verify(objectStorageService, never()).upload(anyString(), any());
+  }
+
+  @Test
+  void unit_kb_uploadDocumentRejectsNullOriginalFileName() {
+    MockMultipartFile noNameFile =
+        new MockMultipartFile("file", null, "text/plain", "content".getBytes());
+
+    assertThatThrownBy(() -> knowledgeBaseService.uploadDocument(testUser, noNameFile))
+        .isInstanceOf(IllegalArgumentException.class);
+    verify(documentRepository, never()).save(any(Document.class));
+  }
+
+  @Test
+  void unit_kb_createDocumentRejectsUnsafeFileName() {
+    assertThatThrownBy(
+            () ->
+                knowledgeBaseService.createDocument(
+                    testUser,
+                    "evil\u0000.pdf",
+                    "/files/evil.pdf",
+                    "application/pdf",
+                    1024L,
+                    null))
+        .isInstanceOf(IllegalArgumentException.class);
+    verify(documentRepository, never()).save(any(Document.class));
   }
 
   @Test
