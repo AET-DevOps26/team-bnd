@@ -1,8 +1,7 @@
 # syntax=docker/dockerfile:1
 
-# Base image digests
-ARG JDK_IMAGE=eclipse-temurin:21-jdk-alpine@sha256:4fb80de7aeb277ad949cfbe89b4f504e50bb34c57fd908c5825236473d71e986
-ARG JRE_IMAGE=eclipse-temurin:21-jre-alpine@sha256:704db3c40204a44f471191446ddd9cda5d60dab40f0e15c6507b815ed897238b
+ARG JDK_IMAGE=amazoncorretto:25-alpine@sha256:32d81edae73e1670244827c2f12e5bcf0d335f035b538455fe9d02eb0771d41b
+ARG JRE_IMAGE=azul/zulu-openjdk-alpine:25-jre-headless@sha256:e8cb8b9d571afa0fb9c459e43e9c03c05ef1993018b1c038597e4c6536ab331d
 
 
 # Build stage

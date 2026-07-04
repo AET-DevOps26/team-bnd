@@ -15,11 +15,11 @@ openApi {
 }
 
 group = 'com.alexandria'
-version = '0.0.1-SNAPSHOT'
+version = '1.5.1'
 
 java {
 	toolchain {
-		languageVersion = JavaLanguageVersion.of(21)
+		languageVersion = JavaLanguageVersion.of(25)
 	}
 }
 
