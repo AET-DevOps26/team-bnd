@@ -43,7 +43,7 @@ public final class FileNameValidator {
             throw new IllegalArgumentException(
                     "File name must not exceed " + MAX_LENGTH + " characters");
         }
-        if (!fileName.equals(fileName.trim())) {
+        if (!fileName.equals(fileName.strip())) {
             throw new IllegalArgumentException(
                     "File name must not have leading or trailing whitespace");
         }
