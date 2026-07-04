@@ -1,0 +1,51 @@
+package com.alexandria.qa;
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.security.SecurityRequirements;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.security.Principal;
+import java.util.List;
+
+@RestController
+@RequestMapping(path = "/api/v1/qa", produces = MediaType.APPLICATION_JSON_VALUE)
+@Tag(name = "QA", description = "Question answering over the user's knowledge base")
+@SecurityRequirement(name = "bearerAuth")
+public class QAController {
+
+    private final QAService qaService;
+
+    public QAController(QAService qaService) {
+        this.qaService = qaService;
+    }
+
+    @PostMapping("/ask")
+    @Operation(summary = "Ask a question about your documents")
+    @ApiResponse(responseCode = "200", description = "Answer generated")
+    public ResponseEntity<QAInteraction> ask(@RequestBody AskRequest request, Principal principal) {
+        return ResponseEntity.ok(qaService.ask(principal.getName(), request.question()));
+    }
+
+    @GetMapping("/history")
+    @Operation(summary = "Get Q&A history")
+    @ApiResponse(responseCode = "200", description = "Q&A history retrieved")
+    public ResponseEntity<List<QAInteraction>> getHistory(Principal principal) {
+        return ResponseEntity.ok(qaService.getHistory(principal.getName()));
+    }
+
+    @DeleteMapping("/internal/users/{subject}")
+    @Operation(operationId = "qaInternalDeleteUserData", summary = "Purge all QA data for a user (internal, called by user-service)")
+    @ApiResponse(responseCode = "204", description = "User data purged")
+    @SecurityRequirements
+    public ResponseEntity<Void> internalDeleteUserData(@PathVariable("subject") String subject) {
+        qaService.deleteAllForUser(subject);
+        return ResponseEntity.noContent().build();
+    }
+
+    public record AskRequest(String question) {}
+}

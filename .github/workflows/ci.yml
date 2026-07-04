@@ -122,6 +122,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        # The Spring Dockerfile is shared by all three Spring microservices,
+        # the concrete service is picked at build time via `--build-arg SERVICE=...`
         dockerfile:
           - services/spring/Dockerfile
           - services/client/Dockerfile
@@ -259,10 +261,19 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        # Per issue #227 the Spring backend consists of three Gradle sub-modules.
+        # The matrix builds each one independently so failures point at the right
+        # microservice.
         service:
-          - name: spring
-            title: Spring
-            path: services/spring/app
+          - name: user-service
+            title: User Service
+            gradle_module: user-service
+          - name: knowledgebase-service
+            title: KnowledgeBase Service
+            gradle_module: knowledgebase-service
+          - name: qa-service
+            title: QA Service
+            gradle_module: qa-service
     permissions:
       contents: read
       checks: write # for test report annotations
@@ -287,8 +298,8 @@ jobs:
 
       - name: Build and Test
         if: env.RUN_JOB == 'true'
-        working-directory: ${{ matrix.service.path }}
-        run: ./gradlew --no-daemon --stacktrace build
+        working-directory: services/spring
+        run: ./gradlew --no-daemon --stacktrace :${{ matrix.service.gradle_module }}:build
 
       - name: Upload Test Reports
         if: always() && env.RUN_JOB == 'true'
@@ -296,8 +307,8 @@ jobs:
         with:
           name: test-reports-${{ matrix.service.name }}
           path: |
-            ${{ matrix.service.path }}/build/reports/tests/**
-            ${{ matrix.service.path }}/build/test-results/**
+            services/spring/${{ matrix.service.gradle_module }}/build/reports/tests/**
+            services/spring/${{ matrix.service.gradle_module }}/build/test-results/**
           if-no-files-found: ignore
           retention-days: 7
 
@@ -306,7 +317,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: jar-${{ matrix.service.name }}
-          path: ${{ matrix.service.path }}/build/libs/*.jar
+          path: services/spring/${{ matrix.service.gradle_module }}/build/libs/*.jar
           if-no-files-found: warn
           retention-days: 7
 
@@ -402,18 +413,31 @@ jobs:
       fail-fast: false
       matrix:
         service:
-          - name: spring
-            title: Spring
+          - name: user-service
+            title: User Service
             context: services/spring
             dockerfile: services/spring/Dockerfile
+            build_args: SERVICE=user-service
+          - name: knowledgebase-service
+            title: KnowledgeBase Service
+            context: services/spring
+            dockerfile: services/spring/Dockerfile
+            build_args: SERVICE=knowledgebase-service
+          - name: qa-service
+            title: QA Service
+            context: services/spring
+            dockerfile: services/spring/Dockerfile
+            build_args: SERVICE=qa-service
           - name: client
             title: Client
             context: services/client
             dockerfile: services/client/Dockerfile
+            build_args: ""
           - name: genai
             title: GenAI
             context: services/genai
             dockerfile: services/genai/Dockerfile
+            build_args: ""
     permissions:
       contents: read
       packages: write # needed to push to GHCR on main
@@ -455,6 +479,7 @@ jobs:
         with:
           context: ${{ matrix.service.context }}
           file: ${{ matrix.service.dockerfile }}
+          build-args: ${{ matrix.service.build_args }}
           push: ${{ github.event_name == 'push' }}
           load: ${{ github.event_name != 'push' }}
           tags: ${{ steps.meta.outputs.tags }}

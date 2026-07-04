@@ -4,29 +4,29 @@
 
 ### Server: Spring Boot REST API
 
-The server side consists of three Spring Boot microservices:
+The server side consists of three Spring Boot microservices. Each service is its own Gradle sub-module under `services/spring/`, built into an individual Docker image and is routed independently by Traefik (or the Kubernetes ingress). They share one PostgreSQL instance but each service has its own schema.
 
-1. User Service
-    - Handles user registration, login, and authentication (JWT-based)
+1. `user-service` (`services/spring/user-service/`)
+    - Owns the `users` table (schema `user`)
+    - Handles user registration, login, and authentication. Users are created on first authenticated request (`OidcUserFilter`)
     - Manages user settings/preferences
-    - Provides endpoints for session management
-    - Database schema: `users`
+    - Exposes `DELETE /api/v1/users/{id}` and fans out the request to `knowledgebase-service` and `qa-service` over the internal API endpoints on delete
+    - Public routes: `/api/v1/users/**`, `/user-service/swagger-ui`, `/user-service/v3/api-docs`
 
-2. Document Management Service
-    - Manages document lifecycle (upload, process, update, delete)
-    - Handles document storage and retrieval
-    - Stores document metadata (title, upload date, file size etc.)
-    - Triggers the GenAI service for summarization and entity extraction
-    - Database schema: `documents`
+2. `knowledgebase-service` (`services/spring/knowledgebase-service/`)
+    - Owns the `documents`, `summaries`, `tags`, `document_tags`, `extracted_entities` and `search_queries` tables (schema `knowledgebase`)
+    - Handles document upload and download to SeaweedFS (S3), tagging, and text search
+    - Calls the GenAI service for document summarization and entity extraction
+    - Public routes: `/api/v1/knowledgebase/**`, `/knowledgebase-service/swagger-ui`, `/knowledgebase-service/v3/api-docs`
+    - Internal routes (not exposed by Traefik): `DELETE /api/v1/knowledgebase/internal/users/{subject}` for the user-service delete and `GET .../document-keys` for the qa-service `/ask` endpoint
 
-3. Search and Indexing Service
-    - Manages document tags (auto-generated as well as user-defined)
-    - Performs search queries across the knowledge base
-    - Generates answers to natural language questions based on the knowledge base
-    - Provides filtered browsing and full-text search
-    - Database schema: `search`
+3. `qa-service` (`services/spring/qa-service/`)
+    - Owns the `qa_interactions` and `qa_source_documents` tables (schema `qa`)
+    - On `/api/v1/qa/ask`, fetches the caller's document object keys from `knowledgebase-service` and delegates answer generation to the GenAI service
+    - Public routes: `/api/v1/qa/**`, `/qa-service/swagger-ui`, `/qa-service/v3/api-docs`
+    - Internal routes: `DELETE /api/v1/qa/internal/users/{subject}` for the user-service delete
 
-All services communicate via REST over HTTP. All endpoints are documented by an OpenAPI spec.
+All services communicate via REST over HTTP. The public API is documented in `api/openapi.yaml`. Internal endpoints are onlydescribed in the "Info" section. Each service exposes its own Prometheus scrape endpoint on `/actuator/prometheus` and shows up as its own job in `infra/prometheus/prometheus.yml`.
 
 Team member responsible for this subsystem: Niklas Ladurner
 
@@ -60,10 +60,12 @@ Team member responsible for this subsystem: Dominic Prinz
 
 ### Database: PostgreSQL
 
-The database consists of a single PostgreSQL instance with schema separation for each microservice:
-- `users`: user accounts, credentials, preferences
-- `documents`: file metadata, summaries, entities
-- `search`: tags, categories, index data
+The database consists of a single PostgreSQL instance with schema separation for each Spring microservice:
+- `user_service.users`
+- `knowledgebase_service.documents`, `.summaries`, `.tags`, `.document_tags`, `.extracted_entities`, `.search_queries`
+- `qa_service.qa_interactions`, `.qa_source_documents`
+
+Cross-service references (`Document.owner_subject`, `SearchQuery.user_subject`, `QAInteraction.user_subject`) are stored as plain OIDC-subject strings, not foreign keys, so no service has to read another service's schema.
 
 Team member responsible for this subsystem: Niklas Ladurner
 

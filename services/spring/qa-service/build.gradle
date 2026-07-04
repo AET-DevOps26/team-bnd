@@ -1,0 +1,16 @@
+// qa-service does not need PDFBox or the AWS SDK. It stores Q&A history and
+// coordinates the /ask flow between knowledgebase-service and the GenAI
+// service via REST.
+
+plugins {
+	id 'org.springdoc.openapi-gradle-plugin'
+}
+
+openApi {
+	apiDocsUrl = "http://localhost:8080/qa-service/v3/api-docs.yaml"
+	outputDir = file("$projectDir/../../../api")
+	outputFileName = "spring-qa-openapi.yaml"
+	customBootRun {
+		args = ["--spring.profiles.active=openapi"]
+	}
+}
