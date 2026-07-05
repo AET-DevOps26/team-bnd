@@ -1,7 +1,7 @@
 // Root build script shared by all Alexandria Spring microservices.
 //
-// The Spring stack was split from a single `app` module into three services
-// (user, knowledgebase, qa) per issue #227. This root project only sets up
+// The Spring stack is split from a single `app` module into three services
+// (user, knowledgebase, qa). This root project only sets up
 // the common Spring Boot version, Java toolchain, and repositories; each
 // subproject declares its own dependencies in its own build.gradle.
 

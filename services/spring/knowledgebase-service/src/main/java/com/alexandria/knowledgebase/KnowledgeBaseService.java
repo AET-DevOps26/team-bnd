@@ -255,10 +255,4 @@ public class KnowledgeBaseService {
         documentRepository.deleteByOwnerSubject(userSubject);
         searchQueryRepository.deleteByUserSubject(userSubject);
     }
-
-    public List<Document> listDocumentsByObjectKeys(String ownerSubject, List<String> objectKeys) {
-        return documentRepository.findByOwnerSubject(ownerSubject).stream()
-                .filter(d -> objectKeys.contains(d.getObjectKey()))
-                .toList();
-    }
 }

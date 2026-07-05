@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 # Single Dockerfile that is shared by all three Alexandria Spring microservices
-# (user-service, knowledgebase-service, qa-service). The concrete service is
+# (user-service, knowledgebase-service, qa-service). The concrete service
 # is specified at build time via `--build-arg SERVICE=<name>`.
 
 # Build stage
@@ -19,9 +19,7 @@ COPY qa-service/build.gradle qa-service/build.gradle
 
 RUN ./gradlew :${SERVICE}:dependencies --no-daemon
 
-COPY user-service/src user-service/src
-COPY knowledgebase-service/src knowledgebase-service/src
-COPY qa-service/src qa-service/src
+COPY ${SERVICE}/src ${SERVICE}/src
 RUN ./gradlew :${SERVICE}:bootJar --no-daemon
 
 # Run stage
