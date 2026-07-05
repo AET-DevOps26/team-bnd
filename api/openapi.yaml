@@ -663,6 +663,16 @@ paths:
                   $ref: '#/components/schemas/QAInteraction'
       security:
         - bearerAuth: []
+    delete:
+      tags:
+        - spring-qa-openapi_QA
+      summary: Delete Q&A history
+      operationId: deleteHistory
+      responses:
+        '204':
+          description: Q&A history deleted
+      security:
+        - bearerAuth: []
   /api/v1/qa/internal/users/{subject}:
     delete:
       tags:

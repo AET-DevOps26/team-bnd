@@ -52,6 +52,12 @@ class QAServiceTest {
     }
 
     @Test
+    void unit_qa_deleteHistoryDelegates() {
+        qaService.deleteHistory("oidc|123");
+        verify(repository).deleteByUserSubject("oidc|123");
+    }
+
+    @Test
     void unit_qa_deleteAllForUserDelegates() {
         qaService.deleteAllForUser("oidc|123");
         verify(repository).deleteByUserSubject("oidc|123");

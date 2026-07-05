@@ -38,6 +38,14 @@ public class QAController {
         return ResponseEntity.ok(qaService.getHistory(principal.getName()));
     }
 
+    @DeleteMapping("/history")
+    @Operation(summary = "Delete Q&A history")
+    @ApiResponse(responseCode = "204", description = "Q&A history deleted")
+    public ResponseEntity<Void> deleteHistory(Principal principal) {
+        qaService.deleteHistory(principal.getName());
+        return ResponseEntity.noContent().build();
+    }
+
     @DeleteMapping("/internal/users/{subject}")
     @Operation(operationId = "qaInternalDeleteUserData", summary = "Purge all QA data for a user (internal, called by user-service)")
     @ApiResponse(responseCode = "204", description = "User data purged")

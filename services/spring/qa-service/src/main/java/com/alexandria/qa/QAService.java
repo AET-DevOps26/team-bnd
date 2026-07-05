@@ -43,7 +43,12 @@ public class QAService {
     }
 
     @Transactional
-    public void deleteAllForUser(String userSubject) {
+    public void deleteHistory(String userSubject) {
         repository.deleteByUserSubject(userSubject);
+    }
+
+    @Transactional
+    public void deleteAllForUser(String userSubject) {
+        deleteHistory(userSubject);
     }
 }
