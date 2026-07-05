@@ -26,7 +26,7 @@ permissions:
 
 env:
   JAVA_VERSION: "25"
-  JAVA_DISTRIBUTION: "temurin"
+  JAVA_DISTRIBUTION: "zulu"
   REGISTRY: ghcr.io
   IMAGE_NAMESPACE: ${{ github.repository }}
   POSTGRES_HOST: ${{ vars.POSTGRES_HOST }}
