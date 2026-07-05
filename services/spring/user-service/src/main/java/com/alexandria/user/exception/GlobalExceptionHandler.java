@@ -29,6 +29,13 @@ public class GlobalExceptionHandler {
                 .body(new ErrorResponse("UNAUTHORIZED", e.getMessage()));
     }
 
+    @ExceptionHandler(UserDeletionException.class)
+    public ResponseEntity<ErrorResponse> handleUserDeletionFailed(UserDeletionException e) {
+        return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
+                .body(new ErrorResponse("USER_DELETE_FAILED",
+                        "Could not fully delete the user account, please retry"));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGenericException(Exception ex) {
         return ResponseEntity

@@ -2,6 +2,7 @@ package com.alexandria.user;
 
 import com.alexandria.user.dto.UpdatePreferencesRequest;
 import com.alexandria.user.exception.PreferencesSerializationException;
+import com.alexandria.user.exception.UserDeletionException;
 import com.alexandria.user.exception.UserNotFoundException;
 import com.alexandria.user.integration.KnowledgeBaseClient;
 import com.alexandria.user.integration.QAClient;
@@ -12,6 +13,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -67,19 +70,28 @@ public class UserService {
                 .orElseThrow(() -> new UserNotFoundException(id))
                 .getOidcSubject();
 
-        // Peer fan-out is intentionally *not* wrapped in a `@Transactional`
-        // method: a slow or hung peer must not hold a Postgres connection
-        // open (and eventually exhaust the Hikari pool). Spring Data's own
-        // `findById` / `deleteById` open their own short transactions.
+        // Fan-out runs outside any @Transactional method so a hung peer can't
+        // hold a Postgres connection and exhaust the Hikari pool. The peer
+        // deletes are idempotent (keyed on the OIDC subject), so we try both
+        // even if one fails and keep the local user row as a retry anchor: it
+        // is dropped only after both peers succeed, and a partial failure is
+        // surfaced so the whole delete can be retried until it converges.
+        List<String> failedServices = new ArrayList<>();
         try {
             knowledgeBaseClient.deleteUserData(subject);
         } catch (Exception e) {
             log.warn("Failed to fan out user delete to knowledgebase-service for {}: {}", subject, e.getMessage());
+            failedServices.add("knowledgebase-service");
         }
         try {
             qaClient.deleteUserData(subject);
         } catch (Exception e) {
             log.warn("Failed to fan out user delete to qa-service for {}: {}", subject, e.getMessage());
+            failedServices.add("qa-service");
+        }
+
+        if (!failedServices.isEmpty()) {
+            throw new UserDeletionException(id, failedServices);
         }
 
         repository.deleteById(id);

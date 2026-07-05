@@ -1,6 +1,7 @@
 package com.alexandria.user;
 
 import com.alexandria.user.dto.UpdatePreferencesRequest;
+import com.alexandria.user.exception.UserDeletionException;
 import com.alexandria.user.exception.UserNotFoundException;
 import com.alexandria.user.integration.KnowledgeBaseClient;
 import com.alexandria.user.integration.QAClient;
@@ -105,17 +106,18 @@ class UserServiceTest {
     }
 
     @Test
-    void unit_user_deleteContinuesWhenPeerFanoutFails() {
+    void unit_user_deleteAttemptsBothPeersButAbortsWhenOneFails() {
         UUID userId = UUID.randomUUID();
         User user = new User("oidc|123", "testuser", "test@example.com");
 
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         doThrow(new RuntimeException("kb down")).when(knowledgeBaseClient).deleteUserData(any());
 
-        userService.deleteUser(userId);
+        assertThatThrownBy(() -> userService.deleteUser(userId))
+                .isInstanceOf(UserDeletionException.class);
 
         verify(qaClient).deleteUserData("oidc|123");
-        verify(userRepository).deleteById(userId);
+        verify(userRepository, never()).deleteById(any());
     }
 
     @Test
