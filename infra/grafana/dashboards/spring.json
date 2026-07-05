@@ -33,7 +33,7 @@
 			"targets": [
 				{
 					"datasource": { "type": "prometheus", "uid": "prometheus" },
-					"expr": "sum(jvm_memory_used_bytes{job=\"spring\", area=\"heap\"}) by (id)",
+					"expr": "sum(jvm_memory_used_bytes{job=~\"user-service|knowledgebase-service|qa-service\", area=\"heap\"}) by (id)",
 					"legendFormat": "{{id}}",
 					"refId": "A"
 				}
@@ -57,7 +57,7 @@
 			"targets": [
 				{
 					"datasource": { "type": "prometheus", "uid": "prometheus" },
-					"expr": "sum(jvm_memory_used_bytes{job=\"spring\", area=\"nonheap\"}) by (id)",
+					"expr": "sum(jvm_memory_used_bytes{job=~\"user-service|knowledgebase-service|qa-service\", area=\"nonheap\"}) by (id)",
 					"legendFormat": "{{id}}",
 					"refId": "A"
 				}
@@ -81,7 +81,7 @@
 			"targets": [
 				{
 					"datasource": { "type": "prometheus", "uid": "prometheus" },
-					"expr": "sum(rate(jvm_gc_pause_seconds_sum{job=\"spring\"}[5m])) by (cause)",
+					"expr": "sum(rate(jvm_gc_pause_seconds_sum{job=~\"user-service|knowledgebase-service|qa-service\"}[5m])) by (cause)",
 					"legendFormat": "{{cause}}",
 					"refId": "A"
 				}
@@ -105,13 +105,13 @@
 			"targets": [
 				{
 					"datasource": { "type": "prometheus", "uid": "prometheus" },
-					"expr": "jvm_threads_live_threads{job=\"spring\"}",
+					"expr": "jvm_threads_live_threads{job=~\"user-service|knowledgebase-service|qa-service\"}",
 					"legendFormat": "live threads",
 					"refId": "A"
 				},
 				{
 					"datasource": { "type": "prometheus", "uid": "prometheus" },
-					"expr": "jvm_threads_daemon_threads{job=\"spring\"}",
+					"expr": "jvm_threads_daemon_threads{job=~\"user-service|knowledgebase-service|qa-service\"}",
 					"legendFormat": "daemon threads",
 					"refId": "B"
 				}
@@ -135,7 +135,7 @@
 			"targets": [
 				{
 					"datasource": { "type": "prometheus", "uid": "prometheus" },
-					"expr": "histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket{job=\"spring\", uri!~\"/actuator.*\"}[5m])) by (le, uri))",
+					"expr": "histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket{job=~\"user-service|knowledgebase-service|qa-service\", uri!~\"/actuator.*\"}[5m])) by (le, uri))",
 					"legendFormat": "p95 {{uri}}",
 					"refId": "A"
 				}
@@ -159,25 +159,25 @@
 			"targets": [
 				{
 					"datasource": { "type": "prometheus", "uid": "prometheus" },
-					"expr": "hikaricp_connections_active{job=\"spring\"}",
+					"expr": "hikaricp_connections_active{job=~\"user-service|knowledgebase-service|qa-service\"}",
 					"legendFormat": "active",
 					"refId": "A"
 				},
 				{
 					"datasource": { "type": "prometheus", "uid": "prometheus" },
-					"expr": "hikaricp_connections_idle{job=\"spring\"}",
+					"expr": "hikaricp_connections_idle{job=~\"user-service|knowledgebase-service|qa-service\"}",
 					"legendFormat": "idle",
 					"refId": "B"
 				},
 				{
 					"datasource": { "type": "prometheus", "uid": "prometheus" },
-					"expr": "hikaricp_connections{job=\"spring\"}",
+					"expr": "hikaricp_connections{job=~\"user-service|knowledgebase-service|qa-service\"}",
 					"legendFormat": "total",
 					"refId": "C"
 				},
 				{
 					"datasource": { "type": "prometheus", "uid": "prometheus" },
-					"expr": "hikaricp_connections_pending{job=\"spring\"}",
+					"expr": "hikaricp_connections_pending{job=~\"user-service|knowledgebase-service|qa-service\"}",
 					"legendFormat": "pending",
 					"refId": "D"
 				}

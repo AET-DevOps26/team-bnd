@@ -73,7 +73,7 @@
 			"targets": [
 				{
 					"datasource": { "type": "prometheus", "uid": "prometheus" },
-					"expr": "sum(rate(http_server_requests_seconds_count{job=\"spring\"}[5m]))",
+					"expr": "sum(rate(http_server_requests_seconds_count{job=~\"user-service|knowledgebase-service|qa-service\"}[5m]))",
 					"legendFormat": "spring",
 					"refId": "A"
 				},
@@ -103,13 +103,13 @@
 			"targets": [
 				{
 					"datasource": { "type": "prometheus", "uid": "prometheus" },
-					"expr": "sum(rate(http_server_requests_seconds_count{job=\"spring\", status=~\"4..\"}[5m]))",
+					"expr": "sum(rate(http_server_requests_seconds_count{job=~\"user-service|knowledgebase-service|qa-service\", status=~\"4..\"}[5m]))",
 					"legendFormat": "spring 4xx",
 					"refId": "A"
 				},
 				{
 					"datasource": { "type": "prometheus", "uid": "prometheus" },
-					"expr": "sum(rate(http_server_requests_seconds_count{job=\"spring\", status=~\"5..\"}[5m]))",
+					"expr": "sum(rate(http_server_requests_seconds_count{job=~\"user-service|knowledgebase-service|qa-service\", status=~\"5..\"}[5m]))",
 					"legendFormat": "spring 5xx",
 					"refId": "B"
 				},
@@ -145,24 +145,24 @@
 			"targets": [
 				{
 					"datasource": { "type": "prometheus", "uid": "prometheus" },
-					"expr": "histogram_quantile(0.50, sum(rate(http_server_requests_seconds_bucket{job=\"spring\"}[5m])) by (le))",
+					"expr": "histogram_quantile(0.50, sum(rate(http_server_requests_seconds_bucket{job=~\"user-service|knowledgebase-service|qa-service\"}[5m])) by (le))",
 					"legendFormat": "spring p50",
 					"refId": "A"
 				},
 				{
 					"datasource": { "type": "prometheus", "uid": "prometheus" },
-					"expr": "histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket{job=\"spring\"}[5m])) by (le))",
+					"expr": "histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket{job=~\"user-service|knowledgebase-service|qa-service\"}[5m])) by (le))",
 					"legendFormat": "spring p95",
 					"refId": "B"
 				},
 				{
 					"datasource": { "type": "prometheus", "uid": "prometheus" },
-					"expr": "histogram_quantile(0.99, sum(rate(http_server_requests_seconds_bucket{job=\"spring\"}[5m])) by (le))",
+					"expr": "histogram_quantile(0.99, sum(rate(http_server_requests_seconds_bucket{job=~\"user-service|knowledgebase-service|qa-service\"}[5m])) by (le))",
 					"legendFormat": "spring p99",
 					"refId": "C"
 				}
 			],
-			"title": "Spring latency percentiles",
+			"title": "Spring backend latency percentiles (user/knowledgebase/qa)",
 			"type": "timeseries"
 		},
 		{
