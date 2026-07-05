@@ -30,7 +30,7 @@ public class KnowledgeBaseClient {
 
     public List<String> listDocumentKeys(String userSubject) {
         return restClient.get()
-                .uri("/api/v1/knowledgebase/internal/users/{subject}/document-keys", userSubject)
+                .uri("/internal/knowledgebase/users/{subject}/document-keys", userSubject)
                 .retrieve()
                 .body(new ParameterizedTypeReference<List<String>>() {});
     }

@@ -18,6 +18,9 @@ tags:
   - name: spring-user-openapi_Health
     description: Liveness and smoke endpoints
     x-displayName: Health
+  - name: spring-knowledgebase-openapi_KnowledgeBase Internal
+    description: Service-to-service endpoints, reachable only inside the cluster network
+    x-displayName: KnowledgeBase Internal
   - name: spring-knowledgebase-openapi_Health
     description: Liveness and smoke endpoints
     x-displayName: Health
@@ -30,6 +33,9 @@ tags:
   - name: spring-qa-openapi_Health
     description: Liveness and smoke endpoints
     x-displayName: Health
+  - name: spring-qa-openapi_QA Internal
+    description: Service-to-service endpoints, reachable only inside the cluster network
+    x-displayName: QA Internal
   - description: Health check endpoints
     name: genai-openapi_health
     x-displayName: health
@@ -356,6 +362,27 @@ paths:
               schema:
                 type: string
       security: []
+  /internal/knowledgebase/users/{subject}/document-keys:
+    get:
+      tags:
+        - spring-knowledgebase-openapi_KnowledgeBase Internal
+      summary: List object keys for a user's documents (internal)
+      operationId: listDocumentKeys
+      parameters:
+        - name: subject
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Object keys returned
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
   /api/v1/knowledgebase/tags:
     get:
       tags:
@@ -392,29 +419,6 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Document'
-      security:
-        - bearerAuth: []
-  /api/v1/knowledgebase/internal/users/{subject}/document-keys:
-    get:
-      tags:
-        - spring-knowledgebase-openapi_KnowledgeBase
-      summary: List object keys for a user's documents (internal, called by qa-service)
-      operationId: internalListDocumentKeys
-      parameters:
-        - name: subject
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Object keys returned
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  type: string
       security:
         - bearerAuth: []
   /api/v1/knowledgebase/history/search:
@@ -565,13 +569,11 @@ paths:
                 format: byte
       security:
         - bearerAuth: []
-  /api/v1/knowledgebase/internal/users/{subject}:
+  /internal/knowledgebase/users/{subject}:
     delete:
       tags:
-        - spring-knowledgebase-openapi_KnowledgeBase
-      summary: >-
-        Purge all knowledgebase data for a user (internal, called by
-        user-service)
+        - spring-knowledgebase-openapi_KnowledgeBase Internal
+      summary: Purge all knowledgebase data for a user (internal)
       operationId: kbInternalDeleteUserData
       parameters:
         - name: subject
@@ -582,8 +584,6 @@ paths:
       responses:
         '204':
           description: User data purged
-      security:
-        - bearerAuth: []
   /api/v1/knowledgebase/documents/{documentId}/tags/{tagId}:
     delete:
       tags:
@@ -673,11 +673,11 @@ paths:
           description: Q&A history deleted
       security:
         - bearerAuth: []
-  /api/v1/qa/internal/users/{subject}:
+  /internal/qa/users/{subject}:
     delete:
       tags:
-        - spring-qa-openapi_QA
-      summary: Purge all QA data for a user (internal, called by user-service)
+        - spring-qa-openapi_QA Internal
+      summary: Purge all QA data for a user (internal)
       operationId: qaInternalDeleteUserData
       parameters:
         - name: subject
@@ -688,8 +688,6 @@ paths:
       responses:
         '204':
           description: User data purged
-      security:
-        - bearerAuth: []
   /genai/ask:
     post:
       description: >-
@@ -1317,12 +1315,14 @@ x-tagGroups:
       - spring-user-openapi_Health
   - name: Alexandria KnowledgeBase Service API
     tags:
+      - spring-knowledgebase-openapi_KnowledgeBase Internal
       - spring-knowledgebase-openapi_Health
       - spring-knowledgebase-openapi_KnowledgeBase
   - name: Alexandria QA Service API
     tags:
       - spring-qa-openapi_QA
       - spring-qa-openapi_Health
+      - spring-qa-openapi_QA Internal
   - name: Alexandria GenAI
     tags:
       - genai-openapi_health

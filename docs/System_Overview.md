@@ -18,13 +18,13 @@ The server side consists of three Spring Boot microservices. Each service is its
     - Handles document upload and download to SeaweedFS (S3), tagging, and text search
     - Calls the GenAI service for document summarization and entity extraction
     - Public routes: `/api/v1/knowledgebase/**`, `/knowledgebase-service/swagger-ui`, `/knowledgebase-service/v3/api-docs`
-    - Internal routes (not exposed by Traefik): `DELETE /api/v1/knowledgebase/internal/users/{subject}` for the user-service delete and `GET .../document-keys` for the qa-service `/ask` endpoint
+    - Internal routes (not routed by Traefik or the Ingress): `/internal/knowledgebase/**`
 
 3. `qa-service` (`services/spring/qa-service/`)
     - Owns the `qa_interactions` and `qa_source_documents` tables (schema `qa`)
     - On `/api/v1/qa/ask`, fetches the caller's document object keys from `knowledgebase-service` and delegates answer generation to the GenAI service
     - Public routes: `/api/v1/qa/**`, `/qa-service/swagger-ui`, `/qa-service/v3/api-docs`
-    - Internal routes: `DELETE /api/v1/qa/internal/users/{subject}` for the user-service delete
+    - Internal routes (not routed by Traefik or the Ingress): `/internal/qa/**`
 
 All services communicate via REST over HTTP. The public API is documented in `api/openapi.yaml`. Internal endpoints are only described in the "Info" section. Each service exposes its own Prometheus scrape endpoint on `/actuator/prometheus` and shows up as its own job in `infra/prometheus/prometheus.yml`.
 

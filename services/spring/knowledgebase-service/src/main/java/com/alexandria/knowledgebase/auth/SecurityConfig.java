@@ -28,8 +28,9 @@ public class SecurityConfig {
                         .requestMatchers("/knowledgebase-service/swagger-ui/**", "/knowledgebase-service/v3/api-docs/**", "/knowledgebase-service/v3/api-docs.yaml").permitAll()
                         .requestMatchers("/actuator/**").permitAll()
                         .requestMatchers("/knowledgebase-service/hello").permitAll()
-                        // Internal fan-out endpoints are only reachable from the alexandria container network
-                        .requestMatchers("/api/v1/knowledgebase/internal/**").permitAll()
+                        // Internal fan-out endpoints live under a prefix that is not routed
+                        // publicly, so they are only reachable inside the cluster network
+                        .requestMatchers("/internal/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2

@@ -9,7 +9,6 @@ import com.alexandria.knowledgebase.search.SearchQuery;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
-import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpHeaders;
@@ -236,29 +235,6 @@ public class KnowledgeBaseController {
                         .toList();
 
         return ResponseEntity.ok(new TagListDto(tagDtos));
-    }
-
-    // ---- Internal service-to-service endpoints (not routed by Traefik) ----
-
-    @DeleteMapping("/internal/users/{subject}")
-    @Operation(operationId = "kbInternalDeleteUserData", summary = "Purge all knowledgebase data for a user (internal, called by user-service)")
-    @ApiResponse(responseCode = "204", description = "User data purged")
-    @SecurityRequirements
-    public ResponseEntity<Void> internalDeleteUserData(@PathVariable("subject") String subject) {
-        knowledgeBaseService.deleteAllForUser(subject);
-        return ResponseEntity.noContent().build();
-    }
-
-    @GetMapping("/internal/users/{subject}/document-keys")
-    @Operation(summary = "List object keys for a user's documents (internal, called by qa-service)")
-    @ApiResponse(responseCode = "200", description = "Object keys returned")
-    @SecurityRequirements
-    public ResponseEntity<List<String>> internalListDocumentKeys(@PathVariable("subject") String subject) {
-        return ResponseEntity.ok(
-                knowledgeBaseService.getDocuments(subject).stream()
-                        .map(Document::getObjectKey)
-                        .toList()
-        );
     }
 
     public record CreateDocumentRequest(

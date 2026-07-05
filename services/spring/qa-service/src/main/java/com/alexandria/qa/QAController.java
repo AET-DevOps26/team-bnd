@@ -3,7 +3,6 @@ package com.alexandria.qa;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
-import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -43,15 +42,6 @@ public class QAController {
     @ApiResponse(responseCode = "204", description = "Q&A history deleted")
     public ResponseEntity<Void> deleteHistory(Principal principal) {
         qaService.deleteHistory(principal.getName());
-        return ResponseEntity.noContent().build();
-    }
-
-    @DeleteMapping("/internal/users/{subject}")
-    @Operation(operationId = "qaInternalDeleteUserData", summary = "Purge all QA data for a user (internal, called by user-service)")
-    @ApiResponse(responseCode = "204", description = "User data purged")
-    @SecurityRequirements
-    public ResponseEntity<Void> internalDeleteUserData(@PathVariable("subject") String subject) {
-        qaService.deleteAllForUser(subject);
         return ResponseEntity.noContent().build();
     }
 

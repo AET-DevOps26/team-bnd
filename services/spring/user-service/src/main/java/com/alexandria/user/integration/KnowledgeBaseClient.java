@@ -28,7 +28,7 @@ public class KnowledgeBaseClient {
 
     public void deleteUserData(String oidcSubject) {
         restClient.delete()
-                .uri("/api/v1/knowledgebase/internal/users/{subject}", oidcSubject)
+                .uri("/internal/knowledgebase/users/{subject}", oidcSubject)
                 .retrieve()
                 .toBodilessEntity();
     }

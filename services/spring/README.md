@@ -28,8 +28,7 @@ Each service exposes its own Swagger UI, routed through Traefik:
 | /api/v1/qa/…                                 | qa-service API                 |
 | /qa-service/swagger-ui/index.html            | qa-service API docs          |
 
-The three services also expose a set of `/api/v1/{knowledgebase,qa}/internal/**` endpoints that Traefik does **not** route from the public entrypoint.
-These endpoints are only reachable from other containers inside the `alexandria` network and are described in the `info` section of the aggregated OpenAPI spec.
+The three services also expose a set of `/internal/{knowledgebase,qa}/**` endpoints for service-to-service calls. This prefix is deliberately not routed by Traefik or the Kubernetes Ingress, so the endpoints are only reachable from other containers inside the `alexandria` network. They are described in the `info` section of the aggregated OpenAPI spec.
 
 ## Production
 

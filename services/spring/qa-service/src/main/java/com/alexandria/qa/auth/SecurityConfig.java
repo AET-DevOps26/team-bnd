@@ -29,7 +29,7 @@ public class SecurityConfig {
                         .requestMatchers("/actuator/**").permitAll()
                         .requestMatchers("/qa-service/hello").permitAll()
                         // Internal fan-out endpoints are only reachable from the alexandria container network
-                        .requestMatchers("/api/v1/qa/internal/**").permitAll()
+                        .requestMatchers("/internal/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2
