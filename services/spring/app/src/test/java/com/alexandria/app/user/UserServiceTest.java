@@ -6,6 +6,9 @@ import com.alexandria.app.exception.UserNotFoundException;
 import com.alexandria.app.knowledgebase.ObjectStorageService;
 import com.alexandria.app.qa.QAInteractionRepository;
 import com.alexandria.app.search.SearchQueryRepository;
+import com.alexandria.app.user.dto.UpdatePreferencesRequest;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -39,6 +42,9 @@ class UserServiceTest {
     @Mock
     private ObjectStorageService objectStorageService;
 
+    @Mock
+    private ObjectMapper objectMapper;
+
     private UserService userService;
 
     @BeforeEach
@@ -48,7 +54,8 @@ class UserServiceTest {
                 documentRepository,
                 qaInteractionRepository,
                 searchQueryRepository,
-                objectStorageService);
+                objectStorageService,
+                objectMapper);
     }
 
     @Test
@@ -127,5 +134,53 @@ class UserServiceTest {
                 .hasMessageContaining(userId.toString());
 
         verify(userRepository, never()).deleteById(any());
+    }
+
+    @Test
+    void unit_user_updatePreferencesUpdatesFields() throws JsonProcessingException {
+        String oidcSubject = "auth0|123";
+        User user = new User(oidcSubject, "testuser", "test@example.com");
+        user.setPreferences("{\"darkTheme\":false,\"language\":\"en\"}");
+        when(userRepository.findByOidcSubject(oidcSubject)).thenReturn(Optional.of(user));
+
+        ObjectMapper realMapper = new ObjectMapper();
+        userService = new UserService(
+                userRepository, documentRepository, qaInteractionRepository,
+                searchQueryRepository, objectStorageService, realMapper);
+
+        UpdatePreferencesRequest request = new UpdatePreferencesRequest(true, "de");
+        UserService.UserPreferences result = userService.updatePreferences(oidcSubject, request);
+
+        assertThat(result.darkTheme()).isTrue();
+        assertThat(result.language()).isEqualTo("de");
+        verify(userRepository).save(user);
+    }
+
+    @Test
+    void unit_user_updatePreferencesPartialUpdate() throws JsonProcessingException {
+        String oidcSubject = "auth0|123";
+        User user = new User(oidcSubject, "testuser", "test@example.com");
+        user.setPreferences("{\"darkTheme\":true,\"language\":\"en\"}");
+        when(userRepository.findByOidcSubject(oidcSubject)).thenReturn(Optional.of(user));
+
+        ObjectMapper realMapper = new ObjectMapper();
+        userService = new UserService(
+                userRepository, documentRepository, qaInteractionRepository,
+                searchQueryRepository, objectStorageService, realMapper);
+
+        UpdatePreferencesRequest request = new UpdatePreferencesRequest(null, "fr");
+        UserService.UserPreferences result = userService.updatePreferences(oidcSubject, request);
+
+        assertThat(result.darkTheme()).isTrue();
+        assertThat(result.language()).isEqualTo("fr");
+    }
+
+    @Test
+    void unit_user_updatePreferencesThrowsWhenUserNotFound() {
+        when(userRepository.findByOidcSubject("unknown")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(
+                () -> userService.updatePreferences("unknown", new UpdatePreferencesRequest(true, "en")))
+                .isInstanceOf(UserNotFoundException.class);
     }
 }

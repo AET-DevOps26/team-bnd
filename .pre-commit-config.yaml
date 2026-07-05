@@ -63,6 +63,12 @@ repos:
         additional_dependencies: ["@redocly/cli@2.30.3"]
         files: '^(services/genai/.*\.py|services/spring/.*\.java)$'
         pass_filenames: false
+      - id: format-java
+        name: Format Java with Spotless
+        entry: bash -c 'services/spring/app/gradlew -p services/spring/app spotlessApply && git diff --exit-code --name-only -- "*.java"'
+        language: system
+        files: "\\.java$"
+        pass_filenames: false
       - id: redocly-lint
         name: redocly-lint
         entry: redocly lint api/openapi.yaml

@@ -2,10 +2,14 @@ package com.alexandria.app.user;
 
 import com.alexandria.app.document.Document;
 import com.alexandria.app.document.DocumentRepository;
+import com.alexandria.app.exception.PreferencesSerializationException;
 import com.alexandria.app.exception.UserNotFoundException;
 import com.alexandria.app.knowledgebase.ObjectStorageService;
 import com.alexandria.app.qa.QAInteractionRepository;
 import com.alexandria.app.search.SearchQueryRepository;
+import com.alexandria.app.user.dto.UpdatePreferencesRequest;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -28,18 +32,21 @@ public class UserService {
     private final QAInteractionRepository qaInteractionRepository;
     private final SearchQueryRepository searchQueryRepository;
     private final ObjectStorageService objectStorageService;
+    private final ObjectMapper objectMapper;
 
     public UserService(
             UserRepository repository,
             DocumentRepository documentRepository,
             QAInteractionRepository qaInteractionRepository,
             SearchQueryRepository searchQueryRepository,
-            ObjectStorageService objectStorageService) {
+            ObjectStorageService objectStorageService,
+            ObjectMapper objectMapper) {
         this.repository = repository;
         this.documentRepository = documentRepository;
         this.qaInteractionRepository = qaInteractionRepository;
         this.searchQueryRepository = searchQueryRepository;
         this.objectStorageService = objectStorageService;
+        this.objectMapper = objectMapper;
     }
 
     /**
@@ -71,6 +78,10 @@ public class UserService {
         return repository.findByOidcSubject(oidcSubject);
     }
 
+    public UserPreferences getPreferences(User user) {
+        return parsePreferences(user.getPreferences());
+    }
+
     /**
      * Deletes user account by ID, including all associated data.
      *
@@ -97,5 +108,54 @@ public class UserService {
         searchQueryRepository.deleteByUserId(id);
 
         repository.deleteById(id);
+    }
+
+    public record UserPreferences(boolean darkTheme, String language) {
+        public static UserPreferences defaultPreferences() {
+            return new UserPreferences(false, "en");
+        }
+    }
+
+    @Transactional
+    public UserPreferences updatePreferences(String oidcSubject, UpdatePreferencesRequest request) {
+        User currentUser =
+                findByOidcSubject(oidcSubject).orElseThrow(() -> new UserNotFoundException(oidcSubject));
+
+        UserPreferences currentPrefs = parsePreferences(currentUser.getPreferences());
+
+        UserPreferences updatedPrefs =
+                new UserPreferences(
+                        request.darkTheme() != null ? request.darkTheme() : currentPrefs.darkTheme(),
+                        request.language() != null ? request.language() : currentPrefs.language());
+
+        try {
+            String updatedJson = objectMapper.writeValueAsString(updatedPrefs);
+            currentUser.setPreferences(updatedJson);
+            this.repository.save(currentUser);
+        } catch (JsonProcessingException e) {
+            log.error(
+                    "Failed to serialize preferences for user {}: {}",
+                    currentUser.getId(),
+                    e.getMessage(),
+                    e);
+            throw new PreferencesSerializationException("Failed to serialize user preferences", e);
+        }
+
+        return updatedPrefs;
+    }
+
+    private UserPreferences parsePreferences(String json) {
+        if (json == null || json.isBlank()) {
+            return UserPreferences.defaultPreferences();
+        }
+        try {
+            return objectMapper.readValue(json, UserPreferences.class);
+        } catch (JsonProcessingException e) {
+            log.error(
+                    "Corrupted preferences JSON detected, falling back to defaults: {}",
+                    e.getMessage(),
+                    e);
+            return UserPreferences.defaultPreferences();
+        }
     }
 }

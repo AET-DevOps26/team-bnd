@@ -1,6 +1,6 @@
 [project]
 name = "alexandria-genai"
-version = "1.5.0"
+version = "1.5.1"
 description = "GenAI microservice for Alexandria"
 requires-python = "~=3.14.0"
 dependencies = [

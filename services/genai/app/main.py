@@ -13,7 +13,7 @@ from app.summarize import summarize
 from app.vectorstore import close_client, delete_document, index_chunks
 
 SERVICE_NAME = "alexandria-genai"
-SERVICE_VERSION = "1.5.0"
+SERVICE_VERSION = "1.5.1"
 
 
 @asynccontextmanager

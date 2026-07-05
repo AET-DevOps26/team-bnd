@@ -3,12 +3,12 @@ package com.alexandria.app.knowledgebase;
 import com.alexandria.app.document.EntityType;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
-import org.springframework.http.client.JdkClientHttpRequestFactory;
 
-import java.util.List;
 import java.net.http.HttpClient;
+import java.util.List;
 
 @Component
 public class GenAiClient {
@@ -29,7 +29,8 @@ public class GenAiClient {
     }
 
     public SummarizeResponse summarize(String objectKey) {
-        return restClient.post()
+        return restClient
+                .post()
                 .uri("/genai/summarize")
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(new SummarizeRequest(objectKey))
@@ -38,7 +39,8 @@ public class GenAiClient {
     }
 
     public ExtractResponse extract(String objectKey) {
-        return restClient.post()
+        return restClient
+                .post()
                 .uri("/genai/extract")
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(new ExtractRequest(objectKey))
@@ -47,7 +49,8 @@ public class GenAiClient {
     }
 
     public AskResponse ask(String question, List<String> objectKeys) {
-        return restClient.post()
+        return restClient
+                .post()
                 .uri("/genai/ask")
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(new AskRequest(question, objectKeys))

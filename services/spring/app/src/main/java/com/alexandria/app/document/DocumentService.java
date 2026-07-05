@@ -19,8 +19,7 @@ public class DocumentService {
     }
 
     public Document findById(UUID id) {
-        return repository.findById(id)
-                .orElseThrow(() -> new DocumentNotFoundException(id));
+        return repository.findById(id).orElseThrow(() -> new DocumentNotFoundException(id));
     }
 
     public List<Document> findByOwnerId(UUID ownerId) {

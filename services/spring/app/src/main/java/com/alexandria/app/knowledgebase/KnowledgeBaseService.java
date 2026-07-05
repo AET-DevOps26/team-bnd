@@ -1,12 +1,22 @@
 package com.alexandria.app.knowledgebase;
 
-import com.alexandria.app.document.*;
+import com.alexandria.app.document.Document;
+import com.alexandria.app.document.DocumentRepository;
+import com.alexandria.app.document.ExtractedEntity;
+import com.alexandria.app.document.ExtractedEntityRepository;
+import com.alexandria.app.document.Summary;
+import com.alexandria.app.document.SummaryRepository;
+import com.alexandria.app.document.Tag;
+import com.alexandria.app.document.TagRepository;
+import com.alexandria.app.document.TagSource;
 import com.alexandria.app.exception.DocumentNotFoundException;
+import com.alexandria.app.knowledgebase.dto.UpdateDocumentRequest;
 import com.alexandria.app.qa.QAInteraction;
 import com.alexandria.app.qa.QAInteractionRepository;
 import com.alexandria.app.search.SearchQuery;
 import com.alexandria.app.search.SearchQueryRepository;
 import com.alexandria.app.user.User;
+import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -14,8 +24,10 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 public class KnowledgeBaseService {
@@ -54,14 +66,21 @@ public class KnowledgeBaseService {
     }
 
     @Transactional
-    public Document createDocument(User owner, String fileName, String objectKey, String fileType, Long fileSize, String textContent) {
+    public Document createDocument(
+            User owner,
+            String fileName,
+            String objectKey,
+            String fileType,
+            Long fileSize,
+            String textContent) {
+        FileNameValidator.validate(fileName);
         Document document = new Document(owner, fileName, objectKey, fileType, fileSize);
         document.setRawTextContent(textContent);
         document = documentRepository.save(document);
 
         if (textContent != null && !textContent.isBlank()) {
-            processSummary(document, objectKey);
-            processEntities(document, objectKey);
+            processSummary(document);
+            processEntities(document);
         }
 
         return document;
@@ -70,6 +89,7 @@ public class KnowledgeBaseService {
     @Transactional
     public Document uploadDocument(User owner, MultipartFile file) {
         String fileName = file.getOriginalFilename();
+        FileNameValidator.validate(fileName);
         String fileType = file.getContentType();
         Long fileSize = file.getSize();
         String objectKey = "/uploads/" + UUID.randomUUID() + "/" + fileName;
@@ -81,15 +101,15 @@ public class KnowledgeBaseService {
         document = documentRepository.save(document);
         objectStorageService.upload(objectKey, file);
 
-        processSummary(document, objectKey);
-        processEntities(document, objectKey);
+        processSummary(document);
+        processEntities(document);
 
         return document;
     }
 
-    private void processSummary(Document document, String objectKey) {
+    private void processSummary(Document document) {
         try {
-            GenAiClient.SummarizeResponse response = genAiClient.summarize(objectKey);
+            GenAiClient.SummarizeResponse response = genAiClient.summarize(document.getObjectKey());
             Summary summary = new Summary(document, response.summary(), response.modelUsed());
             summaryRepository.save(summary);
             document.setSummary(summary);
@@ -98,16 +118,18 @@ public class KnowledgeBaseService {
         }
     }
 
-    private void processEntities(Document document, String objectKey) {
+    private void processEntities(Document document) {
         try {
-            GenAiClient.ExtractResponse response = genAiClient.extract(objectKey);
+            GenAiClient.ExtractResponse response = genAiClient.extract(document.getObjectKey());
             for (GenAiClient.ExtractedEntityDto dto : response.entities()) {
-                ExtractedEntity entity = new ExtractedEntity(document, dto.name(), dto.type(), dto.confidence());
+                ExtractedEntity entity =
+                        new ExtractedEntity(document, dto.name(), dto.type(), dto.confidence());
                 extractedEntityRepository.save(entity);
                 document.getExtractedEntities().add(entity);
             }
         } catch (Exception e) {
-            log.warn("GenAI entity extraction failed for document {}: {}", document.getId(), e.getMessage());
+            log.warn(
+                    "GenAI entity extraction failed for document {}: {}", document.getId(), e.getMessage());
         }
     }
 
@@ -116,12 +138,42 @@ public class KnowledgeBaseService {
     }
 
     public Document getDocument(UUID id, UUID ownerId) {
-        Document document = documentRepository.findById(id)
-                .orElseThrow(() -> new DocumentNotFoundException(id));
+        Document document =
+                documentRepository.findById(id).orElseThrow(() -> new DocumentNotFoundException(id));
         if (!document.getOwner().getId().equals(ownerId)) {
             throw new DocumentNotFoundException(id);
         }
         return document;
+    }
+
+    @Transactional
+    public void reprocessSummary(UUID id, UUID ownerId) {
+        Document document = getDocument(id, ownerId);
+        Summary existing = document.getSummary();
+        if (existing != null) {
+            document.setSummary(null);
+            summaryRepository.delete(existing);
+            summaryRepository.flush();
+        }
+        processSummary(document);
+    }
+
+    @Transactional
+    public void reprocessEntities(UUID id, UUID ownerId) {
+        Document document = getDocument(id, ownerId);
+        extractedEntityRepository.deleteByDocumentId(id);
+        extractedEntityRepository.flush();
+        processEntities(document);
+    }
+
+    public Summary getDocumentSummary(UUID id, UUID ownerId) {
+        Document document = getDocument(id, ownerId);
+        return document.getSummary();
+    }
+
+    public List<ExtractedEntity> getDocumentEntities(UUID id, UUID ownerId) {
+        Document document = getDocument(id, ownerId);
+        return document.getExtractedEntities();
     }
 
     @Transactional(readOnly = true)
@@ -140,13 +192,26 @@ public class KnowledgeBaseService {
         if (!documentRepository.existsByIdAndOwnerId(id, ownerId)) {
             throw new DocumentNotFoundException(id);
         }
-        documentRepository.findById(id).map(Document::getObjectKey).ifPresent(objectStorageService::delete);
+        documentRepository
+                .findById(id)
+                .map(Document::getObjectKey)
+                .ifPresent(objectStorageService::delete);
         documentRepository.deleteById(id);
     }
 
+    @Transactional
+    public Document updateDocument(UUID id, @Valid UpdateDocumentRequest request, UUID ownerId) {
+        Document document = getDocument(id, ownerId);
+        if (request.fileName() != null) {
+            FileNameValidator.validate(request.fileName());
+            document.setFileName(request.fileName());
+        }
+        return documentRepository.save(document);
+    }
+
     public List<Document> search(User user, String queryText) {
-        List<Document> results = documentRepository.findByOwnerIdAndFileNameContainingIgnoreCase(
-                user.getId(), queryText);
+        List<Document> results =
+                documentRepository.findByOwnerIdAndFileNameContainingIgnoreCase(user.getId(), queryText);
 
         SearchQuery searchQuery = new SearchQuery(user, queryText, results.size());
         searchQueryRepository.save(searchQuery);
@@ -156,20 +221,16 @@ public class KnowledgeBaseService {
 
     @Transactional
     public QAInteraction ask(User user, String question) {
-        List<String> objectKeys = documentRepository.findByOwnerId(user.getId())
-                .stream()
-                .map(Document::getObjectKey)
-                .toList();
+        List<String> objectKeys =
+                documentRepository.findByOwnerId(user.getId()).stream()
+                        .map(Document::getObjectKey)
+                        .toList();
 
         GenAiClient.AskResponse response = genAiClient.ask(question, objectKeys);
 
-        QAInteraction interaction = new QAInteraction(
-                user,
-                question,
-                response.answer(),
-                response.sourceObjectKeys(),
-                response.modelUsed()
-        );
+        QAInteraction interaction =
+                new QAInteraction(
+                        user, question, response.answer(), response.sourceObjectKeys(), response.modelUsed());
         return qaInteractionRepository.save(interaction);
     }
 
@@ -177,8 +238,10 @@ public class KnowledgeBaseService {
     public void addTag(UUID documentId, UUID ownerId, String label, TagSource source) {
         Document document = getDocument(documentId, ownerId);
 
-        Tag tag = tagRepository.findByLabel(label)
-                .orElseGet(() -> tagRepository.save(new Tag(label, source)));
+        Tag tag =
+                tagRepository
+                        .findByLabel(label)
+                        .orElseGet(() -> tagRepository.save(new Tag(label, source)));
 
         document.addTag(tag);
         documentRepository.save(document);
@@ -198,7 +261,25 @@ public class KnowledgeBaseService {
         return qaInteractionRepository.findByUserIdOrderByTimestampDesc(userId);
     }
 
+    @Transactional
+    public void deleteQAHistory(UUID userId) {
+        qaInteractionRepository.deleteByUserId(userId);
+    }
+
     public List<SearchQuery> getSearchHistory(UUID userId) {
         return searchQueryRepository.findByUserIdOrderByTimestampDesc(userId);
+    }
+
+    @Transactional
+    public void deleteSearchHistory(UUID userId) {
+        searchQueryRepository.deleteByUserId(userId);
+    }
+
+    public Map<String, Long> getTagsForUserWithCount(UUID userId) {
+        return tagRepository.findTagCountsByOwnerId(userId).stream()
+                .collect(
+                        Collectors.toMap(
+                                TagRepository.TagCountProjection::getLabel,
+                                TagRepository.TagCountProjection::getDocumentCount));
     }
 }
