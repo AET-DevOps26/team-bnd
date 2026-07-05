@@ -24,25 +24,67 @@ spec:
                 name: {{ include "alexandria.fullname" . }}-client
                 port:
                   number: 80
-          - path: /api
+          - path: /api/v1/users
             pathType: Prefix
             backend:
               service:
-                name: {{ include "alexandria.fullname" . }}-spring
+                name: {{ include "alexandria.fullname" . }}-user-service
                 port:
                   number: 8080
-          - path: /swagger-ui
+          - path: /user-service/swagger-ui
             pathType: Prefix
             backend:
               service:
-                name: {{ include "alexandria.fullname" . }}-spring
+                name: {{ include "alexandria.fullname" . }}-user-service
                 port:
                   number: 8080
-          - path: /v3/api-docs
+          - path: /user-service/v3/api-docs
             pathType: Prefix
             backend:
               service:
-                name: {{ include "alexandria.fullname" . }}-spring
+                name: {{ include "alexandria.fullname" . }}-user-service
+                port:
+                  number: 8080
+          - path: /api/v1/knowledgebase
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "alexandria.fullname" . }}-knowledgebase-service
+                port:
+                  number: 8080
+          - path: /knowledgebase-service/swagger-ui
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "alexandria.fullname" . }}-knowledgebase-service
+                port:
+                  number: 8080
+          - path: /knowledgebase-service/v3/api-docs
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "alexandria.fullname" . }}-knowledgebase-service
+                port:
+                  number: 8080
+          - path: /api/v1/qa
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "alexandria.fullname" . }}-qa-service
+                port:
+                  number: 8080
+          - path: /qa-service/swagger-ui
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "alexandria.fullname" . }}-qa-service
+                port:
+                  number: 8080
+          - path: /qa-service/v3/api-docs
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "alexandria.fullname" . }}-qa-service
                 port:
                   number: 8080
           - path: /docs

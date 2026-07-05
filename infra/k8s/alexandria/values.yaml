@@ -10,15 +10,9 @@ image:
   pullPolicy: Always
   tag: "latest"
 
+# Shared config used by all three Spring microservices.
 spring:
   logLevel: "INFO"
-  resources:
-    requests:
-      cpu: 250m
-      memory: 256Mi
-    limits:
-      cpu: 500m
-      memory: 512Mi
   database:
     host: "alexandria-postgres-db"
     port: "5432"
@@ -31,6 +25,33 @@ spring:
     userIdClaim: "sub"
     usernameClaim: "preferred_username"
     rolesClaim: "roles"
+
+userService:
+  resources:
+    requests:
+      cpu: 100m
+      memory: 192Mi
+    limits:
+      cpu: 300m
+      memory: 384Mi
+
+knowledgebaseService:
+  resources:
+    requests:
+      cpu: 250m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+qaService:
+  resources:
+    requests:
+      cpu: 100m
+      memory: 192Mi
+    limits:
+      cpu: 300m
+      memory: 384Mi
 
 client:
   resources:
