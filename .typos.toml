@@ -3,7 +3,7 @@
 
 [files]
 # Eclipse format contains misspelled fields. These typos won't be fixed upstream.
-extend-exclude = ["services/spring/app/intellij-style.xml"]
+extend-exclude = ["services/spring/intellij-style.xml"]
 
 # AKS = Azure Kubernetes Service; typos suggests "ASK".
 [default.extend-words]
