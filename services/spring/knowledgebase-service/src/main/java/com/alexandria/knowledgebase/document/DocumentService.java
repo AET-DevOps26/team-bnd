@@ -22,8 +22,20 @@ public class DocumentService {
         return repository.findById(id).orElseThrow(() -> new DocumentNotFoundException(id));
     }
 
+    public Document findByIdAndOwner(UUID id, String ownerSubject) {
+        Document document = findById(id);
+        if (!document.getOwnerSubject().equals(ownerSubject)) {
+            throw new DocumentNotFoundException(id);
+        }
+        return document;
+    }
+
     public List<Document> findByOwnerSubject(String ownerSubject) {
         return repository.findByOwnerSubject(ownerSubject);
+    }
+
+    public List<Document> searchByFileName(String ownerSubject, String fileName) {
+        return repository.findByOwnerSubjectAndFileNameContainingIgnoreCase(ownerSubject, fileName);
     }
 
     public void delete(UUID id, String ownerSubject) {
@@ -31,5 +43,9 @@ public class DocumentService {
             throw new DocumentNotFoundException(id);
         }
         repository.deleteById(id);
+    }
+
+    public void deleteAllByOwner(String ownerSubject) {
+        repository.deleteByOwnerSubject(ownerSubject);
     }
 }

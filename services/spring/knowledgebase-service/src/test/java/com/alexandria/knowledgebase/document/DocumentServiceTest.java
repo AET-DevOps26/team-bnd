@@ -118,4 +118,53 @@ class DocumentServiceTest {
 
         verify(documentRepository, never()).deleteById(any());
     }
+
+    @Test
+    void unit_document_findByIdAndOwnerReturnsDocumentForOwner() {
+        UUID documentId = UUID.randomUUID();
+        Document document = new Document(OWNER, "notes.txt", "/files/notes.txt", "text/plain", 512L);
+        when(documentRepository.findById(documentId)).thenReturn(Optional.of(document));
+
+        Document result = documentService.findByIdAndOwner(documentId, OWNER);
+
+        assertThat(result.getFileName()).isEqualTo("notes.txt");
+    }
+
+    @Test
+    void unit_document_findByIdAndOwnerWrongOwnerThrowsException() {
+        UUID documentId = UUID.randomUUID();
+        Document document = new Document(OWNER, "notes.txt", "/files/notes.txt", "text/plain", 512L);
+        when(documentRepository.findById(documentId)).thenReturn(Optional.of(document));
+
+        assertThatThrownBy(() -> documentService.findByIdAndOwner(documentId, "oidc|other"))
+                .isInstanceOf(DocumentNotFoundException.class)
+                .hasMessageContaining(documentId.toString());
+    }
+
+    @Test
+    void unit_document_findByIdAndOwnerNotFoundThrowsException() {
+        UUID documentId = UUID.randomUUID();
+        when(documentRepository.findById(documentId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> documentService.findByIdAndOwner(documentId, OWNER))
+                .isInstanceOf(DocumentNotFoundException.class);
+    }
+
+    @Test
+    void unit_document_searchByFileNameDelegatesToRepository() {
+        Document doc = new Document(OWNER, "report.pdf", "/files/report.pdf", "application/pdf", 1024L);
+        when(documentRepository.findByOwnerSubjectAndFileNameContainingIgnoreCase(OWNER, "report"))
+                .thenReturn(List.of(doc));
+
+        List<Document> result = documentService.searchByFileName(OWNER, "report");
+
+        assertThat(result).extracting(Document::getFileName).containsExactly("report.pdf");
+    }
+
+    @Test
+    void unit_document_deleteAllByOwnerDelegatesToRepository() {
+        documentService.deleteAllByOwner(OWNER);
+
+        verify(documentRepository).deleteByOwnerSubject(OWNER);
+    }
 }

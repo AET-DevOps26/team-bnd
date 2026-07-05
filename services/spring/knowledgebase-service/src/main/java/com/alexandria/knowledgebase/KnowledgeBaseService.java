@@ -2,7 +2,6 @@ package com.alexandria.knowledgebase;
 
 import com.alexandria.knowledgebase.document.*;
 import com.alexandria.knowledgebase.dto.UpdateDocumentRequest;
-import com.alexandria.knowledgebase.exception.DocumentNotFoundException;
 import com.alexandria.knowledgebase.search.SearchQuery;
 import com.alexandria.knowledgebase.search.SearchQueryRepository;
 import com.alexandria.knowledgebase.integration.GenAiClient;
@@ -27,7 +26,7 @@ public class KnowledgeBaseService {
 
     private static final Logger log = LoggerFactory.getLogger(KnowledgeBaseService.class);
 
-    private final DocumentRepository documentRepository;
+    private final DocumentService documentService;
     private final SummaryRepository summaryRepository;
     private final ExtractedEntityRepository extractedEntityRepository;
     private final TagRepository tagRepository;
@@ -37,7 +36,7 @@ public class KnowledgeBaseService {
     private final ObjectStorageService objectStorageService;
 
     public KnowledgeBaseService(
-            DocumentRepository documentRepository,
+            DocumentService documentService,
             SummaryRepository summaryRepository,
             ExtractedEntityRepository extractedEntityRepository,
             TagRepository tagRepository,
@@ -45,7 +44,7 @@ public class KnowledgeBaseService {
             GenAiClient genAiClient,
             TextExtractor textExtractor,
             ObjectStorageService objectStorageService) {
-        this.documentRepository = documentRepository;
+        this.documentService = documentService;
         this.summaryRepository = summaryRepository;
         this.extractedEntityRepository = extractedEntityRepository;
         this.tagRepository = tagRepository;
@@ -60,7 +59,7 @@ public class KnowledgeBaseService {
         FileNameValidator.validate(fileName);
         Document document = new Document(ownerSubject, fileName, objectKey, fileType, fileSize);
         document.setRawTextContent(textContent);
-        document = documentRepository.save(document);
+        document = documentService.save(document);
 
         if (textContent != null && !textContent.isBlank()) {
             processSummary(document);
@@ -82,7 +81,7 @@ public class KnowledgeBaseService {
 
         Document document = new Document(ownerSubject, fileName, objectKey, fileType, fileSize);
         document.setRawTextContent(textContent);
-        document = documentRepository.save(document);
+        document = documentService.save(document);
         objectStorageService.upload(objectKey, file);
 
         processSummary(document);
@@ -118,16 +117,11 @@ public class KnowledgeBaseService {
     }
 
     public List<Document> getDocuments(String ownerSubject) {
-        return documentRepository.findByOwnerSubject(ownerSubject);
+        return documentService.findByOwnerSubject(ownerSubject);
     }
 
     public Document getDocument(UUID id, String ownerSubject) {
-        Document document = documentRepository.findById(id)
-                .orElseThrow(() -> new DocumentNotFoundException(id));
-        if (!document.getOwnerSubject().equals(ownerSubject)) {
-            throw new DocumentNotFoundException(id);
-        }
-        return document;
+        return documentService.findByIdAndOwner(id, ownerSubject);
     }
 
     @Transactional
@@ -173,14 +167,9 @@ public class KnowledgeBaseService {
 
     @Transactional
     public void deleteDocument(UUID id, String ownerSubject) {
-        if (!documentRepository.existsByIdAndOwnerSubject(id, ownerSubject)) {
-            throw new DocumentNotFoundException(id);
-        }
-        documentRepository
-                .findById(id)
-                .map(Document::getObjectKey)
-                .ifPresent(objectStorageService::delete);
-        documentRepository.deleteById(id);
+        Document document = documentService.findByIdAndOwner(id, ownerSubject);
+        objectStorageService.delete(document.getObjectKey());
+        documentService.delete(id, ownerSubject);
     }
 
     @Transactional
@@ -190,12 +179,11 @@ public class KnowledgeBaseService {
             FileNameValidator.validate(request.fileName());
             document.setFileName(request.fileName());
         }
-        return documentRepository.save(document);
+        return documentService.save(document);
     }
 
     public List<Document> search(String userSubject, String queryText) {
-        List<Document> results = documentRepository.findByOwnerSubjectAndFileNameContainingIgnoreCase(
-                userSubject, queryText);
+        List<Document> results = documentService.searchByFileName(userSubject, queryText);
 
         SearchQuery searchQuery = new SearchQuery(userSubject, queryText, results.size());
         searchQueryRepository.save(searchQuery);
@@ -213,7 +201,7 @@ public class KnowledgeBaseService {
                         .orElseGet(() -> tagRepository.save(new Tag(label, source)));
 
         document.addTag(tag);
-        documentRepository.save(document);
+        documentService.save(document);
     }
 
     @Transactional
@@ -222,7 +210,7 @@ public class KnowledgeBaseService {
         Tag tag = tagRepository.findById(tagId).orElse(null);
         if (tag != null) {
             document.removeTag(tag);
-            documentRepository.save(document);
+            documentService.save(document);
         }
     }
 
@@ -245,14 +233,14 @@ public class KnowledgeBaseService {
 
     @Transactional
     public void deleteAllForUser(String userSubject) {
-        for (Document doc : documentRepository.findByOwnerSubject(userSubject)) {
+        for (Document doc : documentService.findByOwnerSubject(userSubject)) {
             try {
                 objectStorageService.delete(doc.getObjectKey());
             } catch (Exception e) {
                 log.warn("Failed to delete S3 object for document {}: {}", doc.getId(), e.getMessage());
             }
         }
-        documentRepository.deleteByOwnerSubject(userSubject);
+        documentService.deleteAllByOwner(userSubject);
         searchQueryRepository.deleteByUserSubject(userSubject);
     }
 }
