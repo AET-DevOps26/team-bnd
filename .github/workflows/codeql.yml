@@ -28,6 +28,10 @@ concurrency:
 permissions:
   contents: read
 
+env:
+  JAVA_VERSION: "25"
+  JAVA_DISTRIBUTION: "zulu"
+
 jobs:
   analyze:
     name: Analyze ${{ matrix.display }}
@@ -58,8 +62,8 @@ jobs:
         if: matrix.language == 'java-kotlin'
         uses: actions/setup-java@v5
         with:
-          java-version: '21'
-          distribution: 'temurin'
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v4
@@ -69,7 +73,7 @@ jobs:
 
       - name: Build (Manual Mode for Reliability)
         if: matrix.language == 'java-kotlin'
-        working-directory: services/spring/app
+        working-directory: services/spring
         run: ./gradlew --no-daemon assemble
 
       - name: Analyze

@@ -261,7 +261,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # Per issue #227 the Spring backend consists of three Gradle sub-modules.
+        # The Spring backend consists of three Gradle sub-modules.
         # The matrix builds each one independently so failures point at the right
         # microservice.
         service:
