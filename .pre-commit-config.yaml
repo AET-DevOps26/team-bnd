@@ -76,7 +76,7 @@ repos:
         pass_filenames: false
       - id: format-java
         name: Format Java with Spotless
-        entry: bash -c 'services/spring/app/gradlew -p services/spring/app spotlessApply && git diff --exit-code --name-only -- "*.java"'
+        entry: bash -c 'services/spring/gradlew -p services/spring spotlessApply && git diff --exit-code --name-only -- "*.java"'
         language: system
         files: "\\.java$"
         pass_filenames: false
