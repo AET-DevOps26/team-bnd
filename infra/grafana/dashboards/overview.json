@@ -73,8 +73,8 @@
 			"targets": [
 				{
 					"datasource": { "type": "prometheus", "uid": "prometheus" },
-					"expr": "sum(rate(http_server_requests_seconds_count{job=~\"user-service|knowledgebase-service|qa-service\"}[5m]))",
-					"legendFormat": "spring",
+					"expr": "sum by (job) (rate(http_server_requests_seconds_count{job=~\"user-service|knowledgebase-service|qa-service\"}[5m]))",
+					"legendFormat": "{{job}}",
 					"refId": "A"
 				},
 				{
@@ -103,14 +103,14 @@
 			"targets": [
 				{
 					"datasource": { "type": "prometheus", "uid": "prometheus" },
-					"expr": "sum(rate(http_server_requests_seconds_count{job=~\"user-service|knowledgebase-service|qa-service\", status=~\"4..\"}[5m]))",
-					"legendFormat": "spring 4xx",
+					"expr": "sum by (job) (rate(http_server_requests_seconds_count{job=~\"user-service|knowledgebase-service|qa-service\", status=~\"4..\"}[5m]))",
+					"legendFormat": "{{job}} 4xx",
 					"refId": "A"
 				},
 				{
 					"datasource": { "type": "prometheus", "uid": "prometheus" },
-					"expr": "sum(rate(http_server_requests_seconds_count{job=~\"user-service|knowledgebase-service|qa-service\", status=~\"5..\"}[5m]))",
-					"legendFormat": "spring 5xx",
+					"expr": "sum by (job) (rate(http_server_requests_seconds_count{job=~\"user-service|knowledgebase-service|qa-service\", status=~\"5..\"}[5m]))",
+					"legendFormat": "{{job}} 5xx",
 					"refId": "B"
 				},
 				{
@@ -145,20 +145,20 @@
 			"targets": [
 				{
 					"datasource": { "type": "prometheus", "uid": "prometheus" },
-					"expr": "histogram_quantile(0.50, sum(rate(http_server_requests_seconds_bucket{job=~\"user-service|knowledgebase-service|qa-service\"}[5m])) by (le))",
-					"legendFormat": "spring p50",
+					"expr": "histogram_quantile(0.50, sum by (le, job) (rate(http_server_requests_seconds_bucket{job=~\"user-service|knowledgebase-service|qa-service\"}[5m])))",
+					"legendFormat": "{{job}} p50",
 					"refId": "A"
 				},
 				{
 					"datasource": { "type": "prometheus", "uid": "prometheus" },
-					"expr": "histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket{job=~\"user-service|knowledgebase-service|qa-service\"}[5m])) by (le))",
-					"legendFormat": "spring p95",
+					"expr": "histogram_quantile(0.95, sum by (le, job) (rate(http_server_requests_seconds_bucket{job=~\"user-service|knowledgebase-service|qa-service\"}[5m])))",
+					"legendFormat": "{{job}} p95",
 					"refId": "B"
 				},
 				{
 					"datasource": { "type": "prometheus", "uid": "prometheus" },
-					"expr": "histogram_quantile(0.99, sum(rate(http_server_requests_seconds_bucket{job=~\"user-service|knowledgebase-service|qa-service\"}[5m])) by (le))",
-					"legendFormat": "spring p99",
+					"expr": "histogram_quantile(0.99, sum by (le, job) (rate(http_server_requests_seconds_bucket{job=~\"user-service|knowledgebase-service|qa-service\"}[5m])))",
+					"legendFormat": "{{job}} p99",
 					"refId": "C"
 				}
 			],

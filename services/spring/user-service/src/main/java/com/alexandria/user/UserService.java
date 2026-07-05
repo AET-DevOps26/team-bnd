@@ -60,14 +60,17 @@ public class UserService {
         return parsePreferences(user.getPreferences());
     }
 
-    @Transactional
     public void deleteUser(UUID id) {
-        User user = repository.findById(id)
-                .orElseThrow(() -> new UserNotFoundException(id));
-
         // KB and QA services key their rows on the OIDC subject, not on the
         // local user UUID, so we fan out on the subject.
-        String subject = user.getOidcSubject();
+        String subject = repository.findById(id)
+                .orElseThrow(() -> new UserNotFoundException(id))
+                .getOidcSubject();
+
+        // Peer fan-out is intentionally *not* wrapped in a `@Transactional`
+        // method: a slow or hung peer must not hold a Postgres connection
+        // open (and eventually exhaust the Hikari pool). Spring Data's own
+        // `findById` / `deleteById` open their own short transactions.
         try {
             knowledgeBaseClient.deleteUserData(subject);
         } catch (Exception e) {

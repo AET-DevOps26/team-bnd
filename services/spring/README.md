@@ -33,7 +33,7 @@ These endpoints are only reachable from other containers inside the `alexandria`
 
 ## Production
 
-The three services share one Dockerfilem, the concrete image is picked at build
+The three services share one Dockerfile, the concrete image is picked at build
 time via `--build-arg SERVICE=<name>`. `docker-compose.yml` automatically sets these arguments.
 
 ```bash

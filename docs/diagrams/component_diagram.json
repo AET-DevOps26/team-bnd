@@ -838,8 +838,8 @@
     },
     {
       "id": "51131403-a0c8-4000-a206-2ae6b727c56a",
-      "source": "302164d1-9573-468a-a530-943f6ec043a5",
-      "target": "8c0df11f-5a6d-4706-b43b-e4b228f90168",
+      "source": "8c0df11f-5a6d-4706-b43b-e4b228f90168",
+      "target": "302164d1-9573-468a-a530-943f6ec043a5",
       "type": "ComponentProvidedInterface",
       "sourceHandle": "bottom",
       "targetHandle": "top-between-mid-left-center",

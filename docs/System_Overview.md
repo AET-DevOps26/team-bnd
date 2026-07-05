@@ -26,7 +26,7 @@ The server side consists of three Spring Boot microservices. Each service is its
     - Public routes: `/api/v1/qa/**`, `/qa-service/swagger-ui`, `/qa-service/v3/api-docs`
     - Internal routes: `DELETE /api/v1/qa/internal/users/{subject}` for the user-service delete
 
-All services communicate via REST over HTTP. The public API is documented in `api/openapi.yaml`. Internal endpoints are onlydescribed in the "Info" section. Each service exposes its own Prometheus scrape endpoint on `/actuator/prometheus` and shows up as its own job in `infra/prometheus/prometheus.yml`.
+All services communicate via REST over HTTP. The public API is documented in `api/openapi.yaml`. Internal endpoints are only described in the "Info" section. Each service exposes its own Prometheus scrape endpoint on `/actuator/prometheus` and shows up as its own job in `infra/prometheus/prometheus.yml`.
 
 Team member responsible for this subsystem: Niklas Ladurner
 
