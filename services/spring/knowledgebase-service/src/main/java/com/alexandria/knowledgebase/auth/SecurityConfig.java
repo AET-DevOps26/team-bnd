@@ -28,8 +28,7 @@ public class SecurityConfig {
                         .requestMatchers("/knowledgebase-service/swagger-ui/**", "/knowledgebase-service/v3/api-docs/**", "/knowledgebase-service/v3/api-docs.yaml").permitAll()
                         .requestMatchers("/actuator/**").permitAll()
                         .requestMatchers("/knowledgebase-service/hello").permitAll()
-                        // Internal fan-out endpoints are only reachable from the alexandria
-                        // container network; Traefik does not expose /internal/ paths.
+                        // Internal fan-out endpoints are only reachable from the alexandria container network
                         .requestMatchers("/api/v1/knowledgebase/internal/**").permitAll()
                         .anyRequest().authenticated()
                 )

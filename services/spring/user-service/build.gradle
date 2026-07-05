@@ -1,5 +1,4 @@
-// The user-service also drives OpenAPI spec generation for the whole Spring
-// stack. See services/spring/README.md.
+// The user-service also drives OpenAPI spec generation for the whole Spring stack.
 plugins {
 	id 'org.springdoc.openapi-gradle-plugin'
 }

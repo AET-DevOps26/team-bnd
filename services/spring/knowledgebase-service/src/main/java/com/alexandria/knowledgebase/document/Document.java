@@ -19,9 +19,7 @@ public class Document {
 
     // OIDC subject of the owning user. We deliberately store this as a plain
     // string instead of a foreign key so this service does not have to reach
-    // into the user-service database. See .guidelines/Best Practices
-    // Microservices.md ("One PostgreSQL database per service (logical schema
-    // ok)").
+    // into the user-service database.
     @Column(name = "owner_subject", nullable = false)
     private String ownerSubject;
 

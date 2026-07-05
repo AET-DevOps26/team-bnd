@@ -5,6 +5,10 @@ import com.alexandria.knowledgebase.dto.UpdateDocumentRequest;
 import com.alexandria.knowledgebase.exception.DocumentNotFoundException;
 import com.alexandria.knowledgebase.search.SearchQuery;
 import com.alexandria.knowledgebase.search.SearchQueryRepository;
+import com.alexandria.knowledgebase.integration.GenAiClient;
+import com.alexandria.knowledgebase.integration.GenAiClient.ExtractResponse;
+import com.alexandria.knowledgebase.integration.GenAiClient.ExtractedEntityDto;
+import com.alexandria.knowledgebase.integration.GenAiClient.SummarizeResponse;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -89,7 +93,7 @@ public class KnowledgeBaseService {
 
     private void processSummary(Document document) {
         try {
-            GenAiClient.SummarizeResponse response = genAiClient.summarize(document.getObjectKey());
+            SummarizeResponse response = genAiClient.summarize(document.getObjectKey());
             Summary summary = new Summary(document, response.summary(), response.modelUsed());
             summaryRepository.save(summary);
             document.setSummary(summary);
@@ -100,8 +104,8 @@ public class KnowledgeBaseService {
 
     private void processEntities(Document document) {
         try {
-            GenAiClient.ExtractResponse response = genAiClient.extract(document.getObjectKey());
-            for (GenAiClient.ExtractedEntityDto dto : response.entities()) {
+            ExtractResponse response = genAiClient.extract(document.getObjectKey());
+            for (ExtractedEntityDto dto : response.entities()) {
                 ExtractedEntity entity =
                         new ExtractedEntity(document, dto.name(), dto.type(), dto.confidence());
                 extractedEntityRepository.save(entity);

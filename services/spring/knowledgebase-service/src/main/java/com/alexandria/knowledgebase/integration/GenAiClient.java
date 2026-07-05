@@ -1,4 +1,4 @@
-package com.alexandria.knowledgebase;
+package com.alexandria.knowledgebase.integration;
 
 import com.alexandria.knowledgebase.document.EntityType;
 import org.springframework.beans.factory.annotation.Value;

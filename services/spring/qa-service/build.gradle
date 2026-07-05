@@ -1,7 +1,3 @@
-// qa-service does not need PDFBox or the AWS SDK. It stores Q&A history and
-// coordinates the /ask flow between knowledgebase-service and the GenAI
-// service via REST.
-
 plugins {
 	id 'org.springdoc.openapi-gradle-plugin'
 }

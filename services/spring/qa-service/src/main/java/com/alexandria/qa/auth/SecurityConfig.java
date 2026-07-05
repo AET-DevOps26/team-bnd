@@ -28,8 +28,7 @@ public class SecurityConfig {
                         .requestMatchers("/qa-service/swagger-ui/**", "/qa-service/v3/api-docs/**", "/qa-service/v3/api-docs.yaml").permitAll()
                         .requestMatchers("/actuator/**").permitAll()
                         .requestMatchers("/qa-service/hello").permitAll()
-                        // Internal fan-out endpoints are only reachable from the alexandria
-                        // container network; Traefik does not expose /internal/ paths.
+                        // Internal fan-out endpoints are only reachable from the alexandria container network
                         .requestMatchers("/api/v1/qa/internal/**").permitAll()
                         .anyRequest().authenticated()
                 )
