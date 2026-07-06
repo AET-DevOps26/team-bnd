@@ -26,7 +26,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping(path = "/api/v1/knowledgebase", produces = MediaType.APPLICATION_JSON_VALUE)
 @Tag(
-        name = "KnowledgeBase",
+        name = "KnowledgeBase Service",
         description = "Document management and AI-powered knowledge operations")
 @SecurityRequirement(name = "bearerAuth")
 public class KnowledgeBaseController {

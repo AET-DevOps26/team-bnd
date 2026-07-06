@@ -13,7 +13,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping(path = "/api/v1/qa", produces = MediaType.APPLICATION_JSON_VALUE)
-@Tag(name = "QA", description = "Question answering over the user's knowledge base")
+@Tag(name = "QA Service", description = "Question answering over the user's knowledge base")
 @SecurityRequirement(name = "bearerAuth")
 public class QAController {
 

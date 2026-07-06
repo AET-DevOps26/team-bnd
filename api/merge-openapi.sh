@@ -10,5 +10,4 @@ npx --yes @redocly/cli@2.30.3 join \
   "$SCRIPT_DIR/spring-knowledgebase-openapi.yaml" \
   "$SCRIPT_DIR/spring-qa-openapi.yaml" \
   "$SCRIPT_DIR/genai-openapi.yaml" \
-  --prefix-tags-with-filename \
   -o "$SCRIPT_DIR/openapi.yaml"

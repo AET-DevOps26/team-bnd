@@ -1,14 +1,21 @@
 package com.alexandria.user.exception;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import java.util.Map;
+
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    public record ErrorResponse(String code, String message) {
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record ErrorResponse(String code, String message, Map<String, Object> details) {
+        public ErrorResponse(String code, String message) {
+            this(code, message, null);
+        }
     }
 
     @ExceptionHandler(IllegalArgumentException.class)

@@ -69,9 +69,8 @@ repos:
         pass_filenames: false
       - id: merge-openapi
         name: OpenAPI - Merge
-        entry: redocly join api/spring-user-openapi.yaml api/spring-knowledgebase-openapi.yaml api/spring-qa-openapi.yaml api/genai-openapi.yaml --prefix-tags-with-filename -o api/openapi.yaml
-        language: node
-        additional_dependencies: ["@redocly/cli@2.30.3"]
+        entry: api/merge-openapi.sh
+        language: script
         files: '^(services/genai/.*\.py|services/spring/.*\.java)$'
         pass_filenames: false
       - id: format-java

@@ -20,7 +20,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping(path = "/api/v1/users", produces = MediaType.APPLICATION_JSON_VALUE)
-@Tag(name = "Users", description = "User account management")
+@Tag(name = "User Service", description = "User account management")
 @SecurityRequirement(name = "bearerAuth")
 public class UserController {
     private final UserService userService;

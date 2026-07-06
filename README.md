@@ -27,7 +27,9 @@ All services are accessed through Traefik as the reverse proxy. See [`docs/traef
 |-----|---------|
 | http://localhost/ | Client |
 | http://localhost/api/v1/... | Spring API |
-| http://localhost/swagger-ui/ | Spring API documentation |
+| http://localhost/user-service/swagger-ui.html | user-service API docs |
+| http://localhost/knowledgebase-service/swagger-ui.html | knowledgebase-service API docs |
+| http://localhost/qa-service/swagger-ui.html | qa-service API docs |
 | http://localhost/genai/docs | GenAI API documentation |
 | http://localhost/auth/ | Keycloak |
 | http://localhost/grafana/ | Grafana dashboards |

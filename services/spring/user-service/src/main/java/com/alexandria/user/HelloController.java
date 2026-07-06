@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@Tag(name = "Health", description = "Liveness and smoke endpoints")
+@Tag(name = "User Service")
 public class HelloController {
     @GetMapping(path = "/user-service/hello", produces = "text/plain")
     @Operation(operationId = "helloUser", summary = "Health check (user-service)", description = "Returns 'Hello from user-service!' if service is running")
