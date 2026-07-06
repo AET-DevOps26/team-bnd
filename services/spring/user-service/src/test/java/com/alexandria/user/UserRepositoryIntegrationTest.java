@@ -107,8 +107,7 @@ class UserRepositoryIntegrationTest {
 
         User user2 = new User("oidc_duplicate", "second", "second@example.com");
 
-        assertThatThrownBy(() -> userRepository.saveAndFlush(user2))
-                .isInstanceOf(DataIntegrityViolationException.class);
+        assertThatThrownBy(() -> userRepository.saveAndFlush(user2)).isInstanceOf(DataIntegrityViolationException.class);
     }
 
     @Test
@@ -118,8 +117,7 @@ class UserRepositoryIntegrationTest {
 
         User user2 = new User("oidc_user2", "duplicate", "second@example.com");
 
-        assertThatThrownBy(() -> userRepository.saveAndFlush(user2))
-                .isInstanceOf(DataIntegrityViolationException.class);
+        assertThatThrownBy(() -> userRepository.saveAndFlush(user2)).isInstanceOf(DataIntegrityViolationException.class);
     }
 
     @Test
@@ -129,8 +127,7 @@ class UserRepositoryIntegrationTest {
 
         User user2 = new User("oidc_email2", "second", "duplicate@example.com");
 
-        assertThatThrownBy(() -> userRepository.saveAndFlush(user2))
-                .isInstanceOf(DataIntegrityViolationException.class);
+        assertThatThrownBy(() -> userRepository.saveAndFlush(user2)).isInstanceOf(DataIntegrityViolationException.class);
     }
 
     @Test

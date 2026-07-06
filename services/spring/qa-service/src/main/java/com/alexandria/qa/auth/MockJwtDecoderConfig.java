@@ -14,11 +14,6 @@ public class MockJwtDecoderConfig {
 
     @Bean
     public JwtDecoder jwtDecoder() {
-        return token -> Jwt.withTokenValue(token)
-                .header("alg", "none")
-                .claim("sub", "mock-user")
-                .issuedAt(Instant.now())
-                .expiresAt(Instant.now().plusSeconds(3600))
-                .build();
+        return token -> Jwt.withTokenValue(token).header("alg", "none").claim("sub", "mock-user").issuedAt(Instant.now()).expiresAt(Instant.now().plusSeconds(3600)).build();
     }
 }

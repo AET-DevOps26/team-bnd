@@ -36,14 +36,7 @@ public class KnowledgeBaseService {
     private final ObjectStorageService objectStorageService;
 
     public KnowledgeBaseService(
-            DocumentService documentService,
-            SummaryRepository summaryRepository,
-            ExtractedEntityRepository extractedEntityRepository,
-            TagRepository tagRepository,
-            SearchQueryRepository searchQueryRepository,
-            GenAiClient genAiClient,
-            TextExtractor textExtractor,
-            ObjectStorageService objectStorageService) {
+                                DocumentService documentService, SummaryRepository summaryRepository, ExtractedEntityRepository extractedEntityRepository, TagRepository tagRepository, SearchQueryRepository searchQueryRepository, GenAiClient genAiClient, TextExtractor textExtractor, ObjectStorageService objectStorageService) {
         this.documentService = documentService;
         this.summaryRepository = summaryRepository;
         this.extractedEntityRepository = extractedEntityRepository;
@@ -105,8 +98,7 @@ public class KnowledgeBaseService {
         try {
             ExtractResponse response = genAiClient.extract(document.getObjectKey());
             for (ExtractedEntityDto dto : response.entities()) {
-                ExtractedEntity entity =
-                        new ExtractedEntity(document, dto.name(), dto.type(), dto.confidence());
+                ExtractedEntity entity = new ExtractedEntity(document, dto.name(), dto.type(), dto.confidence());
                 extractedEntityRepository.save(entity);
                 document.getExtractedEntities().add(entity);
             }
@@ -195,10 +187,7 @@ public class KnowledgeBaseService {
     public void addTag(UUID documentId, String ownerSubject, String label, TagSource source) {
         Document document = getDocument(documentId, ownerSubject);
 
-        Tag tag =
-                tagRepository
-                        .findByLabel(label)
-                        .orElseGet(() -> tagRepository.save(new Tag(label, source)));
+        Tag tag = tagRepository.findByLabel(label).orElseGet(() -> tagRepository.save(new Tag(label, source)));
 
         document.addTag(tag);
         documentService.save(document);
@@ -224,11 +213,9 @@ public class KnowledgeBaseService {
     }
 
     public Map<String, Long> getTagsForUserWithCount(String userSubject) {
-        return tagRepository.findTagCountsByOwnerSubject(userSubject).stream()
-                .collect(
-                        Collectors.toMap(
-                                TagRepository.TagCountProjection::getLabel,
-                                TagRepository.TagCountProjection::getDocumentCount));
+        return tagRepository.findTagCountsByOwnerSubject(userSubject).stream().collect(
+                Collectors.toMap(
+                        TagRepository.TagCountProjection::getLabel, TagRepository.TagCountProjection::getDocumentCount));
     }
 
     @Transactional

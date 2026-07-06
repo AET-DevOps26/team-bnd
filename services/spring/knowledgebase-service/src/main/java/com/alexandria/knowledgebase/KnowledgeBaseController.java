@@ -26,8 +26,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping(path = "/api/v1/knowledgebase", produces = MediaType.APPLICATION_JSON_VALUE)
 @Tag(
-        name = "KnowledgeBase Service",
-        description = "Document management and AI-powered knowledge operations")
+        name = "KnowledgeBase Service", description = "Document management and AI-powered knowledge operations")
 @SecurityRequirement(name = "bearerAuth")
 public class KnowledgeBaseController {
 
@@ -48,14 +47,9 @@ public class KnowledgeBaseController {
     @Operation(summary = "Create a new document with text content")
     @ApiResponse(responseCode = "201", description = "Document created")
     public ResponseEntity<Document> createDocument(
-            @RequestBody CreateDocumentRequest request, Principal principal) {
+                                                   @RequestBody CreateDocumentRequest request, Principal principal) {
         Document document = knowledgeBaseService.createDocument(
-                principal.getName(),
-                request.fileName(),
-                request.objectKey(),
-                request.fileType(),
-                request.fileSize(),
-                request.textContent());
+                principal.getName(), request.fileName(), request.objectKey(), request.fileType(), request.fileSize(), request.textContent());
         return ResponseEntity.status(HttpStatus.CREATED).body(document);
     }
 
@@ -64,7 +58,7 @@ public class KnowledgeBaseController {
     @ApiResponse(responseCode = "201", description = "Document uploaded")
     @ApiResponse(responseCode = "400", description = "Invalid file")
     public ResponseEntity<Document> uploadDocument(
-            @RequestParam("file") MultipartFile file, Principal principal) {
+                                                   @RequestParam("file") MultipartFile file, Principal principal) {
         Document document = knowledgeBaseService.uploadDocument(principal.getName(), file);
         return ResponseEntity.status(HttpStatus.CREATED).body(document);
     }
@@ -92,11 +86,8 @@ public class KnowledgeBaseController {
     @ApiResponse(responseCode = "400", description = "Bad Request")
     @ApiResponse(responseCode = "404", description = "Document not found")
     public ResponseEntity<Document> updateDocument(
-            @PathVariable UUID id,
-            @Valid @RequestBody UpdateDocumentRequest request,
-            Principal principal) {
-        Document updatedDocument =
-                knowledgeBaseService.updateDocument(id, request, principal.getName());
+                                                   @PathVariable UUID id, @Valid @RequestBody UpdateDocumentRequest request, Principal principal) {
+        Document updatedDocument = knowledgeBaseService.updateDocument(id, request, principal.getName());
         return ResponseEntity.ok(updatedDocument);
     }
 
@@ -107,17 +98,13 @@ public class KnowledgeBaseController {
     public ResponseEntity<byte[]> downloadDocument(@PathVariable UUID id, Principal principal) {
         Document document = knowledgeBaseService.getDocument(id, principal.getName());
 
-        return knowledgeBaseService.getFileContent(id, principal.getName())
-                .map(bytes -> {
-                    HttpHeaders headers = new HttpHeaders();
-                    headers.setContentType(MediaType.parseMediaType(document.getFileType()));
-                    headers.setContentDispositionFormData("attachment", document.getFileName());
-                    headers.setContentLength(bytes.length);
-                    return ResponseEntity.ok()
-                            .headers(headers)
-                            .body(bytes);
-                })
-                .orElse(ResponseEntity.notFound().build());
+        return knowledgeBaseService.getFileContent(id, principal.getName()).map(bytes -> {
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.parseMediaType(document.getFileType()));
+            headers.setContentDispositionFormData("attachment", document.getFileName());
+            headers.setContentLength(bytes.length);
+            return ResponseEntity.ok().headers(headers).body(bytes);
+        }).orElse(ResponseEntity.notFound().build());
     }
 
     @GetMapping("/search")
@@ -132,7 +119,7 @@ public class KnowledgeBaseController {
     @ApiResponse(responseCode = "204", description = "Tag added")
     @ApiResponse(responseCode = "404", description = "Document not found")
     public ResponseEntity<Void> addTag(
-            @PathVariable UUID id, @RequestBody AddTagRequest request, Principal principal) {
+                                       @PathVariable UUID id, @RequestBody AddTagRequest request, Principal principal) {
         knowledgeBaseService.addTag(id, principal.getName(), request.label(), TagSource.USER);
         return ResponseEntity.noContent().build();
     }
@@ -142,7 +129,7 @@ public class KnowledgeBaseController {
     @ApiResponse(responseCode = "204", description = "Tag removed")
     @ApiResponse(responseCode = "404", description = "Document not found")
     public ResponseEntity<Void> removeTag(
-            @PathVariable UUID documentId, @PathVariable UUID tagId, Principal principal) {
+                                          @PathVariable UUID documentId, @PathVariable UUID tagId, Principal principal) {
         knowledgeBaseService.removeTag(documentId, principal.getName(), tagId);
         return ResponseEntity.noContent().build();
     }
@@ -158,9 +145,8 @@ public class KnowledgeBaseController {
         if (summary == null) {
             return ResponseEntity.noContent().build();
         }
-        DocumentSummaryDto summaryDto =
-                new DocumentSummaryDto(
-                        summary.getContent(), summary.getModelUsed(), summary.getGeneratedAt());
+        DocumentSummaryDto summaryDto = new DocumentSummaryDto(
+                summary.getContent(), summary.getModelUsed(), summary.getGeneratedAt());
         return ResponseEntity.ok(summaryDto);
     }
 
@@ -170,19 +156,13 @@ public class KnowledgeBaseController {
     @ApiResponse(responseCode = "401", description = "Unauthorized")
     @ApiResponse(responseCode = "404", description = "Document not found")
     public ResponseEntity<DocumentEntityResponseDto> getEntities(
-            @PathVariable UUID id, Principal principal) {
-        List<ExtractedEntity> extractedEntities =
-                knowledgeBaseService.getDocumentEntities(id, principal.getName());
-        List<DocumentEntityDto> entityList =
-                extractedEntities.stream()
-                        .map(
-                                entity ->
-                                        new DocumentEntityDto(
-                                                entity.getName(), entity.getType(), entity.getConfidence()))
-                        .toList();
+                                                                 @PathVariable UUID id, Principal principal) {
+        List<ExtractedEntity> extractedEntities = knowledgeBaseService.getDocumentEntities(id, principal.getName());
+        List<DocumentEntityDto> entityList = extractedEntities.stream().map(
+                entity -> new DocumentEntityDto(
+                        entity.getName(), entity.getType(), entity.getConfidence())).toList();
 
-        DocumentEntityResponseDto documentEntityResponseDto =
-                new DocumentEntityResponseDto(id, entityList);
+        DocumentEntityResponseDto documentEntityResponseDto = new DocumentEntityResponseDto(id, entityList);
         return ResponseEntity.ok(documentEntityResponseDto);
     }
 
@@ -225,21 +205,18 @@ public class KnowledgeBaseController {
     @Operation(summary = "Get all unique tags for user")
     @ApiResponse(responseCode = "200", description = "Tags retrieved successfully")
     public ResponseEntity<TagListDto> getTags(Principal principal) {
-        Map<String, Long> tagsWithCount =
-                knowledgeBaseService.getTagsForUserWithCount(principal.getName());
+        Map<String, Long> tagsWithCount = knowledgeBaseService.getTagsForUserWithCount(principal.getName());
 
-        List<TagDto> tagDtos =
-                tagsWithCount.entrySet().stream()
-                        .map(entry -> new TagDto(entry.getKey(), entry.getValue()))
-                        .sorted((a, b) -> Long.compare(b.documentCount(), a.documentCount()))
-                        .toList();
+        List<TagDto> tagDtos = tagsWithCount.entrySet().stream().map(entry -> new TagDto(entry.getKey(), entry.getValue())).sorted((a, b) -> Long.compare(b.documentCount(), a.documentCount())).toList();
 
         return ResponseEntity.ok(new TagListDto(tagDtos));
     }
 
     public record CreateDocumentRequest(
-            String fileName, String objectKey, String fileType, Long fileSize, String textContent) {
+                                        String fileName, String objectKey, String fileType, Long fileSize,
+                                        String textContent) {
     }
 
-    public record AddTagRequest(String label) {}
+    public record AddTagRequest(String label) {
+    }
 }

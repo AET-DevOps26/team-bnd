@@ -58,9 +58,6 @@ public class TextExtractor {
         if (value == null) {
             return "null";
         }
-        return value
-                .replace('\r', '_')
-                .replace('\n', '_')
-                .replaceAll("\\p{Cntrl}", "_");
+        return value.replace('\r', '_').replace('\n', '_').replaceAll("\\p{Cntrl}", "_");
     }
 }

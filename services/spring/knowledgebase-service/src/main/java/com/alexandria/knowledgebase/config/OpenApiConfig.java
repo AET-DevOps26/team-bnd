@@ -9,7 +9,6 @@ import io.swagger.v3.oas.annotations.info.Info;
 import io.swagger.v3.oas.annotations.info.License;
 import io.swagger.v3.oas.annotations.security.SecurityScheme;
 import io.swagger.v3.oas.annotations.servers.Server;
-import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.media.Content;
 import io.swagger.v3.oas.models.media.MediaType;
 import io.swagger.v3.oas.models.media.Schema;
@@ -20,18 +19,11 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @OpenAPIDefinition(
         info = @Info(
-                title = "Alexandria KnowledgeBase Service API",
-                version = "2.0.0",
-                description = "Document management, tagging, and text search. Owns the documents/tags/search-queries tables and calls the GenAI service for summarization and entity extraction.",
-                license = @License(name = "MIT", identifier = "MIT")
-        ),
-        servers = @Server(url = "/", description = "Current server")
+                title = "Alexandria KnowledgeBase Service API", version = "2.0.0", description = "Document management, tagging, and text search. Owns the documents/tags/search-queries tables and calls the GenAI service for summarization and entity extraction.", license = @License(name = "MIT", identifier = "MIT")
+        ), servers = @Server(url = "/", description = "Current server")
 )
 @SecurityScheme(
-        name = "bearerAuth",
-        type = SecuritySchemeType.HTTP,
-        scheme = "bearer",
-        bearerFormat = "JWT"
+        name = "bearerAuth", type = SecuritySchemeType.HTTP, scheme = "bearer", bearerFormat = "JWT"
 )
 public class OpenApiConfig {
 
@@ -44,31 +36,27 @@ public class OpenApiConfig {
     public OpenApiCustomizer errorResponseCustomizer() {
         return openApi -> {
             if (openApi.getComponents() != null) {
-                ModelConverters.getInstance()
-                        .resolveAsResolvedSchema(new AnnotatedType(GlobalExceptionHandler.ErrorResponse.class))
-                        .referencedSchemas.forEach(openApi.getComponents()::addSchemas);
+                ModelConverters.getInstance().resolveAsResolvedSchema(new AnnotatedType(GlobalExceptionHandler.ErrorResponse.class)).referencedSchemas.forEach(openApi.getComponents()::addSchemas);
             }
             if (openApi.getPaths() == null) {
                 return;
             }
-            openApi.getPaths().values().forEach(pathItem ->
-                    pathItem.readOperations().forEach(operation -> {
-                        if (operation.getResponses() == null) {
-                            return;
-                        }
-                        operation.getResponses().forEach((status, response) -> {
-                            if (isErrorStatus(status)) {
-                                response.setContent(errorContent());
-                            }
-                        });
-                    }));
+            openApi.getPaths().values().forEach(pathItem -> pathItem.readOperations().forEach(operation -> {
+                if (operation.getResponses() == null) {
+                    return;
+                }
+                operation.getResponses().forEach((status, response) -> {
+                    if (isErrorStatus(status)) {
+                        response.setContent(errorContent());
+                    }
+                });
+            }));
         };
     }
 
     private static Content errorContent() {
         return new Content().addMediaType(
-                "application/json",
-                new MediaType().schema(new Schema<>().$ref(ERROR_SCHEMA_REF)));
+                "application/json", new MediaType().schema(new Schema<>().$ref(ERROR_SCHEMA_REF)));
     }
 
     private static boolean isErrorStatus(String status) {

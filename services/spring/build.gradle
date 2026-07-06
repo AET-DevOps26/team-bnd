@@ -24,7 +24,7 @@ subprojects {
 	spotless {
 		java {
 			target 'src/**/*.java'
-			eclipse().configFile(rootProject.file('intellij-style.xml'))
+			eclipse('4.36').configFile(rootProject.file('intellij-style.xml'))
 
 			removeUnusedImports()
 			trimTrailingWhitespace()

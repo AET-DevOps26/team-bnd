@@ -16,11 +16,8 @@ public final class FileNameValidator {
 
     public static final int MAX_LENGTH = 255;
     private static final Pattern FORBIDDEN_CHARS = Pattern.compile("[\\x00-\\x1F\\x7F/\\\\<>:\"|?*]");
-    private static final Set<String> RESERVED_NAMES =
-            Set.of(
-                    "CON", "PRN", "AUX", "NUL",
-                    "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9",
-                    "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9");
+    private static final Set<String> RESERVED_NAMES = Set.of(
+            "CON", "PRN", "AUX", "NUL", "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9", "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9");
 
     private FileNameValidator() {
     }
@@ -55,8 +52,7 @@ public final class FileNameValidator {
         }
         if (FORBIDDEN_CHARS.matcher(fileName).find()) {
             throw new IllegalArgumentException(
-                    "File name contains forbidden characters"
-                            + " (control chars, path separators, or <>:\"|?*)");
+                    "File name contains forbidden characters" + " (control chars, path separators, or <>:\"|?*)");
         }
         String baseName = fileName;
         int dot = fileName.indexOf('.');

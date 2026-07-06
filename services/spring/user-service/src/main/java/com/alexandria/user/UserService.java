@@ -28,10 +28,7 @@ public class UserService {
     private final QAClient qaClient;
     private final ObjectMapper objectMapper;
 
-    public UserService(UserRepository repository,
-                       KnowledgeBaseClient knowledgeBaseClient,
-                       QAClient qaClient,
-                       ObjectMapper objectMapper) {
+    public UserService(UserRepository repository, KnowledgeBaseClient knowledgeBaseClient, QAClient qaClient, ObjectMapper objectMapper) {
         this.repository = repository;
         this.knowledgeBaseClient = knowledgeBaseClient;
         this.qaClient = qaClient;
@@ -66,9 +63,7 @@ public class UserService {
     public void deleteUser(UUID id) {
         // KB and QA services key their rows on the OIDC subject, not on the
         // local user UUID, so we fan out on the subject.
-        String subject = repository.findById(id)
-                .orElseThrow(() -> new UserNotFoundException(id))
-                .getOidcSubject();
+        String subject = repository.findById(id).orElseThrow(() -> new UserNotFoundException(id)).getOidcSubject();
 
         // Fan-out runs outside any @Transactional method so a hung peer can't
         // hold a Postgres connection and exhaust the Hikari pool. The peer
@@ -105,15 +100,12 @@ public class UserService {
 
     @Transactional
     public UserPreferences updatePreferences(String oidcSubject, UpdatePreferencesRequest request) {
-        User currentUser =
-                findByOidcSubject(oidcSubject).orElseThrow(() -> new UserNotFoundException(oidcSubject));
+        User currentUser = findByOidcSubject(oidcSubject).orElseThrow(() -> new UserNotFoundException(oidcSubject));
 
         UserPreferences currentPrefs = parsePreferences(currentUser.getPreferences());
 
-        UserPreferences updatedPrefs =
-                new UserPreferences(
-                        request.darkTheme() != null ? request.darkTheme() : currentPrefs.darkTheme(),
-                        request.language() != null ? request.language() : currentPrefs.language());
+        UserPreferences updatedPrefs = new UserPreferences(
+                request.darkTheme() != null ? request.darkTheme() : currentPrefs.darkTheme(), request.language() != null ? request.language() : currentPrefs.language());
 
         try {
             String updatedJson = objectMapper.writeValueAsString(updatedPrefs);
@@ -121,10 +113,7 @@ public class UserService {
             this.repository.save(currentUser);
         } catch (JsonProcessingException e) {
             log.error(
-                    "Failed to serialize preferences for user {}: {}",
-                    currentUser.getId(),
-                    e.getMessage(),
-                    e);
+                    "Failed to serialize preferences for user {}: {}", currentUser.getId(), e.getMessage(), e);
             throw new PreferencesSerializationException("Failed to serialize user preferences", e);
         }
 
@@ -139,9 +128,7 @@ public class UserService {
             return objectMapper.readValue(json, UserPreferences.class);
         } catch (JsonProcessingException e) {
             log.error(
-                    "Corrupted preferences JSON detected, falling back to defaults: {}",
-                    e.getMessage(),
-                    e);
+                    "Corrupted preferences JSON detected, falling back to defaults: {}", e.getMessage(), e);
             return UserPreferences.defaultPreferences();
         }
     }

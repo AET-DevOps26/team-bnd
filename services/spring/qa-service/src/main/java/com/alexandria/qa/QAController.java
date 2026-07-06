@@ -45,5 +45,6 @@ public class QAController {
         return ResponseEntity.noContent().build();
     }
 
-    public record AskRequest(String question) {}
+    public record AskRequest(String question) {
+    }
 }

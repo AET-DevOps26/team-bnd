@@ -37,8 +37,7 @@ class QAServiceTest {
     void unit_qa_askDelegatesToPeerServicesAndPersists() {
         String subject = "oidc|123";
         when(knowledgeBaseClient.listDocumentKeys(subject)).thenReturn(List.of("/uploads/a.pdf"));
-        when(genAiClient.ask("q?", List.of("/uploads/a.pdf")))
-                .thenReturn(new GenAiClient.AskResponse("answer", List.of("/uploads/a.pdf"), "gpt-oss-120b"));
+        when(genAiClient.ask("q?", List.of("/uploads/a.pdf"))).thenReturn(new GenAiClient.AskResponse("answer", List.of("/uploads/a.pdf"), "gpt-oss-120b"));
         when(repository.save(any(QAInteraction.class))).thenAnswer(inv -> inv.getArgument(0));
 
         QAInteraction result = qaService.ask(subject, "q?");

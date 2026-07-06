@@ -113,8 +113,7 @@ class UserServiceTest {
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         doThrow(new RuntimeException("kb down")).when(knowledgeBaseClient).deleteUserData(any());
 
-        assertThatThrownBy(() -> userService.deleteUser(userId))
-                .isInstanceOf(UserDeletionException.class);
+        assertThatThrownBy(() -> userService.deleteUser(userId)).isInstanceOf(UserDeletionException.class);
 
         verify(qaClient).deleteUserData("oidc|123");
         verify(userRepository, never()).deleteById(any());
@@ -125,9 +124,7 @@ class UserServiceTest {
         UUID userId = UUID.randomUUID();
         when(userRepository.findById(userId)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> userService.deleteUser(userId))
-                .isInstanceOf(UserNotFoundException.class)
-                .hasMessageContaining(userId.toString());
+        assertThatThrownBy(() -> userService.deleteUser(userId)).isInstanceOf(UserNotFoundException.class).hasMessageContaining(userId.toString());
 
         verify(userRepository, never()).deleteById(any());
         verify(knowledgeBaseClient, never()).deleteUserData(any());
@@ -173,7 +170,6 @@ class UserServiceTest {
         when(userRepository.findByOidcSubject("unknown")).thenReturn(Optional.empty());
 
         assertThatThrownBy(
-                () -> userService.updatePreferences("unknown", new UpdatePreferencesRequest(true, "en")))
-                .isInstanceOf(UserNotFoundException.class);
+                () -> userService.updatePreferences("unknown", new UpdatePreferencesRequest(true, "en"))).isInstanceOf(UserNotFoundException.class);
     }
 }

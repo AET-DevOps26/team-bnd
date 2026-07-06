@@ -20,21 +20,11 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http
-                .csrf(csrf -> csrf.disable())
-                .sessionManagement(session ->
-                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/qa-service/swagger-ui/**", "/qa-service/v3/api-docs/**", "/qa-service/v3/api-docs.yaml").permitAll()
-                        .requestMatchers("/actuator/**").permitAll()
-                        .requestMatchers("/qa-service/hello").permitAll()
-                        // Internal fan-out endpoints are only reachable from the alexandria container network
-                        .requestMatchers("/internal/**").permitAll()
-                        .anyRequest().authenticated()
-                )
-                .oauth2ResourceServer(oauth2 -> oauth2
-                        .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthConverter))
-                );
+        http.csrf(csrf -> csrf.disable()).sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)).authorizeHttpRequests(auth -> auth.requestMatchers("/qa-service/swagger-ui/**", "/qa-service/v3/api-docs/**", "/qa-service/v3/api-docs.yaml").permitAll().requestMatchers("/actuator/**").permitAll().requestMatchers("/qa-service/hello").permitAll()
+                // Internal fan-out endpoints are only reachable from the alexandria container network
+                .requestMatchers("/internal/**").permitAll().anyRequest().authenticated()
+        ).oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthConverter))
+        );
 
         return http.build();
     }

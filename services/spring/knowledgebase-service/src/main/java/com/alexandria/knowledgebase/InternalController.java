@@ -41,8 +41,6 @@ public class InternalController {
     @SecurityRequirements
     public ResponseEntity<List<String>> listDocumentKeys(@PathVariable("subject") String subject) {
         return ResponseEntity.ok(
-                knowledgeBaseService.getDocuments(subject).stream()
-                        .map(Document::getObjectKey)
-                        .toList());
+                knowledgeBaseService.getDocuments(subject).stream().map(Document::getObjectKey).toList());
     }
 }

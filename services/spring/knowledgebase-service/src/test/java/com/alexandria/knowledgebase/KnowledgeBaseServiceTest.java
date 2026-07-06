@@ -14,7 +14,6 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -52,24 +51,15 @@ class KnowledgeBaseServiceTest {
     @BeforeEach
     void setup() {
         knowledgeBaseService = new KnowledgeBaseService(
-                documentService,
-                summaryRepository,
-                extractedEntityRepository,
-                tagRepository,
-                searchQueryRepository,
-                genAiClient,
-                textExtractor,
-                objectStorageService
+                documentService, summaryRepository, extractedEntityRepository, tagRepository, searchQueryRepository, genAiClient, textExtractor, objectStorageService
         );
     }
 
     @Test
     void unit_kb_createDocumentPersistsAndCallsGenAiForText() {
         when(documentService.save(any(Document.class))).thenAnswer(inv -> inv.getArgument(0));
-        when(genAiClient.summarize(anyString()))
-                .thenReturn(new GenAiClient.SummarizeResponse("summary", "model"));
-        when(genAiClient.extract(anyString()))
-                .thenReturn(new GenAiClient.ExtractResponse(List.of(), "model"));
+        when(genAiClient.summarize(anyString())).thenReturn(new GenAiClient.SummarizeResponse("summary", "model"));
+        when(genAiClient.extract(anyString())).thenReturn(new GenAiClient.ExtractResponse(List.of(), "model"));
 
         Document result = knowledgeBaseService.createDocument(
                 OWNER, "a.pdf", "/uploads/a.pdf", "application/pdf", 100L, "hello world");

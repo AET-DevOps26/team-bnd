@@ -22,17 +22,14 @@ public class OidcUserFilter extends OncePerRequestFilter {
     private final String usernameClaim;
 
     public OidcUserFilter(
-            UserService userService,
-            @Value("${app.auth.user-id-claim}") String userIdClaim,
-            @Value("${app.auth.username-claim}") String usernameClaim) {
+                          UserService userService, @Value("${app.auth.user-id-claim}") String userIdClaim, @Value("${app.auth.username-claim}") String usernameClaim) {
         this.userService = userService;
         this.userIdClaim = userIdClaim;
         this.usernameClaim = usernameClaim;
     }
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
-                                    FilterChain filterChain) throws ServletException, IOException {
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         var auth = SecurityContextHolder.getContext().getAuthentication();
 
         if (auth instanceof JwtAuthenticationToken jwtAuth) {

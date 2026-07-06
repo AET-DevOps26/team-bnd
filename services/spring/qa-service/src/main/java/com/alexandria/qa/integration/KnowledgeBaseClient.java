@@ -16,22 +16,14 @@ public class KnowledgeBaseClient {
     private final RestClient restClient;
 
     public KnowledgeBaseClient(@Value("${knowledgebase.base-url:http://knowledgebase-service:8080}") String baseUrl) {
-        HttpClient httpClient = HttpClient.newBuilder()
-                .version(HttpClient.Version.HTTP_1_1)
-                .connectTimeout(Duration.ofSeconds(5))
-                .build();
+        HttpClient httpClient = HttpClient.newBuilder().version(HttpClient.Version.HTTP_1_1).connectTimeout(Duration.ofSeconds(5)).build();
         JdkClientHttpRequestFactory factory = new JdkClientHttpRequestFactory(httpClient);
         factory.setReadTimeout(Duration.ofSeconds(30));
-        this.restClient = RestClient.builder()
-                .requestFactory(factory)
-                .baseUrl(baseUrl)
-                .build();
+        this.restClient = RestClient.builder().requestFactory(factory).baseUrl(baseUrl).build();
     }
 
     public List<String> listDocumentKeys(String userSubject) {
-        return restClient.get()
-                .uri("/internal/knowledgebase/users/{subject}/document-keys", userSubject)
-                .retrieve()
-                .body(new ParameterizedTypeReference<List<String>>() {});
+        return restClient.get().uri("/internal/knowledgebase/users/{subject}/document-keys", userSubject).retrieve().body(new ParameterizedTypeReference<List<String>>() {
+        });
     }
 }

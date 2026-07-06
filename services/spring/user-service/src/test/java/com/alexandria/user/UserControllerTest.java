@@ -44,57 +44,33 @@ class UserControllerTest {
 
     @Test
     void integration_user_getMeReturnsProfile() throws Exception {
-        mockMvc.perform(get("/api/v1/users/me")
-                        .with(jwt().jwt(j -> j.subject("sub123"))))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.username").value("testuser"))
-                .andExpect(jsonPath("$.email").value("test@example.com"))
-                .andExpect(jsonPath("$.oidcSubject").value("sub123"))
-                .andExpect(jsonPath("$.preferences.darkTheme").value(false))
-                .andExpect(jsonPath("$.preferences.language").value("en"));
+        mockMvc.perform(get("/api/v1/users/me").with(jwt().jwt(j -> j.subject("sub123")))).andExpect(status().isOk()).andExpect(jsonPath("$.username").value("testuser")).andExpect(jsonPath("$.email").value("test@example.com")).andExpect(jsonPath("$.oidcSubject").value("sub123")).andExpect(jsonPath("$.preferences.darkTheme").value(false)).andExpect(jsonPath("$.preferences.language").value("en"));
     }
 
     @Test
     void integration_user_getMeReturns401WithoutAuth() throws Exception {
-        mockMvc.perform(get("/api/v1/users/me"))
-                .andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/api/v1/users/me")).andExpect(status().isUnauthorized());
     }
 
     @Test
     void integration_user_deleteOwnAccountReturns204() throws Exception {
-        mockMvc.perform(delete("/api/v1/users/" + testUser.getId())
-                        .with(jwt().jwt(j -> j.subject("sub123"))))
-                .andExpect(status().isNoContent());
+        mockMvc.perform(delete("/api/v1/users/" + testUser.getId()).with(jwt().jwt(j -> j.subject("sub123")))).andExpect(status().isNoContent());
     }
 
     @Test
     void integration_user_deleteOtherAccountReturns403() throws Exception {
         User otherUser = userRepository.save(new User("other-sub", "other", "other@example.com"));
 
-        mockMvc.perform(delete("/api/v1/users/" + otherUser.getId())
-                        .with(jwt().jwt(j -> j.subject("sub123"))))
-                .andExpect(status().isForbidden());
+        mockMvc.perform(delete("/api/v1/users/" + otherUser.getId()).with(jwt().jwt(j -> j.subject("sub123")))).andExpect(status().isForbidden());
     }
 
     @Test
     void integration_user_updatePreferencesReturnsUpdated() throws Exception {
-        mockMvc.perform(patch("/api/v1/users/me/preferences")
-                        .with(jwt().jwt(j -> j.subject("sub123")))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"darkTheme\":true,\"language\":\"de\"}"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.darkTheme").value(true))
-                .andExpect(jsonPath("$.language").value("de"));
+        mockMvc.perform(patch("/api/v1/users/me/preferences").with(jwt().jwt(j -> j.subject("sub123"))).contentType(MediaType.APPLICATION_JSON).content("{\"darkTheme\":true,\"language\":\"de\"}")).andExpect(status().isOk()).andExpect(jsonPath("$.darkTheme").value(true)).andExpect(jsonPath("$.language").value("de"));
     }
 
     @Test
     void integration_user_updatePreferencesPartialUpdate() throws Exception {
-        mockMvc.perform(patch("/api/v1/users/me/preferences")
-                        .with(jwt().jwt(j -> j.subject("sub123")))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"language\":\"fr\"}"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.darkTheme").value(false))
-                .andExpect(jsonPath("$.language").value("fr"));
+        mockMvc.perform(patch("/api/v1/users/me/preferences").with(jwt().jwt(j -> j.subject("sub123"))).contentType(MediaType.APPLICATION_JSON).content("{\"language\":\"fr\"}")).andExpect(status().isOk()).andExpect(jsonPath("$.darkTheme").value(false)).andExpect(jsonPath("$.language").value("fr"));
     }
 }

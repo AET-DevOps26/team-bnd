@@ -31,17 +31,13 @@ public class UserController {
 
     @DeleteMapping("/{id}")
     @Operation(
-            summary = "Delete user account",
-            description = "Users can only delete their own account")
+            summary = "Delete user account", description = "Users can only delete their own account")
     @ApiResponse(responseCode = "204", description = "User deleted")
     @ApiResponse(responseCode = "403", description = "Cannot delete other users")
     @ApiResponse(responseCode = "404", description = "User not found")
     public ResponseEntity<Void> deleteUser(@PathVariable UUID id, Principal principal) {
         String oidcSubject = principal.getName();
-        User currentUser =
-                userService
-                        .findByOidcSubject(oidcSubject)
-                        .orElseThrow(() -> new UserNotFoundException(oidcSubject));
+        User currentUser = userService.findByOidcSubject(oidcSubject).orElseThrow(() -> new UserNotFoundException(oidcSubject));
 
         if (!currentUser.getId().equals(id)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
@@ -57,22 +53,13 @@ public class UserController {
     @ApiResponse(responseCode = "404", description = "User not found")
     public ResponseEntity<UserProfileDto> userProfile(Principal principal) {
         String oidcSubject = principal.getName();
-        User currentUser =
-                userService
-                        .findByOidcSubject(oidcSubject)
-                        .orElseThrow(() -> new UserNotFoundException(oidcSubject));
+        User currentUser = userService.findByOidcSubject(oidcSubject).orElseThrow(() -> new UserNotFoundException(oidcSubject));
 
         UserPreferences prefs = userService.getPreferences(currentUser);
         UserPreferencesDto prefsDto = new UserPreferencesDto(prefs.darkTheme(), prefs.language());
 
-        UserProfileDto profileDto =
-                new UserProfileDto(
-                        currentUser.getId(),
-                        currentUser.getOidcSubject(),
-                        currentUser.getUsername(),
-                        currentUser.getEmail(),
-                        currentUser.getCreatedAt(),
-                        prefsDto);
+        UserProfileDto profileDto = new UserProfileDto(
+                currentUser.getId(), currentUser.getOidcSubject(), currentUser.getUsername(), currentUser.getEmail(), currentUser.getCreatedAt(), prefsDto);
 
         return ResponseEntity.ok(profileDto);
     }
@@ -83,13 +70,12 @@ public class UserController {
     @ApiResponse(responseCode = "400", description = "Bad Request")
     @ApiResponse(responseCode = "404", description = "User not found")
     public ResponseEntity<UserPreferencesDto> updateUserPreferences(
-            Principal principal, @Valid @RequestBody UpdatePreferencesRequest request) {
+                                                                    Principal principal, @Valid @RequestBody UpdatePreferencesRequest request) {
         String oidcSubject = principal.getName();
 
         UserPreferences updatedPreferences = userService.updatePreferences(oidcSubject, request);
 
-        UserPreferencesDto responseDto =
-                new UserPreferencesDto(updatedPreferences.darkTheme(), updatedPreferences.language());
+        UserPreferencesDto responseDto = new UserPreferencesDto(updatedPreferences.darkTheme(), updatedPreferences.language());
 
         return ResponseEntity.ok(responseDto);
     }

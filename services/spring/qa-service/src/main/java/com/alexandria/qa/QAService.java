@@ -14,9 +14,7 @@ public class QAService {
     private final GenAiClient genAiClient;
     private final KnowledgeBaseClient knowledgeBaseClient;
 
-    public QAService(QAInteractionRepository repository,
-                     GenAiClient genAiClient,
-                     KnowledgeBaseClient knowledgeBaseClient) {
+    public QAService(QAInteractionRepository repository, GenAiClient genAiClient, KnowledgeBaseClient knowledgeBaseClient) {
         this.repository = repository;
         this.genAiClient = genAiClient;
         this.knowledgeBaseClient = knowledgeBaseClient;
@@ -29,11 +27,7 @@ public class QAService {
         GenAiClient.AskResponse response = genAiClient.ask(question, objectKeys);
 
         QAInteraction interaction = new QAInteraction(
-                userSubject,
-                question,
-                response.answer(),
-                response.sourceObjectKeys(),
-                response.modelUsed()
+                userSubject, question, response.answer(), response.sourceObjectKeys(), response.modelUsed()
         );
         return repository.save(interaction);
     }

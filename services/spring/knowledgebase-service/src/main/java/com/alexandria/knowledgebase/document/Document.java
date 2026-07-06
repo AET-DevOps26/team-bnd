@@ -50,9 +50,7 @@ public class Document {
 
     @ManyToMany
     @JoinTable(
-            name = "document_tags",
-            joinColumns = @JoinColumn(name = "document_id"),
-            inverseJoinColumns = @JoinColumn(name = "tag_id")
+            name = "document_tags", joinColumns = @JoinColumn(name = "document_id"), inverseJoinColumns = @JoinColumn(name = "tag_id")
     )
     private Set<Tag> tags = new HashSet<>();
 
