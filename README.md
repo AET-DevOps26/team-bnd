@@ -12,7 +12,7 @@ The core workflow is: Upload a document, get an auto-generated summary with extr
 Alexandria consists of three main subsystems orchestrated via Docker Compose and Traefik:
 
 - **Client**: A React SPA serving as the web interface.
-- **Server**: A Spring Boot application handling core logic, user management, and the PostgreSQL database.
+- **Server**: Three Spring Boot microservices (user-service, knowledgebase-service, qa-service) exposing REST APIs, backed by PostgreSQL with a schema per service.
 - **GenAI**: A Python/FastAPI service using LangChain to extract entities and summarize uploaded documents.
 
 ## Setup
@@ -69,7 +69,7 @@ For local development, `docker compose up` works out of the box; safe defaults a
 
 ### Server
 
-Spring Boot application handling the core server logic and database.
+Three Spring Boot microservices (user-service, knowledgebase-service, qa-service) that split the former monolith along its package boundaries, sharing one Postgres instance with a schema per service.
 For local server development, see [`services/spring/README.md`](services/spring/README.md).
 
 ### Client
@@ -84,9 +84,9 @@ For local Python dev, see [`services/genai/README.md`](services/genai/README.md)
 
 ### Monitoring
 
-Prometheus scrapes metrics from Spring (`/actuator/prometheus`), GenAI (`/genai/metrics`), Traefik, and the SeaweedFS object storage (`s3-storage:9091/metrics`), and Grafana visualizes them. Both run as part of `docker compose up`.
+Prometheus scrapes metrics from each Spring service (`/actuator/prometheus`, one job per service), GenAI (`/genai/metrics`), Traefik, and the SeaweedFS object storage (`s3-storage:9091/metrics`), and Grafana visualizes them. Both run as part of `docker compose up`.
 
 - Grafana: http://localhost/grafana/ (default login `admin` / `admin`, override with `GRAFANA_ADMIN_PASSWORD`)
 - Prometheus: http://localhost/prometheus/
 
-Four dashboards are provisioned automatically under the "Alexandria" folder: an overview (request rate, errors, latency across services), a Spring dashboard (JVM, GC, threads, DB pool), a GenAI dashboard (request rate, latency, process memory), and an object storage dashboard (S3 request rate and latency, in-flight requests, disk usage). Dashboard JSON and the Prometheus scrape and alert config live under [`infra/prometheus`](infra/prometheus) and [`infra/grafana`](infra/grafana).
+Dashboards are provisioned automatically under the "Alexandria" folder: an overview (request rate, errors, latency across services), an aggregate Spring dashboard plus one per Spring service (JVM, GC, threads, DB pool), a GenAI dashboard (request rate, latency, process memory), and an object storage dashboard (S3 request rate and latency, in-flight requests, disk usage). Dashboard JSON and the Prometheus scrape and alert config live under [`infra/prometheus`](infra/prometheus) and [`infra/grafana`](infra/grafana).
