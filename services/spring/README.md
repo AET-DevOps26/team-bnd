@@ -14,6 +14,36 @@ Cross-service ownership fields (`Document.ownerSubject`, `SearchQuery.userSubjec
 `QAInteraction.userSubject`) store the caller's OIDC subject as a plain string
 instead of a foreign key, so no service has to read another service's schema.
 
+## Database migrations
+
+Each service owns its own schema and manages it with [Flyway](https://flywaydb.org).
+Migrations live under `<service>/src/main/resources/db/migration/V*__*.sql` and
+are applied automatically on startup before Hibernate boots. Hibernate itself
+runs in `ddl-auto=validate` mode, so any difference between the JPA entities and
+the SQL migrations fails the app on startup.
+
+The initial `V1__init_*_schema.sql` in every service is idempotent and covers
+both a fresh install and an upgrade from the pre-split monolith:
+
+- On a fresh Postgres it just creates the per-service schema and tables.
+- On an existing database that still has the old `public.*` tables it
+  rewrites the ownership columns (`owner_id` → `owner_subject` on
+  `documents`, `user_id` → `user_subject` on `search_queries` and
+  `qa_interactions`) by joining against `users.oidc_subject`, then moves
+  the tables into the per-service schema with `ALTER TABLE ... SET SCHEMA`.
+
+The three services start independently, so their migrations tolerate any
+ordering: the knowledgebase and qa-service migrations look up the users
+table in `user_service.users` first and fall back to `public.users` if the
+user-service migration has not run yet.
+
+To add a new change, move a `V<n>__<description>.sql` file into the
+service's `db/migration/` directory. Flyway picks it up by name, version
+numbers must be monotonically increasing per service.
+
+Tests still use H2 with Hibernate `create-drop`, therefore Flyway is disabled in
+the H2 test profile.
+
 ## Endpoints
 
 The public API is specified in [`api/openapi.yaml`](../../api/openapi.yaml).
