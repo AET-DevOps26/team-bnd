@@ -31,6 +31,13 @@ spec:
                 name: {{ include "alexandria.fullname" . }}-user-service
                 port:
                   number: 8080
+          - path: /user-service/docs
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "alexandria.fullname" . }}-user-service
+                port:
+                  number: 8080
           - path: /user-service/swagger-ui
             pathType: Prefix
             backend:
@@ -52,6 +59,13 @@ spec:
                 name: {{ include "alexandria.fullname" . }}-knowledgebase-service
                 port:
                   number: 8080
+          - path: /knowledgebase-service/docs
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "alexandria.fullname" . }}-knowledgebase-service
+                port:
+                  number: 8080
           - path: /knowledgebase-service/swagger-ui
             pathType: Prefix
             backend:
@@ -67,6 +81,13 @@ spec:
                 port:
                   number: 8080
           - path: /api/v1/qa
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "alexandria.fullname" . }}-qa-service
+                port:
+                  number: 8080
+          - path: /qa-service/docs
             pathType: Prefix
             backend:
               service:

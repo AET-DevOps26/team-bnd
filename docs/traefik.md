@@ -45,7 +45,7 @@ Traefik also exposes its own Prometheus metrics on a separate internal `metrics`
 |------|---------|---------------|-------------|
 | `/` | Client | 80 | Static frontend (catch-all, lowest priority) |
 | `/api/v1/*` | Spring (user, knowledgebase, qa) | 8080 | REST API |
-| `/<service>-service/swagger-ui.html` | Spring | 8080 | Per-service API documentation UI |
+| `/<service>-service/docs` | Spring | 8080 | Per-service API documentation UI |
 | `/<service>-service/v3/api-docs` | Spring | 8080 | Per-service OpenAPI spec |
 | `/auth/*` | Keycloak | 8180 | OIDC provider |
 | `/docs` | GenAI | 8000 | FastAPI documentation UI |
@@ -68,9 +68,9 @@ docker compose up -d
 |-----|---------|
 | http://localhost/ | Client (frontend) |
 | http://localhost/api/... | Spring API |
-| http://localhost/user-service/swagger-ui.html | user-service API documentation |
-| http://localhost/knowledgebase-service/swagger-ui.html | knowledgebase-service API documentation |
-| http://localhost/qa-service/swagger-ui.html | qa-service API documentation |
+| http://localhost/user-service/docs | user-service API documentation |
+| http://localhost/knowledgebase-service/docs | knowledgebase-service API documentation |
+| http://localhost/qa-service/docs | qa-service API documentation |
 | http://localhost/auth/ | Keycloak admin |
 | http://localhost/docs | GenAI API documentation |
 | http://localhost/redoc | GenAI API documentation (ReDoc) |
@@ -142,7 +142,7 @@ Open the Traefik dashboard at `http://traefik.localhost/` and check:
 curl -s http://localhost/ | head -5
 
 # Test Spring API (Swagger UI is public; most /api endpoints require a JWT)
-curl -sI http://localhost/knowledgebase-service/swagger-ui.html
+curl -sI http://localhost/knowledgebase-service/docs
 
 # Test Keycloak
 curl http://localhost/auth/

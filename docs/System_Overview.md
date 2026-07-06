@@ -11,19 +11,19 @@ The server side consists of three Spring Boot microservices. Each service is its
     - Handles user registration, login, and authentication. Users are created on first authenticated request (`OidcUserFilter`)
     - Manages user settings/preferences
     - Exposes `DELETE /api/v1/users/{id}` and fans out the request to `knowledgebase-service` and `qa-service` over the internal API endpoints on delete
-    - Public routes: `/api/v1/users/**`, `/user-service/swagger-ui`, `/user-service/v3/api-docs`
+    - Public routes: `/api/v1/users/**`, `/user-service/docs`, `/user-service/swagger-ui`, `/user-service/v3/api-docs`
 
 2. `knowledgebase-service` (`services/spring/knowledgebase-service/`)
     - Owns the `documents`, `summaries`, `tags`, `document_tags`, `extracted_entities` and `search_queries` tables (schema `knowledgebase`)
     - Handles document upload and download to SeaweedFS (S3), tagging, and text search
     - Calls the GenAI service for document summarization and entity extraction
-    - Public routes: `/api/v1/knowledgebase/**`, `/knowledgebase-service/swagger-ui`, `/knowledgebase-service/v3/api-docs`
+    - Public routes: `/api/v1/knowledgebase/**`, `/knowledgebase-service/docs`, `/knowledgebase-service/swagger-ui`, `/knowledgebase-service/v3/api-docs`
     - Internal routes (not routed by Traefik or the Ingress): `/internal/knowledgebase/**`
 
 3. `qa-service` (`services/spring/qa-service/`)
     - Owns the `qa_interactions` and `qa_source_documents` tables (schema `qa`)
     - On `/api/v1/qa/ask`, fetches the caller's document object keys from `knowledgebase-service` and delegates answer generation to the GenAI service
-    - Public routes: `/api/v1/qa/**`, `/qa-service/swagger-ui`, `/qa-service/v3/api-docs`
+    - Public routes: `/api/v1/qa/**`, `/qa-service/docs`, `/qa-service/swagger-ui`, `/qa-service/v3/api-docs`
     - Internal routes (not routed by Traefik or the Ingress): `/internal/qa/**`
 
 All services communicate via REST over HTTP. The public API is documented in `api/openapi.yaml`. Internal endpoints are only described in the "Info" section. Each service exposes its own Prometheus scrape endpoint on `/actuator/prometheus` and shows up as its own job in `infra/prometheus/prometheus.yml`.

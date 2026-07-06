@@ -20,7 +20,7 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http.csrf(csrf -> csrf.disable()).sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)).authorizeHttpRequests(auth -> auth.requestMatchers("/knowledgebase-service/swagger-ui/**", "/knowledgebase-service/v3/api-docs/**", "/knowledgebase-service/v3/api-docs.yaml").permitAll().requestMatchers("/actuator/**").permitAll().requestMatchers("/knowledgebase-service/hello").permitAll()
+        http.csrf(csrf -> csrf.disable()).sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)).authorizeHttpRequests(auth -> auth.requestMatchers("/knowledgebase-service/docs", "/knowledgebase-service/swagger-ui/**", "/knowledgebase-service/v3/api-docs/**", "/knowledgebase-service/v3/api-docs.yaml").permitAll().requestMatchers("/actuator/**").permitAll().requestMatchers("/knowledgebase-service/hello").permitAll()
                 // Internal fan-out endpoints live under a prefix that is not routed
                 // publicly, so they are only reachable inside the cluster network
                 .requestMatchers("/internal/**").permitAll().anyRequest().authenticated()

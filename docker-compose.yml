@@ -82,7 +82,7 @@ services:
           memory: 384M
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.user-service.rule=PathPrefix(`/api/v1/users`) || PathPrefix(`/user-service/swagger-ui`) || PathPrefix(`/user-service/v3/api-docs`)"
+      - "traefik.http.routers.user-service.rule=PathPrefix(`/api/v1/users`) || PathPrefix(`/user-service/docs`) || PathPrefix(`/user-service/swagger-ui`) || PathPrefix(`/user-service/v3/api-docs`)"
       - "traefik.http.routers.user-service.entrypoints=web"
       - "traefik.http.routers.user-service.priority=20"
       - "traefik.http.services.user-service.loadbalancer.server.port=8080"
@@ -135,7 +135,7 @@ services:
           memory: 512M
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.knowledgebase-service.rule=PathPrefix(`/api/v1/knowledgebase`) || PathPrefix(`/knowledgebase-service/swagger-ui`) || PathPrefix(`/knowledgebase-service/v3/api-docs`)"
+      - "traefik.http.routers.knowledgebase-service.rule=PathPrefix(`/api/v1/knowledgebase`) || PathPrefix(`/knowledgebase-service/docs`) || PathPrefix(`/knowledgebase-service/swagger-ui`) || PathPrefix(`/knowledgebase-service/v3/api-docs`)"
       - "traefik.http.routers.knowledgebase-service.entrypoints=web"
       - "traefik.http.routers.knowledgebase-service.priority=20"
       - "traefik.http.services.knowledgebase-service.loadbalancer.server.port=8080"
@@ -188,7 +188,7 @@ services:
           memory: 384M
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.qa-service.rule=PathPrefix(`/api/v1/qa`) || PathPrefix(`/qa-service/swagger-ui`) || PathPrefix(`/qa-service/v3/api-docs`)"
+      - "traefik.http.routers.qa-service.rule=PathPrefix(`/api/v1/qa`) || PathPrefix(`/qa-service/docs`) || PathPrefix(`/qa-service/swagger-ui`) || PathPrefix(`/qa-service/v3/api-docs`)"
       - "traefik.http.routers.qa-service.entrypoints=web"
       - "traefik.http.routers.qa-service.priority=20"
       - "traefik.http.services.qa-service.loadbalancer.server.port=8080"
