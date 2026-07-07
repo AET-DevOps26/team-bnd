@@ -207,7 +207,7 @@ jobs:
 
       - name: Upload gitleaks SARIF
         if: always()
-        uses: github/codeql-action/upload-sarif@v4
+        uses: github/codeql-action/upload-sarif@v4.36.2
         with:
           sarif_file: gitleaks.sarif
           category: gitleaks
@@ -242,7 +242,7 @@ jobs:
 
       - name: Upload kics SARIF
         if: always()
-        uses: github/codeql-action/upload-sarif@v4
+        uses: github/codeql-action/upload-sarif@v4.36.2
         with:
           sarif_file: kics-results/results.sarif
           category: kics
@@ -502,7 +502,7 @@ jobs:
 
       - name: Upload Trivy SARIF
         if: always() && env.RUN_JOB == 'true'
-        uses: github/codeql-action/upload-sarif@v4
+        uses: github/codeql-action/upload-sarif@v4.36.2
         with:
           sarif_file: trivy-${{ matrix.service.name }}.sarif
           category: trivy-${{ matrix.service.name }}
