@@ -50,7 +50,7 @@ spec:
               protocol: TCP
           env:
             # ENABLE_MODULES is empty because embeddings come from the genai
-            # service (see #182), not a Weaviate-side vectorizer. Anonymous
+            # service, not a Weaviate-side vectorizer. Anonymous
             # access is fine for the in-network deployment; if the cluster
             # exposes this further, swap to API-key auth via a Secret.
             - name: QUERY_DEFAULTS_LIMIT

@@ -1,201 +1,371 @@
 {
-	"annotations": {
-		"list": [
-			{
-				"builtIn": 1,
-				"datasource": { "type": "grafana", "uid": "-- Grafana --" },
-				"enable": true,
-				"hide": true,
-				"iconColor": "rgba(0, 211, 255, 1)",
-				"name": "Annotations & Alerts",
-				"type": "dashboard"
-			}
-		]
-	},
-	"editable": true,
-	"fiscalYearStartMonth": 0,
-	"graphTooltip": 1,
-	"links": [],
-	"panels": [
-		{
-			"datasource": { "type": "prometheus", "uid": "prometheus" },
-			"fieldConfig": {
-				"defaults": {
-					"color": { "mode": "palette-classic" },
-					"custom": { "axisLabel": "bytes", "drawStyle": "line", "fillOpacity": 10, "lineWidth": 1, "showPoints": "never", "stacking": { "mode": "normal" } },
-					"unit": "bytes"
-				},
-				"overrides": []
-			},
-			"gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
-			"id": 1,
-			"options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
-			"targets": [
-				{
-					"datasource": { "type": "prometheus", "uid": "prometheus" },
-					"expr": "sum(jvm_memory_used_bytes{job=\"spring\", area=\"heap\"}) by (id)",
-					"legendFormat": "{{id}}",
-					"refId": "A"
-				}
-			],
-			"title": "JVM heap memory used",
-			"type": "timeseries"
-		},
-		{
-			"datasource": { "type": "prometheus", "uid": "prometheus" },
-			"fieldConfig": {
-				"defaults": {
-					"color": { "mode": "palette-classic" },
-					"custom": { "axisLabel": "bytes", "drawStyle": "line", "fillOpacity": 10, "lineWidth": 1, "showPoints": "never", "stacking": { "mode": "normal" } },
-					"unit": "bytes"
-				},
-				"overrides": []
-			},
-			"gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
-			"id": 2,
-			"options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
-			"targets": [
-				{
-					"datasource": { "type": "prometheus", "uid": "prometheus" },
-					"expr": "sum(jvm_memory_used_bytes{job=\"spring\", area=\"nonheap\"}) by (id)",
-					"legendFormat": "{{id}}",
-					"refId": "A"
-				}
-			],
-			"title": "JVM non-heap memory used",
-			"type": "timeseries"
-		},
-		{
-			"datasource": { "type": "prometheus", "uid": "prometheus" },
-			"fieldConfig": {
-				"defaults": {
-					"color": { "mode": "palette-classic" },
-					"custom": { "axisLabel": "seconds/s", "drawStyle": "line", "fillOpacity": 10, "lineWidth": 1, "showPoints": "never" },
-					"unit": "s"
-				},
-				"overrides": []
-			},
-			"gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
-			"id": 3,
-			"options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
-			"targets": [
-				{
-					"datasource": { "type": "prometheus", "uid": "prometheus" },
-					"expr": "sum(rate(jvm_gc_pause_seconds_sum{job=\"spring\"}[5m])) by (cause)",
-					"legendFormat": "{{cause}}",
-					"refId": "A"
-				}
-			],
-			"title": "GC pause time per second",
-			"type": "timeseries"
-		},
-		{
-			"datasource": { "type": "prometheus", "uid": "prometheus" },
-			"fieldConfig": {
-				"defaults": {
-					"color": { "mode": "palette-classic" },
-					"custom": { "axisLabel": "threads", "drawStyle": "line", "fillOpacity": 10, "lineWidth": 1, "showPoints": "never" },
-					"unit": "short"
-				},
-				"overrides": []
-			},
-			"gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
-			"id": 4,
-			"options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
-			"targets": [
-				{
-					"datasource": { "type": "prometheus", "uid": "prometheus" },
-					"expr": "jvm_threads_live_threads{job=\"spring\"}",
-					"legendFormat": "live threads",
-					"refId": "A"
-				},
-				{
-					"datasource": { "type": "prometheus", "uid": "prometheus" },
-					"expr": "jvm_threads_daemon_threads{job=\"spring\"}",
-					"legendFormat": "daemon threads",
-					"refId": "B"
-				}
-			],
-			"title": "JVM threads",
-			"type": "timeseries"
-		},
-		{
-			"datasource": { "type": "prometheus", "uid": "prometheus" },
-			"fieldConfig": {
-				"defaults": {
-					"color": { "mode": "palette-classic" },
-					"custom": { "axisLabel": "seconds", "drawStyle": "line", "fillOpacity": 0, "lineWidth": 1, "showPoints": "never" },
-					"unit": "s"
-				},
-				"overrides": []
-			},
-			"gridPos": { "h": 8, "w": 24, "x": 0, "y": 16 },
-			"id": 5,
-			"options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
-			"targets": [
-				{
-					"datasource": { "type": "prometheus", "uid": "prometheus" },
-					"expr": "histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket{job=\"spring\", uri!~\"/actuator.*\"}[5m])) by (le, uri))",
-					"legendFormat": "p95 {{uri}}",
-					"refId": "A"
-				}
-			],
-			"title": "HTTP p95 latency by endpoint",
-			"type": "timeseries"
-		},
-		{
-			"datasource": { "type": "prometheus", "uid": "prometheus" },
-			"fieldConfig": {
-				"defaults": {
-					"color": { "mode": "palette-classic" },
-					"custom": { "axisLabel": "connections", "drawStyle": "line", "fillOpacity": 10, "lineWidth": 1, "showPoints": "never" },
-					"unit": "short"
-				},
-				"overrides": []
-			},
-			"gridPos": { "h": 8, "w": 24, "x": 0, "y": 24 },
-			"id": 6,
-			"options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
-			"targets": [
-				{
-					"datasource": { "type": "prometheus", "uid": "prometheus" },
-					"expr": "hikaricp_connections_active{job=\"spring\"}",
-					"legendFormat": "active",
-					"refId": "A"
-				},
-				{
-					"datasource": { "type": "prometheus", "uid": "prometheus" },
-					"expr": "hikaricp_connections_idle{job=\"spring\"}",
-					"legendFormat": "idle",
-					"refId": "B"
-				},
-				{
-					"datasource": { "type": "prometheus", "uid": "prometheus" },
-					"expr": "hikaricp_connections{job=\"spring\"}",
-					"legendFormat": "total",
-					"refId": "C"
-				},
-				{
-					"datasource": { "type": "prometheus", "uid": "prometheus" },
-					"expr": "hikaricp_connections_pending{job=\"spring\"}",
-					"legendFormat": "pending",
-					"refId": "D"
-				}
-			],
-			"title": "HikariCP database connection pool",
-			"type": "timeseries"
-		}
-	],
-	"preload": false,
-	"refresh": "30s",
-	"schemaVersion": 39,
-	"tags": ["alexandria", "spring"],
-	"templating": { "list": [] },
-	"time": { "from": "now-30m", "to": "now" },
-	"timepicker": {},
-	"timezone": "browser",
-	"title": "Alexandria Spring",
-	"uid": "alexandria-spring",
-	"version": 1,
-	"weekStart": ""
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "links": [],
+  "panels": [
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "bytes",
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineWidth": 1,
+            "showPoints": "never"
+          },
+          "unit": "bytes"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1,
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum(jvm_memory_used_bytes{job=~\"user-service|knowledgebase-service|qa-service\", area=\"heap\"}) by (job)",
+          "legendFormat": "{{job}}",
+          "refId": "A"
+        }
+      ],
+      "title": "JVM heap memory used (by service)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "bytes",
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineWidth": 1,
+            "showPoints": "never"
+          },
+          "unit": "bytes"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 0
+      },
+      "id": 2,
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum(jvm_memory_used_bytes{job=~\"user-service|knowledgebase-service|qa-service\", area=\"nonheap\"}) by (job)",
+          "legendFormat": "{{job}}",
+          "refId": "A"
+        }
+      ],
+      "title": "JVM non-heap memory used (by service)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "seconds/s",
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineWidth": 1,
+            "showPoints": "never"
+          },
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 8
+      },
+      "id": 3,
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum(rate(jvm_gc_pause_seconds_sum{job=~\"user-service|knowledgebase-service|qa-service\"}[5m])) by (job)",
+          "legendFormat": "{{job}}",
+          "refId": "A"
+        }
+      ],
+      "title": "GC pause time per second (by service)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "threads",
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineWidth": 1,
+            "showPoints": "never"
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 8
+      },
+      "id": 4,
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum(jvm_threads_live_threads{job=~\"user-service|knowledgebase-service|qa-service\"}) by (job)",
+          "legendFormat": "{{job}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Live JVM threads (by service)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "seconds",
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "lineWidth": 1,
+            "showPoints": "never"
+          },
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 16
+      },
+      "id": 5,
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket{job=~\"user-service|knowledgebase-service|qa-service\", uri!~\"/actuator.*\"}[5m])) by (le, job))",
+          "legendFormat": "p95 {{job}}",
+          "refId": "A"
+        }
+      ],
+      "title": "HTTP p95 latency (by service)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "connections",
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineWidth": 1,
+            "showPoints": "never"
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 24
+      },
+      "id": 6,
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum(hikaricp_connections_active{job=~\"user-service|knowledgebase-service|qa-service\"}) by (job)",
+          "legendFormat": "{{job}} active",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum(hikaricp_connections_pending{job=~\"user-service|knowledgebase-service|qa-service\"}) by (job)",
+          "legendFormat": "{{job}} pending",
+          "refId": "B"
+        }
+      ],
+      "title": "HikariCP active / pending connections (by service)",
+      "type": "timeseries"
+    }
+  ],
+  "preload": false,
+  "refresh": "30s",
+  "schemaVersion": 39,
+  "tags": [
+    "alexandria",
+    "spring"
+  ],
+  "templating": {
+    "list": []
+  },
+  "time": {
+    "from": "now-30m",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Alexandria Spring (all services)",
+  "uid": "alexandria-spring",
+  "version": 1,
+  "weekStart": ""
 }

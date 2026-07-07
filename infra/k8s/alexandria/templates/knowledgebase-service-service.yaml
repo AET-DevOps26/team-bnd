@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "alexandria.fullname" . }}-knowledgebase-service
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "alexandria.labels" . | nindent 4 }}
+    app: knowledgebase-service
+    app.kubernetes.io/component: backend
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "alexandria.selectorLabels" . | nindent 4 }}
+    app: knowledgebase-service
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+      protocol: TCP

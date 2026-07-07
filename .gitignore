@@ -421,5 +421,7 @@ infra/azure/terraform/*auto.tfvars
 infra/azure/ansible/inventory.ini
 infra/azure/.keys/
 
-**/spring-openapi.yaml
+**/spring-knowledgebase-openapi.yaml
+**/spring-qa-openapi.yaml
+**/spring-user-openapi.yaml
 **/genai-openapi.yaml

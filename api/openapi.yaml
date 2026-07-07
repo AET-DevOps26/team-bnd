@@ -1,24 +1,32 @@
 openapi: 3.1.0
 info:
-  title: Alexandria API
-  description: Document management and knowledge extraction platform
+  title: Alexandria User Service API
+  description: >-
+    User account management. Owns the users table; exposes internal fan-out
+    endpoints consumed by knowledgebase-service and qa-service.
   license:
     name: MIT
     identifier: MIT
-  version: 1.5.1
+  version: 2.0.0
 servers:
   - url: /
     description: Current server
 tags:
-  - name: Users
+  - name: User Service
     description: User account management
-    x-displayName: Users
-  - name: Health
-    description: Liveness and smoke endpoints
-    x-displayName: Health
-  - name: KnowledgeBase
+    x-displayName: User Service
+  - name: KnowledgeBase Service
     description: Document management and AI-powered knowledge operations
-    x-displayName: KnowledgeBase
+    x-displayName: KnowledgeBase Service
+  - name: KnowledgeBase Service (Internal)
+    description: Service-to-service endpoints, reachable only inside the cluster network
+    x-displayName: KnowledgeBase Service (Internal)
+  - name: QA Service
+    description: Question answering over the user's knowledge base
+    x-displayName: QA Service
+  - name: QA Service (Internal)
+    description: Service-to-service endpoints, reachable only inside the cluster network
+    x-displayName: QA Service (Internal)
   - description: Health check endpoints
     name: health
     x-displayName: health
@@ -29,10 +37,110 @@ tags:
     name: ai
     x-displayName: ai
 paths:
+  /api/v1/users/me/preferences:
+    patch:
+      tags:
+        - User Service
+      summary: Update user preferences
+      operationId: updateUserPreferences
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePreferencesRequest'
+        required: true
+      responses:
+        '200':
+          description: User preferences updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserPreferencesDto'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - bearerAuth: []
+  /user-service/hello:
+    get:
+      tags:
+        - User Service
+      summary: Health check (user-service)
+      description: Returns 'Hello from user-service!' if service is running
+      operationId: helloUser
+      responses:
+        '200':
+          description: Service is running
+          content:
+            text/plain:
+              schema:
+                type: string
+      security: []
+  /api/v1/users/me:
+    get:
+      tags:
+        - User Service
+      summary: Get user profile
+      operationId: userProfile
+      responses:
+        '200':
+          description: User profile retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfileDto'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - bearerAuth: []
+  /api/v1/users/{id}:
+    delete:
+      tags:
+        - User Service
+      summary: Delete user account
+      description: Users can only delete their own account
+      operationId: deleteUser
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: User deleted
+        '403':
+          description: Cannot delete other users
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - bearerAuth: []
   /api/v1/knowledgebase/documents/{id}/tags:
     post:
       tags:
-        - KnowledgeBase
+        - KnowledgeBase Service
       summary: Add tag to document
       operationId: addTag
       parameters:
@@ -53,12 +161,16 @@ paths:
           description: Tag added
         '404':
           description: Document not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
       security:
         - bearerAuth: []
   /api/v1/knowledgebase/documents/{id}/reprocess/summary:
     post:
       tags:
-        - KnowledgeBase
+        - KnowledgeBase Service
       summary: Reprocess document summary
       operationId: reprocessSummary
       parameters:
@@ -73,14 +185,22 @@ paths:
           description: Document summary reprocessed
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '404':
           description: Document not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
       security:
         - bearerAuth: []
   /api/v1/knowledgebase/documents/{id}/reprocess/entities:
     post:
       tags:
-        - KnowledgeBase
+        - KnowledgeBase Service
       summary: Reprocess document entities
       operationId: reprocessEntities
       parameters:
@@ -95,14 +215,22 @@ paths:
           description: Document entities reprocessed
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '404':
           description: Document not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
       security:
         - bearerAuth: []
   /api/v1/knowledgebase/documents/upload:
     post:
       tags:
-        - KnowledgeBase
+        - KnowledgeBase Service
       summary: Upload a document file
       operationId: uploadDocument
       requestBody:
@@ -128,13 +256,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Document'
+                $ref: '#/components/schemas/ErrorResponse'
       security:
         - bearerAuth: []
   /api/v1/knowledgebase/documents/create:
     post:
       tags:
-        - KnowledgeBase
+        - KnowledgeBase Service
       summary: Create a new document with text content
       operationId: createDocument
       requestBody:
@@ -152,64 +280,10 @@ paths:
                 $ref: '#/components/schemas/Document'
       security:
         - bearerAuth: []
-  /api/v1/knowledgebase/ask:
-    post:
-      tags:
-        - KnowledgeBase
-      summary: Ask a question about your documents
-      operationId: ask
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/AskRequest'
-        required: true
-      responses:
-        '200':
-          description: Answer generated
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/QAInteraction'
-      security:
-        - bearerAuth: []
-  /api/v1/users/me/preferences:
-    patch:
-      tags:
-        - Users
-      summary: Update user preferences
-      operationId: updateUserPreferences
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UpdatePreferencesRequest'
-        required: true
-      responses:
-        '200':
-          description: User preferences updated
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UserPreferencesDto'
-        '400':
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UserPreferencesDto'
-        '404':
-          description: User not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UserPreferencesDto'
-      security:
-        - bearerAuth: []
   /api/v1/knowledgebase/documents/{id}:
     get:
       tags:
-        - KnowledgeBase
+        - KnowledgeBase Service
       summary: Get document by ID
       operationId: getDocument
       parameters:
@@ -231,12 +305,12 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Document'
+                $ref: '#/components/schemas/ErrorResponse'
       security:
         - bearerAuth: []
     delete:
       tags:
-        - KnowledgeBase
+        - KnowledgeBase Service
       summary: Delete document
       operationId: deleteDocument
       parameters:
@@ -251,11 +325,15 @@ paths:
           description: Document deleted
         '404':
           description: Document not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
       security:
         - bearerAuth: []
     patch:
       tags:
-        - KnowledgeBase
+        - KnowledgeBase Service
       summary: Update document metadata
       operationId: updateDocument
       parameters:
@@ -283,22 +361,22 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Document'
+                $ref: '#/components/schemas/ErrorResponse'
         '404':
           description: Document not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Document'
+                $ref: '#/components/schemas/ErrorResponse'
       security:
         - bearerAuth: []
-  /hello:
+  /knowledgebase-service/hello:
     get:
       tags:
-        - Health
-      summary: Health check
-      description: Returns 'Hello World!' if service is running
-      operationId: helloEndpoint
+        - KnowledgeBase Service
+      summary: Health check (knowledgebase-service)
+      description: Returns 'Hello from knowledgebase-service!' if service is running
+      operationId: helloKnowledgeBase
       responses:
         '200':
           description: Service is running
@@ -306,38 +384,33 @@ paths:
             text/plain:
               schema:
                 type: string
-        '404':
-          description: Endpoint not found
-          content:
-            text/plain:
-              schema:
-                type: string
       security: []
-  /api/v1/users/me:
+  /internal/knowledgebase/users/{subject}/document-keys:
     get:
       tags:
-        - Users
-      summary: Get user profile
-      operationId: userProfile
+        - KnowledgeBase Service (Internal)
+      summary: List object keys for a user's documents (internal)
+      operationId: listDocumentKeys
+      parameters:
+        - name: subject
+          in: path
+          required: true
+          schema:
+            type: string
       responses:
         '200':
-          description: User profile retrieved
+          description: Object keys returned
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UserProfileDto'
-        '404':
-          description: User not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UserProfileDto'
-      security:
-        - bearerAuth: []
+                type: array
+                items:
+                  type: string
+      security: []
   /api/v1/knowledgebase/tags:
     get:
       tags:
-        - KnowledgeBase
+        - KnowledgeBase Service
       summary: Get all unique tags for user
       operationId: getTags
       responses:
@@ -352,7 +425,7 @@ paths:
   /api/v1/knowledgebase/search:
     get:
       tags:
-        - KnowledgeBase
+        - KnowledgeBase Service
       summary: Search documents
       operationId: search
       parameters:
@@ -375,7 +448,7 @@ paths:
   /api/v1/knowledgebase/history/search:
     get:
       tags:
-        - KnowledgeBase
+        - KnowledgeBase Service
       summary: Get search history
       operationId: getSearchHistory
       responses:
@@ -391,7 +464,7 @@ paths:
         - bearerAuth: []
     delete:
       tags:
-        - KnowledgeBase
+        - KnowledgeBase Service
       summary: Delete search history
       operationId: deleteSearchHistory
       responses:
@@ -399,39 +472,10 @@ paths:
           description: Search history deleted
       security:
         - bearerAuth: []
-  /api/v1/knowledgebase/history/qa:
-    get:
-      tags:
-        - KnowledgeBase
-      summary: Get Q&A history
-      operationId: getQAHistory
-      responses:
-        '200':
-          description: Q&A history retrieved
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/QAInteraction'
-      security:
-        - bearerAuth: []
-    delete:
-      tags:
-        - KnowledgeBase
-      summary: Delete Q&A history
-      operationId: deleteQAHistory
-      responses:
-        '204':
-          description: Q&A history deleted
-        '500':
-          description: Internal Server Error
-      security:
-        - bearerAuth: []
   /api/v1/knowledgebase/documents:
     get:
       tags:
-        - KnowledgeBase
+        - KnowledgeBase Service
       summary: List all documents
       operationId: listDocuments
       responses:
@@ -448,7 +492,7 @@ paths:
   /api/v1/knowledgebase/documents/{id}/summary:
     get:
       tags:
-        - KnowledgeBase
+        - KnowledgeBase Service
       summary: Get document summary
       operationId: getSummary
       parameters:
@@ -476,19 +520,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/DocumentSummaryDto'
+                $ref: '#/components/schemas/ErrorResponse'
         '404':
           description: Document not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/DocumentSummaryDto'
+                $ref: '#/components/schemas/ErrorResponse'
       security:
         - bearerAuth: []
   /api/v1/knowledgebase/documents/{id}/entities:
     get:
       tags:
-        - KnowledgeBase
+        - KnowledgeBase Service
       summary: Get document entities
       operationId: getEntities
       parameters:
@@ -510,19 +554,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/DocumentEntityResponseDto'
+                $ref: '#/components/schemas/ErrorResponse'
         '404':
           description: Document not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/DocumentEntityResponseDto'
+                $ref: '#/components/schemas/ErrorResponse'
       security:
         - bearerAuth: []
   /api/v1/knowledgebase/documents/{id}/download:
     get:
       tags:
-        - KnowledgeBase
+        - KnowledgeBase Service
       summary: Download document file
       operationId: downloadDocument
       parameters:
@@ -545,37 +589,29 @@ paths:
           content:
             application/json:
               schema:
-                type: string
-                format: byte
+                $ref: '#/components/schemas/ErrorResponse'
       security:
         - bearerAuth: []
-  /api/v1/users/{id}:
+  /internal/knowledgebase/users/{subject}:
     delete:
       tags:
-        - Users
-      summary: Delete user account
-      description: Users can only delete their own account
-      operationId: deleteUser
+        - KnowledgeBase Service (Internal)
+      summary: Purge all knowledgebase data for a user (internal)
+      operationId: kbInternalDeleteUserData
       parameters:
-        - name: id
+        - name: subject
           in: path
           required: true
           schema:
             type: string
-            format: uuid
       responses:
         '204':
-          description: User deleted
-        '403':
-          description: Cannot delete other users
-        '404':
-          description: User not found
-      security:
-        - bearerAuth: []
+          description: User data purged
+      security: []
   /api/v1/knowledgebase/documents/{documentId}/tags/{tagId}:
     delete:
       tags:
-        - KnowledgeBase
+        - KnowledgeBase Service
       summary: Remove tag from document
       operationId: removeTag
       parameters:
@@ -596,8 +632,91 @@ paths:
           description: Tag removed
         '404':
           description: Document not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
       security:
         - bearerAuth: []
+  /api/v1/qa/ask:
+    post:
+      tags:
+        - QA Service
+      summary: Ask a question about your documents
+      operationId: ask
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AskRequest'
+        required: true
+      responses:
+        '200':
+          description: Answer generated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QAInteraction'
+      security:
+        - bearerAuth: []
+  /qa-service/hello:
+    get:
+      tags:
+        - QA Service
+      summary: Health check (qa-service)
+      description: Returns 'Hello from qa-service!' if service is running
+      operationId: helloQa
+      responses:
+        '200':
+          description: Service is running
+          content:
+            text/plain:
+              schema:
+                type: string
+      security: []
+  /api/v1/qa/history:
+    get:
+      tags:
+        - QA Service
+      summary: Get Q&A history
+      operationId: getHistory
+      responses:
+        '200':
+          description: Q&A history retrieved
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/QAInteraction'
+      security:
+        - bearerAuth: []
+    delete:
+      tags:
+        - QA Service
+      summary: Delete Q&A history
+      operationId: deleteHistory
+      responses:
+        '204':
+          description: Q&A history deleted
+      security:
+        - bearerAuth: []
+  /internal/qa/users/{subject}:
+    delete:
+      tags:
+        - QA Service (Internal)
+      summary: Purge all QA data for a user (internal)
+      operationId: qaInternalDeleteUserData
+      parameters:
+        - name: subject
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: User data purged
+      security: []
   /genai/ask:
     post:
       description: >-
@@ -809,6 +928,49 @@ paths:
         - ai
 components:
   schemas:
+    UpdatePreferencesRequest:
+      type: object
+      properties:
+        darkTheme:
+          type: boolean
+        language:
+          type: string
+          maxLength: 5
+          minLength: 2
+    UserPreferencesDto:
+      type: object
+      properties:
+        darkTheme:
+          type: boolean
+        language:
+          type: string
+    UserProfileDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        oidcSubject:
+          type: string
+        username:
+          type: string
+        email:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        preferences:
+          $ref: '#/components/schemas/UserPreferencesDto'
+    ErrorResponse:
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
+          additionalProperties:
+            type: object
     AddTagRequest:
       type: object
       properties:
@@ -820,8 +982,8 @@ components:
         id:
           type: string
           format: uuid
-        owner:
-          $ref: '#/components/schemas/User'
+        ownerSubject:
+          type: string
         fileName:
           type: string
         objectKey:
@@ -898,23 +1060,6 @@ components:
           items:
             $ref: '#/components/schemas/Document'
           uniqueItems: true
-    User:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-        oidcSubject:
-          type: string
-        username:
-          type: string
-        email:
-          type: string
-        createdAt:
-          type: string
-          format: date-time
-        preferences:
-          type: string
     CreateDocumentRequest:
       type: object
       properties:
@@ -929,70 +1074,11 @@ components:
           format: int64
         textContent:
           type: string
-    AskRequest:
-      type: object
-      properties:
-        question:
-          type: string
-    QAInteraction:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-        user:
-          $ref: '#/components/schemas/User'
-        question:
-          type: string
-        answer:
-          type: string
-        sourceObjectKeys:
-          type: array
-          items:
-            type: string
-        timestamp:
-          type: string
-          format: date-time
-        modelUsed:
-          type: string
-    UpdatePreferencesRequest:
-      type: object
-      properties:
-        darkTheme:
-          type: boolean
-        language:
-          type: string
-          maxLength: 5
-          minLength: 2
-    UserPreferencesDto:
-      type: object
-      properties:
-        darkTheme:
-          type: boolean
-        language:
-          type: string
     UpdateDocumentRequest:
       type: object
       properties:
         fileName:
           type: string
-    UserProfileDto:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-        oidcSubject:
-          type: string
-        username:
-          type: string
-        email:
-          type: string
-        createdAt:
-          type: string
-          format: date-time
-        preferences:
-          $ref: '#/components/schemas/UserPreferencesDto'
     TagDto:
       type: object
       properties:
@@ -1014,8 +1100,8 @@ components:
         id:
           type: string
           format: uuid
-        user:
-          $ref: '#/components/schemas/User'
+        userSubject:
+          type: string
         queryText:
           type: string
         timestamp:
@@ -1059,6 +1145,32 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/DocumentEntityDto'
+    AskRequest:
+      type: object
+      properties:
+        question:
+          type: string
+    QAInteraction:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        userSubject:
+          type: string
+        question:
+          type: string
+        answer:
+          type: string
+        sourceObjectKeys:
+          type: array
+          items:
+            type: string
+        timestamp:
+          type: string
+          format: date-time
+        modelUsed:
+          type: string
     GenAiAskRequest:
       properties:
         objectKeys:
@@ -1236,11 +1348,17 @@ components:
       scheme: bearer
       bearerFormat: JWT
 x-tagGroups:
-  - name: Alexandria API
+  - name: Alexandria User Service API
     tags:
-      - Users
-      - Health
-      - KnowledgeBase
+      - User Service
+  - name: Alexandria KnowledgeBase Service API
+    tags:
+      - KnowledgeBase Service
+      - KnowledgeBase Service (Internal)
+  - name: Alexandria QA Service API
+    tags:
+      - QA Service
+      - QA Service (Internal)
   - name: Alexandria GenAI
     tags:
       - health

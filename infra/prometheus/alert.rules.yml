@@ -11,19 +11,20 @@ groups:
           summary: "{{ $labels.job }} target is down"
           description: "Prometheus has not been able to scrape {{ $labels.instance }} ({{ $labels.job }}) for over a minute."
 
-      # More than 5% of Spring HTTP responses are 5xx over the last 5 minutes.
+      # More than 5% of HTTP responses across any Spring microservice are 5xx over
+      # the last 5 minutes. Tracked per service (user-service / knowledgebase-service / qa-service)
       - alert: SpringHighErrorRate
         expr: |
-          sum(rate(http_server_requests_seconds_count{job="spring", status=~"5.."}[5m]))
+          sum by (job) (rate(http_server_requests_seconds_count{job=~"user-service|knowledgebase-service|qa-service", status=~"5.."}[5m]))
             /
-          sum(rate(http_server_requests_seconds_count{job="spring"}[5m]))
+          sum by (job) (rate(http_server_requests_seconds_count{job=~"user-service|knowledgebase-service|qa-service"}[5m]))
             > 0.05
         for: 5m
         labels:
           severity: warning
         annotations:
-          summary: "Spring 5xx error rate above 5%"
-          description: "More than 5% of Spring requests have failed with a 5xx status over the last 5 minutes."
+          summary: "{{ $labels.job }} 5xx error rate above 5%"
+          description: "More than 5% of {{ $labels.job }} requests have failed with a 5xx status over the last 5 minutes."
 
       # GenAI 95th percentile request latency stays above 2s.
       - alert: GenAiSlowResponses

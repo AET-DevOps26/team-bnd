@@ -6,71 +6,81 @@ repos:
     rev: v6.0.0
     hooks:
       - id: trailing-whitespace
+        name: Trim trailing whitespace
       - id: end-of-file-fixer
+        name: Fix end of files
       - id: check-yaml
+        name: Check YAML files
         args: [--allow-multiple-documents]
         exclude: '\.github/workflows/.*\.ya?ml$'
       - id: check-added-large-files
+        name: Check for added large files
         args: [--maxkb=1024]
       - id: check-merge-conflict
+        name: Check for merge conflicts
       - id: mixed-line-ending
+        name: Check for mixed line endings
 
   - repo: https://github.com/adrienverge/yamllint
     rev: v1.38.0
     hooks:
       - id: yamllint
+        name: Lint YAML files
         args: [-c=.yamllint.yaml]
 
   - repo: https://github.com/hadolint/hadolint
     rev: v2.14.0
     hooks:
       - id: hadolint-docker
+        name: Lint Dockerfiles
         args: [--config, .hadolint.yaml]
 
   - repo: https://github.com/rhysd/actionlint
     rev: v1.7.12
     hooks:
       - id: actionlint
+        name: Lint GitHub Actions workflow files
 
   - repo: https://github.com/crate-ci/typos
     rev: v1.47.2
     hooks:
       - id: typos
+        name: Check for typos
 
   - repo: https://github.com/gitleaks/gitleaks
     rev: v8.30.1
     hooks:
       - id: gitleaks-docker
+        name: Detect hardcoded secrets
 
   - repo: local
     hooks:
       - id: genai-openapi
-        name: genai-openapi
+        name: OpenAPI - Generate spec for GenAI
         entry: api/generate-genai-openapi.sh
         language: script
         files: '^services/genai/.*\.py$'
         pass_filenames: false
       - id: spring-openapi
-        name: spring-openapi
+        name: OpenAPI - Generate spec for Spring
         entry: api/generate-spring-openapi.sh
         language: script
         files: '^services/spring/.*\.java$'
         pass_filenames: false
       - id: merge-openapi
-        name: merge-openapi
-        entry: redocly join api/spring-openapi.yaml api/genai-openapi.yaml -o api/openapi.yaml
-        language: node
-        additional_dependencies: ["@redocly/cli@2.30.3"]
+        name: OpenAPI - Merge
+        entry: api/merge-openapi.sh
+        language: script
         files: '^(services/genai/.*\.py|services/spring/.*\.java)$'
         pass_filenames: false
       - id: format-java
         name: Format Java with Spotless
-        entry: bash -c 'services/spring/app/gradlew -p services/spring/app spotlessApply && git diff --exit-code --name-only -- "*.java"'
+        entry: bash -c 'services/spring/gradlew -p services/spring spotlessApply && git diff --exit-code --name-only -- "*.java"'
         language: system
         files: "\\.java$"
         pass_filenames: false
       - id: redocly-lint
-        name: redocly-lint
+        name: OpenAPI - Lint
         entry: redocly lint api/openapi.yaml
         language: node
         additional_dependencies: ["@redocly/cli@2.30.3"]

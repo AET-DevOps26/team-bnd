@@ -43,20 +43,20 @@
     },
     {
       "id": "c4f8c55b-80ef-482d-b3f7-46e04cdd9679",
-      "width": 860,
-      "height": 220,
+      "width": 725,
+      "height": 230,
       "type": "componentSubsystem",
       "position": {
         "x": 100,
-        "y": 320
+        "y": 310
       },
       "data": {
-        "name": "Backend",
+        "name": "Server",
         "isComponentSubsystemHeaderShown": true
       },
       "measured": {
-        "width": 860,
-        "height": 220
+        "width": 725,
+        "height": 230
       }
     },
     {
@@ -66,7 +66,7 @@
       "type": "component",
       "position": {
         "x": 20,
-        "y": 70
+        "y": 80
       },
       "parentId": "c4f8c55b-80ef-482d-b3f7-46e04cdd9679",
       "data": {
@@ -85,11 +85,11 @@
       "type": "component",
       "position": {
         "x": 270,
-        "y": 70
+        "y": 80
       },
       "parentId": "c4f8c55b-80ef-482d-b3f7-46e04cdd9679",
       "data": {
-        "name": "Document Service",
+        "name": "KnowledgeBase Service",
         "isComponentHeaderShown": true
       },
       "measured": {
@@ -99,20 +99,20 @@
     },
     {
       "id": "8c0df11f-5a6d-4706-b43b-e4b228f90168",
-      "width": 280,
+      "width": 180,
       "height": 120,
       "type": "component",
       "position": {
         "x": 520,
-        "y": 70
+        "y": 80
       },
       "parentId": "c4f8c55b-80ef-482d-b3f7-46e04cdd9679",
       "data": {
-        "name": "Search and Indexing Service",
+        "name": "QA Service",
         "isComponentHeaderShown": true
       },
       "measured": {
-        "width": 280,
+        "width": 180,
         "height": 120
       }
     },
@@ -197,7 +197,7 @@
       "type": "component",
       "position": {
         "x": 485,
-        "y": 60
+        "y": 55
       },
       "parentId": "41f9e852-f9ac-45b6-81a7-3e33e1d77b12",
       "data": {
@@ -328,7 +328,7 @@
         "y": 250
       },
       "data": {
-        "name": "Document REST API"
+        "name": "KnowledgeBase REST API"
       },
       "measured": {
         "width": 20,
@@ -341,11 +341,11 @@
       "height": 20,
       "type": "componentInterface",
       "position": {
-        "x": 750,
+        "x": 700,
         "y": 250
       },
       "data": {
-        "name": "Search REST API"
+        "name": "QA REST API"
       },
       "measured": {
         "width": 20,
@@ -443,7 +443,7 @@
       "height": 60,
       "type": "colorDescription",
       "position": {
-        "x": 700,
+        "x": 655,
         "y": 110
       },
       "data": {
@@ -507,17 +507,6 @@
       "id": "9b4dac19-2635-4697-a2d7-5cd8bd806ca6",
       "source": "8a3c9bcd-66c1-4280-bd3e-8ab375429467",
       "target": "c03a6257-609f-48bf-95e1-9d61ec2dd52c",
-      "type": "ComponentProvidedInterface",
-      "sourceHandle": "top",
-      "targetHandle": "bottom",
-      "data": {
-        "points": []
-      }
-    },
-    {
-      "id": "bb9f1907-9740-4005-8fa4-f12d21cb4b9a",
-      "source": "8c0df11f-5a6d-4706-b43b-e4b228f90168",
-      "target": "302164d1-9573-468a-a530-943f6ec043a5",
       "type": "ComponentProvidedInterface",
       "sourceHandle": "top",
       "targetHandle": "bottom",
@@ -621,7 +610,24 @@
       "sourceHandle": "bottom",
       "targetHandle": "top",
       "data": {
-        "points": [],
+        "points": [
+          {
+            "x": 210,
+            "y": 511
+          },
+          {
+            "x": 210,
+            "y": 675
+          },
+          {
+            "x": 5,
+            "y": 675
+          },
+          {
+            "x": 5,
+            "y": 1010
+          }
+        ],
         "strokeColor": "#26de81"
       }
     },
@@ -635,16 +641,16 @@
       "data": {
         "points": [
           {
-            "x": 760,
+            "x": 710,
             "y": 511
           },
           {
-            "x": 760,
-            "y": 684
+            "x": 710,
+            "y": 675
           },
           {
             "x": 5,
-            "y": 684
+            "y": 675
           },
           {
             "x": 5,
@@ -763,11 +769,11 @@
           },
           {
             "x": 460,
-            "y": 684
+            "y": 675
           },
           {
             "x": 5,
-            "y": 684
+            "y": 675
           },
           {
             "x": 5,
@@ -804,21 +810,13 @@
       "source": "4b3283b2-bd39-4c9b-8b3c-894a23326012",
       "target": "45faaa15-84c2-4530-ba4a-4069fc4a3849",
       "type": "ComponentRequiredInterface",
-      "sourceHandle": "bottom-right",
+      "sourceHandle": "bottom-mid-right",
       "targetHandle": "top",
       "data": {
         "points": [
           {
-            "x": 260,
-            "y": 511
-          },
-          {
-            "x": 260,
-            "y": 541
-          },
-          {
             "x": 235,
-            "y": 541
+            "y": 511
           },
           {
             "x": 235,
@@ -834,6 +832,17 @@
       "type": "ComponentRequiredInterface",
       "sourceHandle": "bottom-left",
       "targetHandle": "top",
+      "data": {
+        "points": []
+      }
+    },
+    {
+      "id": "51131403-a0c8-4000-a206-2ae6b727c56a",
+      "source": "8c0df11f-5a6d-4706-b43b-e4b228f90168",
+      "target": "302164d1-9573-468a-a530-943f6ec043a5",
+      "type": "ComponentProvidedInterface",
+      "sourceHandle": "bottom",
+      "targetHandle": "top-between-mid-left-center",
       "data": {
         "points": []
       }

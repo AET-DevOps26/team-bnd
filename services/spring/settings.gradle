@@ -1,0 +1,5 @@
+rootProject.name = 'alexandria-spring'
+
+include 'user-service'
+include 'knowledgebase-service'
+include 'qa-service'

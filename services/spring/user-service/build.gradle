@@ -1,0 +1,13 @@
+// The user-service also drives OpenAPI spec generation for the whole Spring stack.
+plugins {
+	id 'org.springdoc.openapi-gradle-plugin'
+}
+
+openApi {
+	apiDocsUrl = "http://localhost:8080/user-service/v3/api-docs.yaml"
+	outputDir = file("$projectDir/../../../api")
+	outputFileName = "spring-user-openapi.yaml"
+	customBootRun {
+		args = ["--spring.profiles.active=openapi"]
+	}
+}

@@ -1,0 +1,88 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "alexandria.fullname" . }}-qa-service
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "alexandria.labels" . | nindent 4 }}
+    app: qa-service
+    app.kubernetes.io/component: backend
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "alexandria.selectorLabels" . | nindent 6 }}
+      app: qa-service
+  template:
+    metadata:
+      labels:
+        {{- include "alexandria.selectorLabels" . | nindent 8 }}
+        app: qa-service
+        app.kubernetes.io/component: backend
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      initContainers:
+        - name: wait-for-postgres
+          image: postgres:16-alpine
+          command:
+            - sh
+            - -c
+            - |
+              until pg_isready -h {{ .Values.spring.database.host }} -p {{ .Values.spring.database.port }} -U {{ .Values.spring.database.username }}; do
+                echo "waiting for database..."
+                sleep 2
+              done
+              echo "database is ready"
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          resources:
+            {{- toYaml .Values.qaService.resources | nindent 12 }}
+      containers:
+        - name: qa-service
+          image: {{ include "alexandria.image" (dict "Values" .Values "service" "qa-service") }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: {{ include "alexandria.fullname" . }}-qa-service-config
+          env:
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "alexandria.fullname" . }}-spring-secrets
+                  key: postgres-password
+          resources:
+            {{- toYaml .Values.qaService.resources | nindent 12 }}
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3

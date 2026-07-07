@@ -13,10 +13,21 @@ scrape_configs:
       - targets: ["localhost:9090"]
 
   # Spring Boot exposes Micrometer metrics via the Actuator Prometheus endpoint.
-  - job_name: spring
+  # Each Spring microservice is scraped individually
+  - job_name: user-service
     metrics_path: /actuator/prometheus
     static_configs:
-      - targets: ["spring:8080"]
+      - targets: ["user-service:8080"]
+
+  - job_name: knowledgebase-service
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ["knowledgebase-service:8080"]
+
+  - job_name: qa-service
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ["qa-service:8080"]
 
   # GenAI (FastAPI) exposes metrics via prometheus-fastapi-instrumentator.
   - job_name: genai
