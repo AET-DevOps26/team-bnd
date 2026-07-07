@@ -26,6 +26,9 @@ app = FastAPI(
     title="Alexandria GenAI",
     description="GenAI microservice for the Alexandria document platform.",
     version=SERVICE_VERSION,
+    docs_url="/genai/docs",
+    redoc_url="/genai/redoc",
+    openapi_url="/genai/openapi.json",
     openapi_tags=[
         {"name": "health", "description": "Health check endpoints"},
         {"name": "hello", "description": "Hello endpoints"},
