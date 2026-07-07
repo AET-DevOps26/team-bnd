@@ -34,6 +34,14 @@ public class GenAiClient {
         return restClient.post().uri("/genai/ask").contentType(MediaType.APPLICATION_JSON).body(new AskRequest(question, objectKeys)).retrieve().body(AskResponse.class);
     }
 
+    public IndexResponse index(String objectKey) {
+        return restClient.post().uri("/genai/index").contentType(MediaType.APPLICATION_JSON).body(new IndexRequest(objectKey)).retrieve().body(IndexResponse.class);
+    }
+
+    public DeleteIndexResponse deleteIndex(String objectKey) {
+        return restClient.delete().uri("/genai/index/{objectKey}", objectKey).retrieve().body(DeleteIndexResponse.class);
+    }
+
     public record SummarizeRequest(String objectKey) {
     }
 
@@ -53,5 +61,14 @@ public class GenAiClient {
     }
 
     public record AskResponse(String answer, List<String> sourceObjectKeys, String modelUsed) {
+    }
+
+    public record IndexRequest(String objectKey) {
+    }
+
+    public record IndexResponse(String objectKey, Integer chunksIndexed, String embeddingModel) {
+    }
+
+    public record DeleteIndexResponse(String objectKey, Integer chunksDeleted) {
     }
 }
