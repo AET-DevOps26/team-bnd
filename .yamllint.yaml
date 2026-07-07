@@ -15,7 +15,7 @@ rules:
     indent-sequences: consistent
 
 ignore: |
-  services/spring/app/build/
+  services/spring/**/build/
   **/node_modules/
   **/build/
   **/templates/
