@@ -91,7 +91,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 3
-      start_period: 80s
+      start_period: 180s
     depends_on:
       postgres-db:
         condition: service_healthy
@@ -144,7 +144,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 3
-      start_period: 80s
+      start_period: 180s
     depends_on:
       s3-storage:
         condition: service_healthy
@@ -197,7 +197,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 3
-      start_period: 80s
+      start_period: 180s
     depends_on:
       postgres-db:
         condition: service_healthy
