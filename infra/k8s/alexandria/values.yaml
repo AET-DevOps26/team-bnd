@@ -26,22 +26,25 @@ spring:
     usernameClaim: "preferred_username"
     rolesClaim: "roles"
 
+# CPU limits are sized so the sum of all `limits.cpu` in the alexandria
+# namespace stays under the 4 CPU quota enforced by the stud cluster
+# (ResourceQuota `default-h2d5c`).
 userService:
   resources:
     requests:
       cpu: 100m
       memory: 192Mi
     limits:
-      cpu: 300m
+      cpu: 200m
       memory: 384Mi
 
 knowledgebaseService:
   resources:
     requests:
-      cpu: 250m
+      cpu: 200m
       memory: 256Mi
     limits:
-      cpu: 500m
+      cpu: 400m
       memory: 512Mi
 
 qaService:
@@ -50,7 +53,7 @@ qaService:
       cpu: 100m
       memory: 192Mi
     limits:
-      cpu: 300m
+      cpu: 200m
       memory: 384Mi
 
 client:
@@ -59,7 +62,7 @@ client:
       cpu: 50m
       memory: 64Mi
     limits:
-      cpu: 250m
+      cpu: 100m
       memory: 128Mi
 
 genai:
@@ -166,11 +169,11 @@ postgres-db:
         CREATE DATABASE alexandria;
   resources:
     requests:
+      memory: "512Mi"
+      cpu: "250m"
+    limits:
       memory: "1Gi"
       cpu: "500m"
-    limits:
-      memory: "2Gi"
-      cpu: "1000m"
 
 s3:
   # endpoint: override to use external S3 (e.g. AWS). Leave empty to auto-derive from release name.
