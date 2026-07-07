@@ -13,7 +13,7 @@ scrape_configs:
       - targets: ["localhost:9090"]
 
   # Spring Boot exposes Micrometer metrics via the Actuator Prometheus endpoint.
-  # Each Spring microservice is scaped individually
+  # Each Spring microservice is scraped individually
   - job_name: user-service
     metrics_path: /actuator/prometheus
     static_configs:

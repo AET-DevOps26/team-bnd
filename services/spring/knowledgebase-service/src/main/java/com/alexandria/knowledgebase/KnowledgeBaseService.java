@@ -160,8 +160,9 @@ public class KnowledgeBaseService {
     @Transactional
     public void deleteDocument(UUID id, String ownerSubject) {
         Document document = documentService.findByIdAndOwner(id, ownerSubject);
-        objectStorageService.delete(document.getObjectKey());
+        String objectKey = document.getObjectKey();
         documentService.delete(id, ownerSubject);
+        objectStorageService.delete(objectKey);
     }
 
     @Transactional

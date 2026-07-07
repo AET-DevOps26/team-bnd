@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -95,8 +96,21 @@ class KnowledgeBaseServiceTest {
 
         knowledgeBaseService.deleteDocument(docId, OWNER);
 
-        verify(objectStorageService).delete("/uploads/a.pdf");
-        verify(documentService).delete(docId, OWNER);
+        org.mockito.InOrder inOrder = inOrder(documentService, objectStorageService);
+        inOrder.verify(documentService).delete(docId, OWNER);
+        inOrder.verify(objectStorageService).delete("/uploads/a.pdf");
+    }
+
+    @Test
+    void unit_kb_deleteDocumentSkipsS3WhenDbDeleteFails() {
+        UUID docId = UUID.randomUUID();
+        Document doc = new Document(OWNER, "a.pdf", "/uploads/a.pdf", "application/pdf", 100L);
+        when(documentService.findByIdAndOwner(docId, OWNER)).thenReturn(doc);
+        doThrow(new RuntimeException("db down")).when(documentService).delete(docId, OWNER);
+
+        assertThatThrownBy(() -> knowledgeBaseService.deleteDocument(docId, OWNER)).isInstanceOf(RuntimeException.class);
+
+        verify(objectStorageService, never()).delete(anyString());
     }
 
     @Test

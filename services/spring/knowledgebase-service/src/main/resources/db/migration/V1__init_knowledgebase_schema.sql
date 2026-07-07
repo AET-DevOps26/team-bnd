@@ -67,9 +67,7 @@ BEGIN
             DROP COLUMN IF EXISTS user_id;
     END IF;
 
-    -- Move all knowledgebase tables into the new schema. Hibernate's update
-    -- mode never does this on its own, which is exactly the concern raised
-    -- in PR #230.
+    -- Move all knowledgebase tables into the new schema.
     ALTER TABLE public.documents SET SCHEMA knowledgebase_service;
     IF to_regclass('public.summaries')          IS NOT NULL THEN ALTER TABLE public.summaries          SET SCHEMA knowledgebase_service; END IF;
     IF to_regclass('public.tags')               IS NOT NULL THEN ALTER TABLE public.tags               SET SCHEMA knowledgebase_service; END IF;
