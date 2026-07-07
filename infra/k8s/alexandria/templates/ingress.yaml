@@ -108,21 +108,21 @@ spec:
                 name: {{ include "alexandria.fullname" . }}-qa-service
                 port:
                   number: 8080
-          - path: /docs
+          - path: /genai/docs
             pathType: Prefix
             backend:
               service:
                 name: {{ include "alexandria.fullname" . }}-genai
                 port:
                   number: 8000
-          - path: /redoc
+          - path: /genai/redoc
             pathType: Prefix
             backend:
               service:
                 name: {{ include "alexandria.fullname" . }}-genai
                 port:
                   number: 8000
-          - path: /openapi.json
+          - path: /genai/openapi.json
             pathType: Prefix
             backend:
               service:

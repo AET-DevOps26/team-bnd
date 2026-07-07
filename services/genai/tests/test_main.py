@@ -32,7 +32,7 @@ def test_hello_returns_plain_text_greeting():
 
 
 def test_openapi_schema_exposes_all_endpoints():
-    response = client.get("/openapi.json")
+    response = client.get("/genai/openapi.json")
     assert response.status_code == 200
     paths = response.json()["paths"]
     assert "/genai/health" in paths

@@ -17,23 +17,23 @@ Alexandria consists of three main subsystems orchestrated via Docker Compose and
 
 ## Setup
 
-
 ### Traefik Reverse Proxy
 
 All services are accessed through Traefik as the reverse proxy. See [`docs/traefik.md`](docs/traefik.md) for architecture, routing, and configuration details.
 
 **Quick reference:**
-| URL | Service |
-|-----|---------|
-| http://localhost/ | Client |
-| http://localhost/api/v1/... | Spring API |
-| http://localhost/user-service/docs | user-service API docs |
+
+| URL                                         | Service                        |
+| ------------------------------------------- | ------------------------------ |
+| http://localhost/                           | Client                         |
+| http://localhost/api/v1/...                 | Spring API                     |
+| http://localhost/user-service/docs          | user-service API docs          |
 | http://localhost/knowledgebase-service/docs | knowledgebase-service API docs |
-| http://localhost/qa-service/docs | qa-service API docs |
-| http://localhost/genai/docs | GenAI API documentation |
-| http://localhost/auth/ | Keycloak |
-| http://localhost/grafana/ | Grafana dashboards |
-| http://localhost/prometheus/ | Prometheus |
+| http://localhost/qa-service/docs            | qa-service API docs            |
+| http://localhost/genai/docs                 | GenAI API documentation        |
+| http://localhost/auth/                      | Keycloak                       |
+| http://localhost/grafana/                   | Grafana dashboards             |
+| http://localhost/prometheus/                | Prometheus                     |
 
 ### Infrastructure & Deployment
 
@@ -54,6 +54,7 @@ To run the full hook set manually:
 Our `docker-compose.yml` includes both pre-built image references and local build contexts. You can choose to pull images for instant startup or build them locally.
 
 **Pull and Run (Fastest):**
+
 1. `docker compose pull && docker compose up -d`
 2. Open http://localhost/ to view the site.
 
@@ -65,7 +66,8 @@ To build the images from your local source: `docker compose up --build --force-r
 For local development, `docker compose up` works out of the box; safe defaults are embedded in `docker-compose.yml`. For production or CI, copy `.env.example` to `.env` and set the values as needed.
 
 #### Troubleshooting
-- Make sure to remove all containers *and* docker volumes if you change to a local .env file. Otherwise, e.g., the postgres service will use the old password, leading to failed connections on the server side. This can be achieved by running `docker compose rm <container>` and `docker volume rm <volume>`.
+
+- Make sure to remove all containers _and_ docker volumes if you change to a local .env file. Otherwise, e.g., the postgres service will use the old password, leading to failed connections on the server side. This can be achieved by running `docker compose rm <container>` and `docker volume rm <volume>`.
 
 ### Server
 

@@ -21,7 +21,7 @@ The processing endpoints take object keys, not raw text. The service downloads t
 
 `ask` takes `{"question": "...", "objectKeys": [...]}` and answers with retrieval-augmented generation: the question is embedded, matched against the indexed chunks of the listed documents, and the top matches are passed to the LLM. The response returns `sourceObjectKeys`, the documents whose chunks actually fed the answer. When nothing relevant is found (or no documents are in scope), it says so instead of guessing.
 
-FastAPI also exposes `/openapi.json` and `/docs` (Swagger UI) out of the box.
+FastAPI also exposes `/genai/openapi.json` and `/genai/docs` (Swagger UI) out of the box.
 
 `/genai/metrics` is served by [prometheus-fastapi-instrumentator](https://github.com/trallnag/prometheus-fastapi-instrumentator) and exposes HTTP request count, latency, and Python process metrics. Prometheus scrapes it directly over the internal network (`http://genai:8000/genai/metrics`), so it is not routed through Traefik or the k8s ingress.
 
