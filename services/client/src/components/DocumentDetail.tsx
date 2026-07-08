@@ -142,6 +142,49 @@ export default function DocumentDetail({ documentId }: Props) {
         </dl>
       </header>
 
+      {tags.length > 0 && (
+        <section className="detail-section">
+          <h3>Tags</h3>
+          <ul className="tag-list" aria-label="Document tags">
+            {tags.map((tag) => (
+              <li
+                key={tag.id}
+                className={`tag tag--${tag.source?.toLowerCase() ?? "user"}`}
+              >
+                {tag.label}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {entities.length > 0 && (
+        <section className="detail-section">
+          <h3>Extracted Entities</h3>
+          <ul className="entity-list" aria-label="Extracted entities">
+            {entities.map((entity) => (
+              <li key={entity.id} className="entity-item">
+                <span className="entity-name">{entity.name}</span>
+                <span className="entity-type">
+                  {(entity.type && ENTITY_TYPE_LABELS[entity.type]) ??
+                    entity.type}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {summary && (
+        <section className="detail-section">
+          <h3>Summary</h3>
+          <p className="detail-summary">{summary.content}</p>
+          {summary.modelUsed && (
+            <p className="detail-meta-small">Model: {summary.modelUsed}</p>
+          )}
+        </section>
+      )}
+
       {isPdf && (
         <section className="detail-section">
           <h3>Document Preview</h3>
@@ -177,49 +220,6 @@ export default function DocumentDetail({ documentId }: Props) {
               <ReactMarkdown>{markdownData}</ReactMarkdown>
             </div>
           )}
-        </section>
-      )}
-
-      {tags.length > 0 && (
-        <section className="detail-section">
-          <h3>Tags</h3>
-          <ul className="tag-list" aria-label="Document tags">
-            {tags.map((tag) => (
-              <li
-                key={tag.id}
-                className={`tag tag--${tag.source?.toLowerCase() ?? "user"}`}
-              >
-                {tag.label}
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-
-      {summary && (
-        <section className="detail-section">
-          <h3>Summary</h3>
-          <p className="detail-summary">{summary.content}</p>
-          {summary.modelUsed && (
-            <p className="detail-meta-small">Model: {summary.modelUsed}</p>
-          )}
-        </section>
-      )}
-
-      {entities.length > 0 && (
-        <section className="detail-section">
-          <h3>Extracted Entities</h3>
-          <ul className="entity-list" aria-label="Extracted entities">
-            {entities.map((entity) => (
-              <li key={entity.id} className="entity-item">
-                <span className="entity-name">{entity.name}</span>
-                <span className="entity-type">
-                  {(entity.type && ENTITY_TYPE_LABELS[entity.type]) ??
-                    entity.type}
-                </span>
-              </li>
-            ))}
-          </ul>
         </section>
       )}
 
