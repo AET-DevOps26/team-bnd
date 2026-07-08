@@ -895,6 +895,43 @@ paths:
       summary: Delete Index
       tags:
         - ai
+  /genai/search:
+    post:
+      description: >-
+        Rank indexed documents by semantic similarity to the query.
+
+
+        The query is embedded and matched against the indexed chunks scoped to
+        the
+
+        requested object keys; chunk hits are rolled up to one entry per
+        document,
+
+        each carrying the closest chunk's snippet and a relevance score.
+      operationId: search_genai_search_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenAiSearchRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenAiSearchResponse'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      security: []
+      summary: Search
+      tags:
+        - ai
   /genai/summarize:
     post:
       description: Summarize the document stored under the given object key.
@@ -1317,6 +1354,63 @@ components:
         - chunksIndexed
         - embeddingModel
       title: GenAiIndexResponse
+      type: object
+    GenAiSearchRequest:
+      properties:
+        limit:
+          default: 10
+          maximum: 50
+          minimum: 1
+          title: Limit
+          type: integer
+        objectKeys:
+          items:
+            type: string
+          title: Objectkeys
+          type: array
+        query:
+          title: Query
+          type: string
+      required:
+        - query
+        - objectKeys
+      title: GenAiSearchRequest
+      type: object
+    GenAiSearchResponse:
+      properties:
+        embeddingModel:
+          title: Embeddingmodel
+          type: string
+        results:
+          items:
+            $ref: '#/components/schemas/GenAiSearchResult'
+          title: Results
+          type: array
+      required:
+        - results
+        - embeddingModel
+      title: GenAiSearchResponse
+      type: object
+    GenAiSearchResult:
+      properties:
+        chunkIndex:
+          title: Chunkindex
+          type: integer
+        objectKey:
+          title: Objectkey
+          type: string
+        score:
+          title: Score
+          type: number
+        snippet:
+          title: Snippet
+          type: string
+      required:
+        - objectKey
+        - score
+        - snippet
+        - chunkIndex
+      title: GenAiSearchResult
       type: object
     GenAiSummarizeRequest:
       properties:

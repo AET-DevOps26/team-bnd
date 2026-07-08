@@ -3,18 +3,19 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import PlainTextResponse
 from prometheus_fastapi_instrumentator import Instrumentator
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.embeddings import chunk_text, embed_chunks, get_embedding_model_name
 from app.extract import extract_entities
 from app.qa import answer_question
+from app.search import search_documents
 from app.storage import ObjectNotFoundError, UnsupportedFileError, fetch_text
 from app.summarize import summarize
 from app.tag import generate_tags
 from app.vectorstore import close_client, delete_document, index_chunks
 
 SERVICE_NAME = "alexandria-genai"
-SERVICE_VERSION = "2.1.0"
+SERVICE_VERSION = "2.2.0"
 
 
 @asynccontextmanager
@@ -96,6 +97,24 @@ class GenAiAskResponse(BaseModel):
     answer: str
     sourceObjectKeys: list[str]
     modelUsed: str
+
+
+class GenAiSearchRequest(BaseModel):
+    query: str
+    objectKeys: list[str]
+    limit: int = Field(default=10, ge=1, le=50)
+
+
+class GenAiSearchResult(BaseModel):
+    objectKey: str
+    score: float
+    snippet: str
+    chunkIndex: int
+
+
+class GenAiSearchResponse(BaseModel):
+    results: list[GenAiSearchResult]
+    embeddingModel: str
 
 
 class GenAiIndexRequest(BaseModel):
@@ -195,6 +214,24 @@ def ask(request: GenAiAskRequest) -> GenAiAskResponse:
 
     answer, source_keys, model = answer_question(request.question, request.objectKeys)
     return GenAiAskResponse(answer=answer, sourceObjectKeys=source_keys, modelUsed=model)
+
+
+@app.post("/genai/search", tags=["ai"], response_model=GenAiSearchResponse, openapi_extra={"security": []})
+def search(request: GenAiSearchRequest) -> GenAiSearchResponse:
+    """Rank indexed documents by semantic similarity to the query.
+
+    The query is embedded and matched against the indexed chunks scoped to the
+    requested object keys; chunk hits are rolled up to one entry per document,
+    each carrying the closest chunk's snippet and a relevance score.
+    """
+    if not request.query.strip():
+        raise HTTPException(status_code=422, detail="query must not be empty")
+
+    results, model = search_documents(request.query, request.objectKeys, request.limit)
+    return GenAiSearchResponse(
+        results=[GenAiSearchResult(objectKey=r["object_key"], score=r["score"], snippet=r["snippet"], chunkIndex=r["chunk_index"]) for r in results],
+        embeddingModel=model,
+    )
 
 
 @app.post("/genai/index", tags=["ai"], response_model=GenAiIndexResponse, responses=_DOCUMENT_ERROR_RESPONSES, openapi_extra={"security": []})
