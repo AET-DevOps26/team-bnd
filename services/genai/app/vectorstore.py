@@ -128,10 +128,13 @@ def search(query_vector: list[float], object_keys: list[str], limit: int) -> lis
     """Return the top chunks nearest to the query vector, scoped to object_keys.
 
     Each result carries its text, source object key, chunk index, and distance.
-    An empty object_keys list searches the whole collection.
+    An empty object_keys list returns no results so the function never searches
+    outside the requested scope.
     """
+    if not object_keys:
+        return []
     collection = _client().collections.get(COLLECTION_NAME)
-    filters = Filter.by_property("object_key").contains_any(object_keys) if object_keys else None
+    filters = Filter.by_property("object_key").contains_any(object_keys)
 
     response = collection.query.near_vector(
         near_vector=query_vector,
@@ -156,12 +159,15 @@ def search_grouped(query_vector: list[float], object_keys: list[str], limit: int
     Uses Weaviate's group_by on ``object_key`` so each document appears once,
     ranked by its closest chunk. ``number_of_groups`` caps the documents returned
     and ``objects_per_group=1`` keeps only that closest chunk. An empty
-    ``object_keys`` list searches the whole collection.
+    ``object_keys`` list returns no results so the function never searches
+    outside the requested scope.
 
     Each result carries its text, source object key, chunk index, and distance.
     """
+    if not object_keys:
+        return []
     collection = _client().collections.get(COLLECTION_NAME)
-    filters = Filter.by_property("object_key").contains_any(object_keys) if object_keys else None
+    filters = Filter.by_property("object_key").contains_any(object_keys)
 
     response = collection.query.near_vector(
         near_vector=query_vector,

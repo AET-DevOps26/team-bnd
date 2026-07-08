@@ -65,6 +65,24 @@ def test_empty_object_keys_returns_no_results_without_searching():
     assert model == "m"
 
 
+def test_search_grouped_returns_empty_for_empty_object_keys_without_querying():
+    from app.vectorstore import search_grouped
+
+    with patch("app.vectorstore._client", side_effect=AssertionError("must not touch weaviate")):
+        results = search_grouped([0.1, 0.2], [], limit=5)
+
+    assert results == []
+
+
+def test_search_returns_empty_for_empty_object_keys_without_querying():
+    from app.vectorstore import search
+
+    with patch("app.vectorstore._client", side_effect=AssertionError("must not touch weaviate")):
+        results = search([0.1, 0.2], [], limit=5)
+
+    assert results == []
+
+
 def test_long_snippet_is_truncated_at_word_boundary():
     long_text = "word " * 200
     with (
