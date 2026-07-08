@@ -1,10 +1,15 @@
 import React from "react";
-import $api from "../api/client";
 import UploadDocument from "./UploadDocument";
+import type { components } from "../api/schema";
+
+type Document = components["schemas"]["Document"];
 
 interface Props {
   selectedId: string | null;
   onSelect: (id: string) => void;
+  documents: Document[] | undefined;
+  isLoading: boolean;
+  error: unknown;
 }
 
 function formatDate(isoString?: string): string {
@@ -16,27 +21,22 @@ function formatDate(isoString?: string): string {
   });
 }
 
-export default function DocumentTree({ selectedId, onSelect }: Props) {
-  const {
-    data: documents,
-    isLoading,
-    error,
-  } = $api.useQuery("get", "/api/v1/knowledgebase/documents");
-
-  const queryError: unknown = error;
+export default function DocumentTree({
+  selectedId,
+  onSelect,
+  documents,
+  isLoading,
+  error,
+}: Props) {
   const errorMessage =
-    queryError instanceof Error
-      ? queryError.message
-      : queryError
-        ? String(queryError)
-        : "";
+    error instanceof Error ? error.message : error ? String(error) : "";
 
   return (
     <nav className="document-tree" aria-label="Document list">
       <h2 className="tree-heading">Documents</h2>
       <UploadDocument onUploaded={onSelect} />
       {isLoading && <p className="tree-status">Loading…</p>}
-      {error && (
+      {!!error && (
         <p
           className={`tree-status ${
             errorMessage === "NOT_AUTHENTICATED"

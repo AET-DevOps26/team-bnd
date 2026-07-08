@@ -455,4 +455,367 @@ test.describe("Alexandria client", () => {
       );
     });
   });
+
+  test.describe("Q&A panel", () => {
+    // Stub the history endpoint for all Q&A tests so there is no history
+    // pre-loaded and the empty state is shown by default.
+    test.beforeEach(async ({ page }) => {
+      await page.route("/api/v1/qa/history", (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify([]),
+        }),
+      );
+    });
+
+    test("Ask tab renders the Q&A panel with input and button", async ({
+      page,
+    }) => {
+      await page.goto("/");
+
+      const askTab = page.getByRole("tab", { name: "Ask" });
+      await expect(askTab).toBeVisible();
+      await askTab.click();
+
+      const panel = page.getByRole("region", { name: "Question and answer" });
+      await expect(panel).toBeVisible();
+
+      const input = page.locator(".qa-input");
+      await expect(input).toBeVisible();
+
+      const submit = page.locator(".qa-submit");
+      await expect(submit).toBeVisible();
+      await expect(submit).toHaveText("Ask");
+    });
+
+    test("Ask tab shows empty state when there is no history", async ({
+      page,
+    }) => {
+      await page.goto("/");
+      await page.getByRole("tab", { name: "Ask" }).click();
+
+      const empty = page.locator(".qa-empty");
+      await expect(empty).toBeVisible({ timeout: 5000 });
+      await expect(empty).toContainText("No questions yet");
+    });
+
+    test("submitting a question calls POST /api/v1/qa/ask and displays the answer", async ({
+      page,
+    }) => {
+      await page.route("/api/v1/qa/ask", (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            id: "aaaaaaaa-0000-0000-0000-000000000001",
+            userSubject: "user-1",
+            question: "What is the main topic?",
+            answer: "The main topic is testing.",
+            sourceObjectKeys: [],
+            timestamp: "2026-07-08T10:00:00Z",
+            modelUsed: "gpt-4o",
+          }),
+        }),
+      );
+
+      await page.goto("/");
+      await page.getByRole("tab", { name: "Ask" }).click();
+
+      const input = page.locator(".qa-input");
+      await input.fill("What is the main topic?");
+
+      await page.locator(".qa-submit").click();
+
+      // Answer should appear
+      const interaction = page.locator(".qa-interaction").first();
+      await expect(interaction).toBeVisible({ timeout: 5000 });
+      await expect(interaction).toContainText("What is the main topic?");
+      await expect(interaction).toContainText("The main topic is testing.");
+    });
+
+    test("answer shows model and timestamp in the meta line", async ({
+      page,
+    }) => {
+      await page.route("/api/v1/qa/ask", (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            id: "aaaaaaaa-0000-0000-0000-000000000002",
+            userSubject: "user-1",
+            question: "When was it published?",
+            answer: "It was published in 2024.",
+            sourceObjectKeys: [],
+            timestamp: "2026-07-08T12:30:00Z",
+            modelUsed: "test-model",
+          }),
+        }),
+      );
+
+      await page.goto("/");
+      await page.getByRole("tab", { name: "Ask" }).click();
+      await page.locator(".qa-input").fill("When was it published?");
+      await page.locator(".qa-submit").click();
+
+      const meta = page.locator(".qa-meta").first();
+      await expect(meta).toBeVisible({ timeout: 5000 });
+      await expect(meta).toContainText("test-model");
+    });
+
+    test("answer includes clickable source references when sources are returned", async ({
+      page,
+    }) => {
+      const docId = "00000000-0000-0000-0000-000000000010";
+      const objectKey = `users/user-1/documents/${docId}/report.pdf`;
+
+      await page.route("/api/v1/knowledgebase/documents", (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify([
+            {
+              id: docId,
+              fileName: "report.pdf",
+              objectKey,
+              fileType: "application/pdf",
+              fileSize: 2048,
+              createdAt: "2026-07-01T00:00:00Z",
+              tags: [],
+              extractedEntities: [],
+              summary: null,
+            },
+          ]),
+        }),
+      );
+
+      await page.route("/api/v1/qa/ask", (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            id: "aaaaaaaa-0000-0000-0000-000000000003",
+            userSubject: "user-1",
+            question: "What does the report say?",
+            answer: "The report covers Q3 results.",
+            sourceObjectKeys: [objectKey],
+            timestamp: "2026-07-08T11:00:00Z",
+            modelUsed: "gpt-4o",
+          }),
+        }),
+      );
+
+      await page.goto("/");
+      await page.getByRole("tab", { name: "Ask" }).click();
+      await page.locator(".qa-input").fill("What does the report say?");
+      await page.locator(".qa-submit").click();
+
+      // Source references section should appear
+      const sources = page.locator(".qa-sources").first();
+      await expect(sources).toBeVisible({ timeout: 5000 });
+
+      // The resolved document link should use the document's fileName
+      const sourceLink = page.locator(".qa-source-link").first();
+      await expect(sourceLink).toBeVisible();
+      await expect(sourceLink).toHaveText("report.pdf");
+    });
+
+    test("clicking a source reference navigates to the Documents tab and selects the document", async ({
+      page,
+    }) => {
+      const docId = "00000000-0000-0000-0000-000000000011";
+      const objectKey = `users/user-1/documents/${docId}/guide.pdf`;
+
+      await page.route("/api/v1/knowledgebase/documents", (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify([
+            {
+              id: docId,
+              fileName: "guide.pdf",
+              objectKey,
+              fileType: "application/pdf",
+              fileSize: 1024,
+              createdAt: "2026-07-01T00:00:00Z",
+              tags: [],
+              extractedEntities: [],
+              summary: null,
+            },
+          ]),
+        }),
+      );
+
+      await page.route(
+        `/api/v1/knowledgebase/documents/${docId}`,
+        (route) =>
+          route.fulfill({
+            status: 200,
+            contentType: "application/json",
+            body: JSON.stringify({
+              id: docId,
+              fileName: "guide.pdf",
+              objectKey,
+              fileType: "application/pdf",
+              fileSize: 1024,
+              createdAt: "2026-07-01T00:00:00Z",
+              tags: [],
+              extractedEntities: [],
+              summary: null,
+            }),
+          }),
+      );
+
+      await page.route("/api/v1/qa/ask", (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            id: "aaaaaaaa-0000-0000-0000-000000000004",
+            userSubject: "user-1",
+            question: "What is in the guide?",
+            answer: "The guide explains installation steps.",
+            sourceObjectKeys: [objectKey],
+            timestamp: "2026-07-08T11:05:00Z",
+            modelUsed: "gpt-4o",
+          }),
+        }),
+      );
+
+      await page.goto("/");
+      await page.getByRole("tab", { name: "Ask" }).click();
+      await page.locator(".qa-input").fill("What is in the guide?");
+      await page.locator(".qa-submit").click();
+
+      const sourceLink = page.locator(".qa-source-link").first();
+      await expect(sourceLink).toBeVisible({ timeout: 5000 });
+
+      // Click the source link — should switch to Documents tab
+      await sourceLink.click();
+
+      const documentsTab = page.getByRole("tab", { name: "Documents" });
+      await expect(documentsTab).toHaveAttribute("aria-selected", "true", {
+        timeout: 3000,
+      });
+
+      // The document detail should now show the selected document's title
+      const detailTitle = page.locator(".detail-title");
+      await expect(detailTitle).toBeVisible({ timeout: 5000 });
+      await expect(detailTitle).toHaveText("guide.pdf");
+    });
+
+    test("history is loaded on mount and displayed as past interactions", async ({
+      page,
+    }) => {
+      // Override the beforeEach empty-history stub with actual history
+      await page.unroute("/api/v1/qa/history");
+      await page.route("/api/v1/qa/history", (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify([
+            {
+              id: "aaaaaaaa-0000-0000-0000-000000000005",
+              userSubject: "user-1",
+              question: "Previous question from history?",
+              answer: "This is a historical answer.",
+              sourceObjectKeys: [],
+              timestamp: "2026-07-07T09:00:00Z",
+              modelUsed: "gpt-4o",
+            },
+          ]),
+        }),
+      );
+
+      await page.goto("/");
+      await page.getByRole("tab", { name: "Ask" }).click();
+
+      const interaction = page.locator(".qa-interaction").first();
+      await expect(interaction).toBeVisible({ timeout: 5000 });
+      await expect(interaction).toContainText("Previous question from history?");
+      await expect(interaction).toContainText("This is a historical answer.");
+    });
+
+    test("shows an error message when the ask endpoint returns 500", async ({
+      page,
+    }) => {
+      await page.route("/api/v1/qa/ask", (route) =>
+        route.fulfill({ status: 500, body: "Internal Server Error" }),
+      );
+
+      await page.goto("/");
+      await page.getByRole("tab", { name: "Ask" }).click();
+      await page.locator(".qa-input").fill("This will fail.");
+      await page.locator(".qa-submit").click();
+
+      const error = page.locator(".qa-error");
+      await expect(error).toBeVisible({ timeout: 5000 });
+      await expect(error).toContainText("Failed to get an answer");
+    });
+
+    test("shows 'Not authenticated.' when the ask endpoint returns 401", async ({
+      page,
+    }) => {
+      await page.route("/api/v1/qa/ask", (route) =>
+        route.fulfill({ status: 401, body: "Unauthorized" }),
+      );
+
+      await page.goto("/");
+      await page.getByRole("tab", { name: "Ask" }).click();
+      await page.locator(".qa-input").fill("Auth check question.");
+      await page.locator(".qa-submit").click();
+
+      const error = page.locator(".qa-error");
+      await expect(error).toBeVisible({ timeout: 5000 });
+      await expect(error).toHaveText("Not authenticated.");
+    });
+
+    test("submit button is disabled while request is in flight", async ({
+      page,
+    }) => {
+      await page.route("/api/v1/qa/ask", async (route) => {
+        await new Promise((resolve) => setTimeout(resolve, 3000));
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            id: "aaaaaaaa-0000-0000-0000-000000000006",
+            question: "Slow question?",
+            answer: "Slow answer.",
+            sourceObjectKeys: [],
+            timestamp: "2026-07-08T11:30:00Z",
+            modelUsed: "gpt-4o",
+          }),
+        });
+      });
+
+      await page.goto("/");
+      await page.getByRole("tab", { name: "Ask" }).click();
+      await page.locator(".qa-input").fill("Slow question?");
+      await page.locator(".qa-submit").click();
+
+      // While in flight the button should show "Asking…" and be disabled
+      const submit = page.locator(".qa-submit");
+      await expect(submit).toBeDisabled();
+      await expect(submit).toHaveText("Asking…");
+    });
+
+    test("Documents tab is visible and switches back to document view", async ({
+      page,
+    }) => {
+      await page.goto("/");
+
+      const documentsTab = page.getByRole("tab", { name: "Documents" });
+      await expect(documentsTab).toBeVisible();
+      await expect(documentsTab).toHaveAttribute("aria-selected", "true");
+
+      // Switch to Ask tab
+      await page.getByRole("tab", { name: "Ask" }).click();
+      await expect(documentsTab).toHaveAttribute("aria-selected", "false");
+
+      // Switch back
+      await documentsTab.click();
+      await expect(documentsTab).toHaveAttribute("aria-selected", "true");
+    });
+  });
 });
