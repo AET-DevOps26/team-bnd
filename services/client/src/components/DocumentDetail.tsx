@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import ReactMarkdown from "react-markdown";
 import $api from "../api/client";
 
 interface Props {
@@ -43,6 +44,7 @@ export default function DocumentDetail({ documentId }: Props) {
   );
 
   const isPdf = document?.fileType === "application/pdf";
+  const isMarkdown = document?.fileType === "text/markdown";
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
 
   const {
@@ -57,6 +59,20 @@ export default function DocumentDetail({ documentId }: Props) {
       parseAs: "blob",
     },
     { enabled: !!documentId && isPdf },
+  );
+
+  const {
+    data: markdownData,
+    isLoading: markdownLoading,
+    isError: markdownError,
+  } = $api.useQuery(
+    "get",
+    "/api/v1/knowledgebase/documents/{id}/download",
+    {
+      params: { path: { id: documentId! } },
+      parseAs: "text",
+    },
+    { enabled: !!documentId && isMarkdown },
   );
 
   useEffect(() => {
@@ -141,6 +157,25 @@ export default function DocumentDetail({ documentId }: Props) {
               src={pdfUrl}
               title={`PDF preview of ${document.fileName ?? "document"}`}
             />
+          )}
+        </section>
+      )}
+
+      {isMarkdown && (
+        <section className="detail-section">
+          <h3>Document Preview</h3>
+          {markdownLoading && (
+            <p className="markdown-status">Loading preview…</p>
+          )}
+          {markdownError && (
+            <p className="markdown-status markdown-status--error">
+              Failed to load markdown preview.
+            </p>
+          )}
+          {markdownData != null && (
+            <div className="markdown-body">
+              <ReactMarkdown>{markdownData}</ReactMarkdown>
+            </div>
           )}
         </section>
       )}

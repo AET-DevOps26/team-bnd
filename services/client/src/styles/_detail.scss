@@ -152,3 +152,114 @@
         color: $color-error;
     }
 }
+
+// Markdown preview
+
+.markdown-status {
+    margin: 0;
+    font-size: 0.85rem;
+    color: $color-text-body;
+
+    &--error {
+        color: $color-error;
+    }
+}
+
+.markdown-body {
+    padding: 1rem 1.25rem;
+    border: 1px solid $color-border;
+    border-radius: 6px;
+    background: $color-bg-white;
+    font-size: 0.9rem;
+    line-height: 1.6;
+    color: $color-text-dark;
+
+    // Reset all headings so they render as normal prose headings,
+    // not the small uppercase labels defined by .detail-section h3.
+    h1, h2, h3, h4, h5, h6 {
+        margin: 1em 0 0.4em;
+        font-weight: 700;
+        text-transform: none;
+        letter-spacing: normal;
+        color: $color-text;
+    }
+
+    h1 { font-size: 1.4rem; }
+    h2 { font-size: 1.2rem; }
+    h3 { font-size: 1.05rem; }
+    h4 { font-size: 0.95rem; }
+    h5 { font-size: 0.875rem; }
+    h6 { font-size: 0.8rem; color: $color-text-secondary; }
+
+    p { margin: 0 0 0.75em; }
+
+    ul, ol {
+        margin: 0 0 0.75em;
+        padding-left: 1.5em;
+    }
+
+    li { margin-bottom: 0.2em; }
+
+    code {
+        font-family: monospace;
+        font-size: 0.85em;
+        background: $color-bg-neutral;
+        padding: 0.1em 0.35em;
+        border-radius: 3px;
+    }
+
+    pre {
+        background: $color-bg-neutral;
+        border: 1px solid $color-border-light;
+        border-radius: 4px;
+        padding: 0.75rem 1rem;
+        overflow-x: auto;
+        margin: 0 0 0.75em;
+
+        code {
+            background: none;
+            padding: 0;
+            border-radius: 0;
+        }
+    }
+
+    blockquote {
+        margin: 0 0 0.75em;
+        padding: 0.25em 0.75em;
+        border-left: 3px solid $color-border;
+        color: $color-text-secondary;
+    }
+
+    a {
+        color: $color-primary;
+
+        &:hover { color: $color-primary-dark; }
+    }
+
+    hr {
+        border: none;
+        border-top: 1px solid $color-border-subtle;
+        margin: 1em 0;
+    }
+
+    table {
+        border-collapse: collapse;
+        width: 100%;
+        margin: 0 0 0.75em;
+        font-size: 0.875rem;
+    }
+
+    th, td {
+        border: 1px solid $color-border;
+        padding: 0.3em 0.6em;
+        text-align: left;
+    }
+
+    th {
+        background: $color-bg-subtle;
+        font-weight: 600;
+    }
+
+    // Remove trailing margin from the last child
+    > *:last-child { margin-bottom: 0; }
+}
