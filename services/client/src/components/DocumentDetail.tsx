@@ -163,7 +163,10 @@ export default function DocumentDetail({ documentId }: Props) {
           <h3>Extracted Entities</h3>
           <ul className="entity-list" aria-label="Extracted entities">
             {entities.map((entity) => (
-              <li key={entity.id} className="entity-item">
+              <li
+                key={entity.id}
+                className={`entity-item entity-item--${entity.type?.toLowerCase() ?? "unknown"}`}
+              >
                 <span className="entity-name">{entity.name}</span>
                 <span className="entity-type">
                   {(entity.type && ENTITY_TYPE_LABELS[entity.type]) ??

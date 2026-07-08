@@ -105,33 +105,68 @@
 
 // Entities
 
+$color-entity-person: #0b6394;
+$color-entity-person-bg: #e0edf8;
+$color-entity-date: #b45309;
+$color-entity-date-bg: #fef3c7;
+$color-entity-topic: #2e7d32;
+$color-entity-topic-bg: #e8f5e9;
+$color-entity-org: #6d28d9;
+$color-entity-org-bg: #ede9fe;
+
 .entity-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
     list-style: none;
     margin: 0;
     padding: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 0.3rem;
 }
 
 .entity-item {
-    display: flex;
-    align-items: baseline;
-    gap: 0.5rem;
-    font-size: 0.875rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.2rem 0.6rem;
+    border-radius: 999px;
+    font-size: 0.82rem;
+    border: 1px solid currentColor;
+
+    &--person {
+        color: $color-entity-person;
+        background: $color-entity-person-bg;
+        border-color: rgba($color-entity-person, 0.3);
+    }
+
+    &--date {
+        color: $color-entity-date;
+        background: $color-entity-date-bg;
+        border-color: rgba($color-entity-date, 0.3);
+    }
+
+    &--topic {
+        color: $color-entity-topic;
+        background: $color-entity-topic-bg;
+        border-color: rgba($color-entity-topic, 0.3);
+    }
+
+    &--organization {
+        color: $color-entity-org;
+        background: $color-entity-org-bg;
+        border-color: rgba($color-entity-org, 0.3);
+    }
 }
 
 .entity-name {
-    color: $color-text-dark;
     font-weight: 500;
 }
 
 .entity-type {
-    font-size: 0.72rem;
-    color: $color-text-muted;
-    background: $color-bg-neutral;
-    padding: 0.1rem 0.45rem;
-    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    opacity: 0.75;
 }
 
 // PDF embed
@@ -176,7 +211,12 @@
 
     // Reset all headings so they render as normal prose headings,
     // not the small uppercase labels defined by .detail-section h3.
-    h1, h2, h3, h4, h5, h6 {
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
         margin: 1em 0 0.4em;
         font-weight: 700;
         text-transform: none;
@@ -184,21 +224,39 @@
         color: $color-text;
     }
 
-    h1 { font-size: 1.4rem; }
-    h2 { font-size: 1.2rem; }
-    h3 { font-size: 1.05rem; }
-    h4 { font-size: 0.95rem; }
-    h5 { font-size: 0.875rem; }
-    h6 { font-size: 0.8rem; color: $color-text-secondary; }
+    h1 {
+        font-size: 1.4rem;
+    }
+    h2 {
+        font-size: 1.2rem;
+    }
+    h3 {
+        font-size: 1.05rem;
+    }
+    h4 {
+        font-size: 0.95rem;
+    }
+    h5 {
+        font-size: 0.875rem;
+    }
+    h6 {
+        font-size: 0.8rem;
+        color: $color-text-secondary;
+    }
 
-    p { margin: 0 0 0.75em; }
+    p {
+        margin: 0 0 0.75em;
+    }
 
-    ul, ol {
+    ul,
+    ol {
         margin: 0 0 0.75em;
         padding-left: 1.5em;
     }
 
-    li { margin-bottom: 0.2em; }
+    li {
+        margin-bottom: 0.2em;
+    }
 
     code {
         font-family: monospace;
@@ -233,7 +291,9 @@
     a {
         color: $color-primary;
 
-        &:hover { color: $color-primary-dark; }
+        &:hover {
+            color: $color-primary-dark;
+        }
     }
 
     hr {
@@ -249,7 +309,8 @@
         font-size: 0.875rem;
     }
 
-    th, td {
+    th,
+    td {
         border: 1px solid $color-border;
         padding: 0.3em 0.6em;
         text-align: left;
@@ -261,5 +322,7 @@
     }
 
     // Remove trailing margin from the last child
-    > *:last-child { margin-bottom: 0; }
+    > *:last-child {
+        margin-bottom: 0;
+    }
 }
