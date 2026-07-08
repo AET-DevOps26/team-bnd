@@ -49,6 +49,8 @@ export default function DocumentTree({ selectedId, onSelect }: Props) {
               Not authenticated. Provide an <code>access_token</code> in{" "}
               <code>localStorage</code>.
             </>
+          ) : errorMessage === "FORBIDDEN" ? (
+            "You do not have permission to view documents."
           ) : (
             "Failed to load documents."
           )}

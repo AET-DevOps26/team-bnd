@@ -16,9 +16,11 @@ fetchClient.use({
   async onResponse({ response }) {
     if (!response.ok) {
       throw new Error(
-        response.status === 401 || response.status === 403
+        response.status === 401
           ? "NOT_AUTHENTICATED"
-          : `Request failed: ${response.status} ${response.statusText}`,
+          : response.status === 403
+            ? "FORBIDDEN"
+            : `Request failed: ${response.status} ${response.statusText}`,
       );
     }
     return undefined;

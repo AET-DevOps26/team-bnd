@@ -98,7 +98,9 @@ export default function DocumentDetail({ documentId }: Props) {
         <p>
           {errorMessage === "NOT_AUTHENTICATED"
             ? "Not authenticated."
-            : "Failed to load document."}
+            : errorMessage === "FORBIDDEN"
+              ? "You do not have permission to view this document."
+              : "Failed to load document."}
         </p>
       </div>
     );

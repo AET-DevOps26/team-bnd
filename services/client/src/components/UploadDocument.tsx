@@ -50,7 +50,9 @@ export default function UploadDocument({ onUploaded }: Props) {
       setErrorMessage(
         e?.message === "NOT_AUTHENTICATED"
           ? "Not authenticated."
-          : "Upload failed. Please try again.",
+          : e?.message === "FORBIDDEN"
+            ? "You do not have permission to upload documents."
+            : "Upload failed. Please try again.",
       );
     }
   }
