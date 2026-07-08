@@ -1,23 +1,32 @@
 # Alexandria GenAI service
 
-Python/FastAPI microservice for AI-powered document processing. Uses LangChain to call an LLM for summarization, entity extraction, and document Q&A.
+Python/FastAPI microservice for AI-powered document processing. Uses LangChain to call an LLM for summarization, entity extraction, content-based tagging, and document Q&A.
 
 The processing endpoints take object keys, not raw text. The service downloads the referenced documents from the S3-compatible object storage (the same SeaweedFS bucket the Spring service uploads to), extracts their text (plain UTF-8 or PDF via pypdf), and feeds that to the LLM.
 
 ## Endpoints
 
-| Method | Path                       | Description                                                  |
-| ------ | -------------------------- | ------------------------------------------------------------ |
-| GET    | `/genai/health`            | Liveness/readiness probe                                     |
-| GET    | `/genai/hello`             | Sanity check, returns a plain string                         |
-| POST   | `/genai/summarize`         | Summarize the document at `objectKey`                        |
-| POST   | `/genai/extract`           | Extract named entities from the document at `objectKey`      |
-| POST   | `/genai/index`             | Chunk, embed, and index the document at `objectKey`          |
-| DELETE | `/genai/index/{objectKey}` | Remove a document's chunks from the index                    |
-| POST   | `/genai/ask`               | Answer a question from indexed chunks of the given documents |
-| GET    | `/genai/metrics`           | Prometheus metrics (in-network scraping only)                |
+| Method | Path                       | Description                                                      |
+| ------ | -------------------------- | ---------------------------------------------------------------- |
+| GET    | `/genai/health`            | Liveness/readiness probe                                         |
+| GET    | `/genai/hello`             | Sanity check, returns a plain string                             |
+| POST   | `/genai/summarize`         | Summarize the document at `objectKey`                            |
+| POST   | `/genai/extract`           | Extract named entities from the document at `objectKey`          |
+| POST   | `/genai/tag`               | Assign content-based topical tags to the document at `objectKey` |
+| POST   | `/genai/index`             | Chunk, embed, and index the document at `objectKey`              |
+| DELETE | `/genai/index/{objectKey}` | Remove a document's chunks from the index                        |
+| POST   | `/genai/ask`               | Answer a question from indexed chunks of the given documents     |
+| GET    | `/genai/metrics`           | Prometheus metrics (in-network scraping only)                    |
 
-`summarize`, `extract`, and `index` take `{"objectKey": "..."}`. A key that is missing returns 404 (415 if the object is neither UTF-8 text nor a PDF, 422 if it has no extractable text).
+`summarize`, `extract`, `tag`, and `index` take `{"objectKey": "..."}`. A key that is missing returns 404 (415 if the object is neither UTF-8 text nor a PDF, 422 if it has no extractable text).
+
+`summarize` returns `{"summary": "...", "modelUsed": "..."}`: a concise 2-4 sentence, third-person summary of the document's main points.
+
+`extract` returns `{"entities": [...], "modelUsed": "..."}` with typed entities (`PERSON`, `DATE`, `TOPIC`, `ORGANIZATION`) and confidence scores.
+
+`tag` returns `{"tags": [...], "modelUsed": "..."}`: a small set of broad, lowercase topical tags describing what the document is about, so the knowledge base can categorise and filter documents. Tags are restricted to lowercase ascii letters, digits, spaces, and hyphens (e.g. `machine learning`, `covid-19`); anything else the model returns is dropped. The result is capped at 5 tags and de-duplicated regardless of what the model returns, and the prompt steers it toward common, reusable terms rather than document-specific phrasing so the same topic lands on the same tag across documents. A document with no clear topic yields an empty list. Callers may pass `{"objectKey": "...", "knownTags": [...]}` to bias the model toward reusing existing labels, which keeps the vocabulary from fragmenting into one-off tags; those are validated against the same allowlist before they reach the prompt.
+
+`index` chunks and embeds the document into Weaviate for retrieval; `DELETE /genai/index/{objectKey}` removes its chunks. See the RAG section below.
 
 `ask` takes `{"question": "...", "objectKeys": [...]}` and answers with retrieval-augmented generation: the question is embedded, matched against the indexed chunks of the listed documents, and the top matches are passed to the LLM. The response returns `sourceObjectKeys`, the documents whose chunks actually fed the answer. When nothing relevant is found (or no documents are in scope), it says so instead of guessing.
 
