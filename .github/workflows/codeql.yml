@@ -60,7 +60,7 @@ jobs:
         # Only the Java/Kotlin path needs Gradle. Python and JS/TS use
         # CodeQL's no-build analysis, so the autobuild step alone is enough.
         if: matrix.language == 'java-kotlin'
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@v5.4.0
         with:
           java-version: ${{ env.JAVA_VERSION }}
           distribution: ${{ env.JAVA_DISTRIBUTION }}
