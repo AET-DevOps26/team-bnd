@@ -41,6 +41,7 @@ def test_openapi_schema_exposes_all_endpoints():
     assert "/genai/extract" in paths
     assert "/genai/tag" in paths
     assert "/genai/ask" in paths
+    assert "/genai/search" in paths
     assert "/genai/index" in paths
     assert "/genai/index/{object_key}" in paths
     # metrics is an operational endpoint, not part of the public API surface
@@ -287,6 +288,97 @@ def test_ask_passes_question_and_object_keys_to_retrieval():
 
 def test_ask_rejects_empty_question():
     response = client.post("/genai/ask", json={"question": "  ", "objectKeys": ["key-1"]})
+    assert response.status_code == 422
+
+
+# --- search ---
+
+
+def test_search_returns_ranked_documents_with_context():
+    results = [
+        {"object_key": "uploads/a/report.txt", "score": 0.91, "snippet": "revenue grew", "chunk_index": 2},
+        {"object_key": "uploads/b/memo.txt", "score": 0.80, "snippet": "cost review", "chunk_index": 0},
+    ]
+    with patch("app.main.search_documents", return_value=(results, "Qwen/Qwen3-Embedding-8B")):
+        response = client.post(
+            "/genai/search",
+            json={"query": "how did revenue change", "objectKeys": ["uploads/a/report.txt", "uploads/b/memo.txt"]},
+        )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["embeddingModel"] == "Qwen/Qwen3-Embedding-8B"
+    assert len(body["results"]) == 2
+    first = body["results"][0]
+    assert first["objectKey"] == "uploads/a/report.txt"
+    assert first["score"] == 0.91
+    assert first["snippet"] == "revenue grew"
+    assert first["chunkIndex"] == 2
+
+
+def test_search_passes_query_keys_and_limit_to_module():
+    captured = {}
+
+    def fake_search(query, object_keys, limit):
+        captured["query"] = query
+        captured["object_keys"] = object_keys
+        captured["limit"] = limit
+        return ([], "m")
+
+    with patch("app.main.search_documents", side_effect=fake_search):
+        client.post("/genai/search", json={"query": "climate", "objectKeys": ["k1", "k2"], "limit": 3})
+
+    assert captured["query"] == "climate"
+    assert captured["object_keys"] == ["k1", "k2"]
+    assert captured["limit"] == 3
+
+
+def test_search_defaults_limit_when_omitted():
+    captured = {}
+
+    def fake_search(query, object_keys, limit):
+        captured["limit"] = limit
+        return ([], "m")
+
+    with patch("app.main.search_documents", side_effect=fake_search):
+        client.post("/genai/search", json={"query": "q", "objectKeys": ["k1"]})
+
+    assert captured["limit"] == 10
+
+
+def test_search_returns_empty_results():
+    with patch("app.main.search_documents", return_value=([], "m")):
+        response = client.post("/genai/search", json={"query": "nothing matches", "objectKeys": ["k1"]})
+
+    assert response.status_code == 200
+    assert response.json()["results"] == []
+
+
+def test_search_rejects_empty_query():
+    response = client.post("/genai/search", json={"query": "  ", "objectKeys": ["k1"]})
+    assert response.status_code == 422
+
+
+def test_search_rejects_missing_query():
+    response = client.post("/genai/search", json={"objectKeys": ["k1"]})
+    assert response.status_code == 422
+
+
+def test_search_rejects_out_of_range_limit():
+    response = client.post("/genai/search", json={"query": "q", "objectKeys": ["k1"], "limit": 0})
+    assert response.status_code == 422
+
+
+def test_search_rejects_limit_above_max():
+    response = client.post("/genai/search", json={"query": "q", "objectKeys": ["k1"], "limit": 51})
+    assert response.status_code == 422
+
+
+def test_search_rejects_over_long_query():
+    response = client.post(
+        "/genai/search",
+        json={"query": "a" * 1501, "objectKeys": ["k1"]},
+    )
     assert response.status_code == 422
 
 

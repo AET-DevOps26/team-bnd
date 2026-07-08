@@ -20,7 +20,7 @@ from urllib.parse import urlparse
 import weaviate
 from weaviate.classes.config import Configure, DataType, Property
 from weaviate.classes.data import DataObject
-from weaviate.classes.query import Filter, MetadataQuery
+from weaviate.classes.query import Filter, GroupBy, MetadataQuery
 from weaviate.exceptions import UnexpectedStatusCodeError
 from weaviate.util import generate_uuid5
 
@@ -128,10 +128,13 @@ def search(query_vector: list[float], object_keys: list[str], limit: int) -> lis
     """Return the top chunks nearest to the query vector, scoped to object_keys.
 
     Each result carries its text, source object key, chunk index, and distance.
-    An empty object_keys list searches the whole collection.
+    An empty object_keys list returns no results so the function never searches
+    outside the requested scope.
     """
+    if not object_keys:
+        return []
     collection = _client().collections.get(COLLECTION_NAME)
-    filters = Filter.by_property("object_key").contains_any(object_keys) if object_keys else None
+    filters = Filter.by_property("object_key").contains_any(object_keys)
 
     response = collection.query.near_vector(
         near_vector=query_vector,
@@ -148,6 +151,45 @@ def search(query_vector: list[float], object_keys: list[str], limit: int) -> lis
         }
         for obj in response.objects
     ]
+
+
+def search_grouped(query_vector: list[float], object_keys: list[str], limit: int) -> list[dict]:
+    """Return one nearest chunk per distinct object_key (document-level results).
+
+    Uses Weaviate's group_by on ``object_key`` so each document appears once,
+    ranked by its closest chunk. ``number_of_groups`` caps the documents returned
+    and ``objects_per_group=1`` keeps only that closest chunk. An empty
+    ``object_keys`` list returns no results so the function never searches
+    outside the requested scope.
+
+    Each result carries its text, source object key, chunk index, and distance.
+    """
+    if not object_keys:
+        return []
+    collection = _client().collections.get(COLLECTION_NAME)
+    filters = Filter.by_property("object_key").contains_any(object_keys)
+
+    response = collection.query.near_vector(
+        near_vector=query_vector,
+        limit=limit,
+        filters=filters,
+        group_by=GroupBy(prop="object_key", objects_per_group=1, number_of_groups=limit),
+        return_metadata=MetadataQuery(distance=True),
+    )
+    results = []
+    for group in response.groups.values():
+        if not group.objects:
+            continue
+        best = group.objects[0]
+        results.append(
+            {
+                "text": best.properties["text"],
+                "object_key": group.name,
+                "chunk_index": int(best.properties["chunk_index"]),
+                "distance": best.metadata.distance,
+            }
+        )
+    return results
 
 
 def close_client() -> None:

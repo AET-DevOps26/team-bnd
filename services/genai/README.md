@@ -1,6 +1,6 @@
 # Alexandria GenAI service
 
-Python/FastAPI microservice for AI-powered document processing. Uses LangChain to call an LLM for summarization, entity extraction, content-based tagging, and document Q&A.
+Python/FastAPI microservice for AI-powered document processing. Uses LangChain to call an LLM for summarization, entity extraction, content-based tagging, semantic search, and document Q&A.
 
 The processing endpoints take object keys, not raw text. The service downloads the referenced documents from the S3-compatible object storage (the same SeaweedFS bucket the Spring service uploads to), extracts their text (plain UTF-8 or PDF via pypdf), and feeds that to the LLM.
 
@@ -16,6 +16,7 @@ The processing endpoints take object keys, not raw text. The service downloads t
 | POST   | `/genai/index`             | Chunk, embed, and index the document at `objectKey`              |
 | DELETE | `/genai/index/{objectKey}` | Remove a document's chunks from the index                        |
 | POST   | `/genai/ask`               | Answer a question from indexed chunks of the given documents     |
+| POST   | `/genai/search`            | Rank indexed documents by semantic similarity to a query         |
 | GET    | `/genai/metrics`           | Prometheus metrics (in-network scraping only)                    |
 
 `summarize`, `extract`, `tag`, and `index` take `{"objectKey": "..."}`. A key that is missing returns 404 (415 if the object is neither UTF-8 text nor a PDF, 422 if it has no extractable text).
@@ -29,6 +30,8 @@ The processing endpoints take object keys, not raw text. The service downloads t
 `index` chunks and embeds the document into Weaviate for retrieval; `DELETE /genai/index/{objectKey}` removes its chunks. See the RAG section below.
 
 `ask` takes `{"question": "...", "objectKeys": [...]}` and answers with retrieval-augmented generation: the question is embedded, matched against the indexed chunks of the listed documents, and the top matches are passed to the LLM. The response returns `sourceObjectKeys`, the documents whose chunks actually fed the answer. When nothing relevant is found (or no documents are in scope), it says so instead of guessing.
+
+`search` takes `{"query": "...", "objectKeys": [...], "limit": 10}` and returns documents ranked by semantic similarity to the query. The query (capped at 1500 characters) is embedded and matched against the indexed chunks scoped to `objectKeys`. Results are de-duplicated to one entry per document using Weaviate's `group_by` on `object_key`, so a document with many close chunks never crowds out the rest; each carries a `snippet` (the closest chunk, truncated at a word boundary) and a `score` in `[0, 1]` (higher is more relevant) so the client can show why a document matched. `limit` (1-50, default 10) caps the number of documents; an empty `objectKeys` returns no results. Only indexed documents are searchable, so this reuses the same embedding config and Weaviate collection as `/genai/index` and `/genai/ask`.
 
 FastAPI also exposes `/genai/openapi.json` and `/genai/docs` (Swagger UI) out of the box.
 
