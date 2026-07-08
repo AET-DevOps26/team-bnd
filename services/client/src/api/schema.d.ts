@@ -95,23 +95,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/knowledgebase/documents/{id}/reprocess/tags": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Reprocess document tags */
-        post: operations["reprocessTags"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/knowledgebase/documents/{id}/reprocess/summary": {
         parameters: {
             query?: never;
@@ -253,32 +236,15 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/knowledgebase/search/text": {
+    "/api/v1/knowledgebase/search": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** Keyword search over document filenames and content */
-        get: operations["searchText"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/knowledgebase/search/semantic": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Semantic search over document content, with keyword fallback */
-        get: operations["searchSemantic"];
+        /** Search documents */
+        get: operations["search"];
         put?: never;
         post?: never;
         delete?: never;
@@ -609,30 +575,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/genai/search": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Search
-         * @description Rank indexed documents by semantic similarity to the query.
-         *
-         *     The query is embedded and matched against the indexed chunks scoped to the
-         *     requested object keys; chunk hits are rolled up to one entry per document,
-         *     each carrying the closest chunk's snippet and a relevance score.
-         */
-        post: operations["search_genai_search_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/genai/summarize": {
         parameters: {
             query?: never;
@@ -698,11 +640,9 @@ export interface components {
         ErrorResponse: {
             code?: string;
             message?: string;
-            fieldErrors?: components["schemas"]["FieldError"][];
-        };
-        FieldError: {
-            field?: string;
-            message?: string;
+            details?: {
+                [key: string]: Record<string, never>;
+            };
         };
         AddTagRequest: {
             label?: string;
@@ -768,29 +708,6 @@ export interface components {
         TagListDto: {
             tags?: components["schemas"]["TagDto"][];
         };
-        DocumentRefDto: {
-            /** Format: uuid */
-            id?: string;
-            fileName?: string;
-            fileType?: string;
-            /** Format: int64 */
-            fileSize?: number;
-            /** Format: date-time */
-            createdAt?: string;
-        };
-        TextSearchResponseDto: {
-            results?: components["schemas"]["DocumentRefDto"][];
-        };
-        SemanticSearchResponseDto: {
-            results?: components["schemas"]["SemanticSearchResultDto"][];
-            fallbackUsed?: boolean;
-        };
-        SemanticSearchResultDto: {
-            document?: components["schemas"]["DocumentRefDto"];
-            /** Format: double */
-            score?: number;
-            snippet?: string;
-        };
         SearchQuery: {
             /** Format: uuid */
             id?: string;
@@ -820,7 +737,7 @@ export interface components {
             entities?: components["schemas"]["DocumentEntityDto"][];
         };
         AskRequest: {
-            question: string;
+            question?: string;
         };
         QAInteraction: {
             /** Format: uuid */
@@ -844,19 +761,10 @@ export interface components {
         GenAiAskResponse: {
             /** Answer */
             answer: string;
-            /** Citations */
-            citations: components["schemas"]["GenAiCitation"][];
             /** Modelused */
             modelUsed: string;
-        };
-        /** GenAiCitation */
-        GenAiCitation: {
-            /** Marker */
-            marker: number;
-            /** Objectkey */
-            objectKey: string;
-            /** Snippet */
-            snippet: string;
+            /** Sourceobjectkeys */
+            sourceObjectKeys: string[];
         };
         /** GenAiDeleteIndexResponse */
         GenAiDeleteIndexResponse: {
@@ -867,11 +775,6 @@ export interface components {
         };
         /** GenAiExtractRequest */
         GenAiExtractRequest: {
-            /**
-             * Maxentities
-             * @default 20
-             */
-            maxEntities: number;
             /** Objectkey */
             objectKey: string;
         };
@@ -904,36 +807,6 @@ export interface components {
             embeddingModel: string;
             /** Objectkey */
             objectKey: string;
-        };
-        /** GenAiSearchRequest */
-        GenAiSearchRequest: {
-            /**
-             * Limit
-             * @default 10
-             */
-            limit: number;
-            /** Objectkeys */
-            objectKeys: string[];
-            /** Query */
-            query: string;
-        };
-        /** GenAiSearchResponse */
-        GenAiSearchResponse: {
-            /** Embeddingmodel */
-            embeddingModel: string;
-            /** Results */
-            results: components["schemas"]["GenAiSearchResult"][];
-        };
-        /** GenAiSearchResult */
-        GenAiSearchResult: {
-            /** Chunkindex */
-            chunkIndex: number;
-            /** Objectkey */
-            objectKey: string;
-            /** Score */
-            score: number;
-            /** Snippet */
-            snippet: string;
         };
         /** GenAiSummarizeRequest */
         GenAiSummarizeRequest: {
@@ -1141,44 +1014,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
-            };
-            /** @description Document not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-        };
-    };
-    reprocessTags: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Document tags reprocessed */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Unauthorized */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
             };
             /** @description Document not found */
             404: {
@@ -1493,7 +1328,7 @@ export interface operations {
             };
         };
     };
-    searchText: {
+    search: {
         parameters: {
             query: {
                 q: string;
@@ -1510,39 +1345,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["TextSearchResponseDto"];
-                };
-            };
-        };
-    };
-    searchSemantic: {
-        parameters: {
-            query: {
-                q: string;
-                limit?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Ranked search results with match context */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SemanticSearchResponseDto"];
-                };
-            };
-            /** @description Invalid limit */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
+                    "application/json": components["schemas"]["Document"][];
                 };
             };
         };
@@ -1630,7 +1433,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["DocumentSummaryDto"];
+                };
             };
             /** @description Unauthorized */
             401: {
@@ -2062,39 +1867,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GenAiDeleteIndexResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    search_genai_search_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["GenAiSearchRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["GenAiSearchResponse"];
                 };
             };
             /** @description Validation Error */
