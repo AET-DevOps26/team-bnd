@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import PlainTextResponse
 from prometheus_fastapi_instrumentator import Instrumentator
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from app.embeddings import chunk_text, embed_chunks, get_embedding_model_name
 from app.extract import extract_entities
@@ -88,9 +88,17 @@ class GenAiTagResponse(BaseModel):
     modelUsed: str
 
 
+def _reject_blank(value: str) -> str:
+    if not value.strip():
+        raise ValueError("must not be blank")
+    return value
+
+
 class GenAiAskRequest(BaseModel):
     question: str
     objectKeys: list[str]
+
+    _validate_question = field_validator("question")(_reject_blank)
 
 
 class GenAiAskResponse(BaseModel):
@@ -103,6 +111,8 @@ class GenAiSearchRequest(BaseModel):
     query: str = Field(max_length=1500)
     objectKeys: list[str]
     limit: int = Field(default=10, ge=1, le=50)
+
+    _validate_query = field_validator("query")(_reject_blank)
 
 
 class GenAiSearchResult(BaseModel):
@@ -209,9 +219,6 @@ def ask(request: GenAiAskRequest) -> GenAiAskResponse:
     The question is embedded and matched against the indexed chunks scoped to the
     requested object keys; the answer cites the documents its chunks came from.
     """
-    if not request.question.strip():
-        raise HTTPException(status_code=422, detail="question must not be empty")
-
     answer, source_keys, model = answer_question(request.question, request.objectKeys)
     return GenAiAskResponse(answer=answer, sourceObjectKeys=source_keys, modelUsed=model)
 
@@ -224,9 +231,6 @@ def search(request: GenAiSearchRequest) -> GenAiSearchResponse:
     requested object keys; chunk hits are rolled up to one entry per document,
     each carrying the closest chunk's snippet and a relevance score.
     """
-    if not request.query.strip():
-        raise HTTPException(status_code=422, detail="query must not be empty")
-
     results, model = search_documents(request.query, request.objectKeys, request.limit)
     return GenAiSearchResponse(
         results=[GenAiSearchResult(objectKey=r["object_key"], score=r["score"], snippet=r["snippet"], chunkIndex=r["chunk_index"]) for r in results],
