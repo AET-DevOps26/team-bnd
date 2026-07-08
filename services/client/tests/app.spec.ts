@@ -106,7 +106,6 @@ test.describe("Alexandria client", () => {
               fileType: "application/pdf",
               fileSize: 204800,
               createdAt: "2026-05-01T10:00:00Z",
-              rawTextContent: null,
               tags: [],
               extractedEntities: [],
               summary: null,
@@ -127,7 +126,6 @@ test.describe("Alexandria client", () => {
               fileType: "application/pdf",
               fileSize: 204800,
               createdAt: "2026-05-01T10:00:00Z",
-              rawTextContent: "This is the full text of the sample report.",
               tags: [{ id: "tag-1", label: "report", source: "AUTO" }],
               extractedEntities: [],
               summary: {
@@ -168,7 +166,6 @@ test.describe("Alexandria client", () => {
               fileType: "text/plain",
               fileSize: 1024,
               createdAt: "2026-05-02T09:00:00Z",
-              rawTextContent: null,
               tags: [],
               extractedEntities: [],
               summary: null,
@@ -189,7 +186,6 @@ test.describe("Alexandria client", () => {
               fileType: "text/plain",
               fileSize: 1024,
               createdAt: "2026-05-02T09:00:00Z",
-              rawTextContent: "Full text of meeting notes.",
               tags: [],
               extractedEntities: [],
               summary: {
@@ -216,59 +212,5 @@ test.describe("Alexandria client", () => {
       );
     });
 
-    test("detail view shows full text content", async ({ page }) => {
-      await page.route("/api/v1/knowledgebase/documents", (route) =>
-        route.fulfill({
-          status: 200,
-          contentType: "application/json",
-          body: JSON.stringify([
-            {
-              id: "00000000-0000-0000-0000-000000000003",
-              fileName: "report.txt",
-              fileType: "text/plain",
-              fileSize: 512,
-              createdAt: "2026-05-03T08:00:00Z",
-              rawTextContent: null,
-              tags: [],
-              extractedEntities: [],
-              summary: null,
-            },
-          ]),
-        }),
-      );
-
-      await page.route(
-        "/api/v1/knowledgebase/documents/00000000-0000-0000-0000-000000000003",
-        (route) =>
-          route.fulfill({
-            status: 200,
-            contentType: "application/json",
-            body: JSON.stringify({
-              id: "00000000-0000-0000-0000-000000000003",
-              fileName: "report.txt",
-              fileType: "text/plain",
-              fileSize: 512,
-              createdAt: "2026-05-03T08:00:00Z",
-              rawTextContent: "The complete raw text of this document.",
-              tags: [],
-              extractedEntities: [],
-              summary: null,
-            }),
-          }),
-      );
-
-      await page.goto("/");
-
-      const docItem = page.locator(".tree-item").first();
-      await expect(docItem).toBeVisible({ timeout: 5000 });
-      await docItem.click();
-
-      await expect(page.locator(".detail-raw-text")).toBeVisible({
-        timeout: 5000,
-      });
-      await expect(page.locator(".detail-raw-text")).toContainText(
-        "The complete raw text of this document.",
-      );
-    });
   });
 });

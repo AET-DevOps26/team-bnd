@@ -108,9 +108,6 @@ export default function DocumentDetail({ documentId }: Props) {
 
   if (!document) return null;
 
-  // The API may return rawTextContent even though the schema doesn't declare it
-  const rawTextContent = (document as { rawTextContent?: string })
-    .rawTextContent;
   const tags = document.tags ?? [];
   const entities = document.extractedEntities ?? [];
   const summary = document.summary;
@@ -191,12 +188,6 @@ export default function DocumentDetail({ documentId }: Props) {
         </section>
       )}
 
-      {rawTextContent && (
-        <section className="detail-section">
-          <h3>Full Text</h3>
-          <pre className="detail-raw-text">{rawTextContent}</pre>
-        </section>
-      )}
     </article>
   );
 }
