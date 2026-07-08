@@ -4,7 +4,7 @@ version = "2.2.0"
 description = "GenAI microservice for Alexandria"
 requires-python = "~=3.14.0"
 dependencies = [
-    "fastapi~=0.138.2",
+    "fastapi~=0.139.0",
     "uvicorn[standard]~=0.49.0",
     "pydantic~=2.13.4",
     "langchain-openai~=1.3.3",
