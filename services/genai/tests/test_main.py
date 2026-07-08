@@ -39,6 +39,7 @@ def test_openapi_schema_exposes_all_endpoints():
     assert "/genai/hello" in paths
     assert "/genai/summarize" in paths
     assert "/genai/extract" in paths
+    assert "/genai/tag" in paths
     assert "/genai/ask" in paths
     assert "/genai/index" in paths
     assert "/genai/index/{object_key}" in paths
@@ -159,6 +160,72 @@ def test_extract_returns_404_for_missing_object():
 
 def test_extract_rejects_missing_object_key():
     response = client.post("/genai/extract", json={})
+    assert response.status_code == 422
+
+
+# --- tag ---
+
+
+def test_tag_returns_tags_and_model():
+    with (
+        patch("app.main.fetch_text", return_value="A paper about climate policy."),
+        patch("app.main.generate_tags", return_value=(["climate policy", "environment"], "openai/gpt-oss-120b")),
+    ):
+        response = client.post("/genai/tag", json={"objectKey": "uploads/abc/paper.txt"})
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["modelUsed"] == "openai/gpt-oss-120b"
+    assert body["tags"] == ["climate policy", "environment"]
+
+
+def test_tag_passes_fetched_text_to_model():
+    captured = {}
+
+    def fake_generate_tags(content):
+        captured["content"] = content
+        return (["topic"], "test-model")
+
+    with (
+        patch("app.main.fetch_text", return_value="Fetched body."),
+        patch("app.main.generate_tags", side_effect=fake_generate_tags),
+    ):
+        client.post("/genai/tag", json={"objectKey": "k"})
+
+    assert captured["content"] == "Fetched body."
+
+
+def test_tag_returns_empty_tags_list():
+    with (
+        patch("app.main.fetch_text", return_value="Some text."),
+        patch("app.main.generate_tags", return_value=([], "openai/gpt-oss-120b")),
+    ):
+        response = client.post("/genai/tag", json={"objectKey": "k"})
+
+    assert response.status_code == 200
+    assert response.json()["tags"] == []
+
+
+def test_tag_returns_404_for_missing_object():
+    with patch("app.main.fetch_text", side_effect=ObjectNotFoundError("missing")):
+        response = client.post("/genai/tag", json={"objectKey": "missing"})
+    assert response.status_code == 404
+
+
+def test_tag_returns_415_for_unsupported_file():
+    with patch("app.main.fetch_text", side_effect=UnsupportedFileError("not text")):
+        response = client.post("/genai/tag", json={"objectKey": "image.png"})
+    assert response.status_code == 415
+
+
+def test_tag_returns_422_for_empty_document():
+    with patch("app.main.fetch_text", return_value="   "):
+        response = client.post("/genai/tag", json={"objectKey": "blank.txt"})
+    assert response.status_code == 422
+
+
+def test_tag_rejects_missing_object_key():
+    response = client.post("/genai/tag", json={})
     assert response.status_code == 422
 
 

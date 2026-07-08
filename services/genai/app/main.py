@@ -10,10 +10,11 @@ from app.extract import extract_entities
 from app.qa import answer_question
 from app.storage import ObjectNotFoundError, UnsupportedFileError, fetch_text
 from app.summarize import summarize
+from app.tag import generate_tags
 from app.vectorstore import close_client, delete_document, index_chunks
 
 SERVICE_NAME = "alexandria-genai"
-SERVICE_VERSION = "1.5.1"
+SERVICE_VERSION = "2.1.0"
 
 
 @asynccontextmanager
@@ -73,6 +74,15 @@ class GenAiExtractRequest(BaseModel):
 
 class GenAiExtractResponse(BaseModel):
     entities: list[GenAiExtractedEntity]
+    modelUsed: str
+
+
+class GenAiTagRequest(BaseModel):
+    objectKey: str
+
+
+class GenAiTagResponse(BaseModel):
+    tags: list[str]
     modelUsed: str
 
 
@@ -162,6 +172,14 @@ def extract(request: GenAiExtractRequest) -> GenAiExtractResponse:
         entities=[GenAiExtractedEntity(**e) for e in entities],
         modelUsed=model,
     )
+
+
+@app.post("/genai/tag", tags=["ai"], response_model=GenAiTagResponse, responses=_DOCUMENT_ERROR_RESPONSES, openapi_extra={"security": []})
+def tag(request: GenAiTagRequest) -> GenAiTagResponse:
+    """Assign content-based topical tags to the document stored under the given object key."""
+    content = _load_document(request.objectKey)
+    tags, model = generate_tags(content)
+    return GenAiTagResponse(tags=tags, modelUsed=model)
 
 
 @app.post("/genai/ask", tags=["ai"], response_model=GenAiAskResponse, openapi_extra={"security": []})
