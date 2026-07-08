@@ -97,6 +97,39 @@ ingress:
   className: nginx
   host: alexandria.stud.k8s.aet.cit.tum.de
 
+# Self-hosted Prometheus and Grafana mirroring the docker-compose setup
+prometheus:
+  enabled: true
+  image:
+    repository: prom/prometheus
+    tag: v3.12.0
+  retention: 15d
+  persistence:
+    size: 5Gi
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 300m
+      memory: 512Mi
+
+grafana:
+  enabled: true
+  image:
+    repository: grafana/grafana
+    tag: 13.0.2
+  adminPassword: "admin"
+  persistence:
+    size: 1Gi
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+
 keycloak:
   keycloak:
     adminPassword: "admin"

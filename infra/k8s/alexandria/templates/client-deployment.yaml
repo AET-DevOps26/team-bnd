@@ -19,16 +19,30 @@ spec:
         app: client
         app.kubernetes.io/component: frontend
     spec:
+      # nginx (default image) has to bind to :80, so runAsNonRoot stays off here.
       securityContext:
         runAsNonRoot: false
       containers:
         - name: client
           image: {{ include "alexandria.image" (dict "Values" .Values "service" "client") }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
           ports:
             - name: http
               containerPort: 80
               protocol: TCP
+          volumeMounts:
+            - name: nginx-cache
+              mountPath: /var/cache/nginx
+            - name: nginx-run
+              mountPath: /var/run
+            - name: tmp
+              mountPath: /tmp
           resources:
             {{- toYaml .Values.client.resources | nindent 12 }}
           livenessProbe:
@@ -47,3 +61,10 @@ spec:
             periodSeconds: 10
             timeoutSeconds: 3
             failureThreshold: 3
+      volumes:
+        - name: nginx-cache
+          emptyDir: {}
+        - name: nginx-run
+          emptyDir: {}
+        - name: tmp
+          emptyDir: {}
