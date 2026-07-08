@@ -273,3 +273,38 @@
 .qa-meta-sep {
     color: $color-text-faint;
 }
+
+// ── Clear history ────────────────────────────────────────────
+
+.qa-clear {
+    display: flex;
+    justify-content: center;
+    padding-top: 0.5rem;
+}
+
+.qa-clear-button {
+    padding: 0.3rem 0.75rem;
+    font-family: $font-family;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: $color-text-secondary;
+    background: none;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    cursor: pointer;
+    transition:
+        background 0.12s,
+        border-color 0.12s,
+        color 0.12s;
+
+    &:hover:not(:disabled) {
+        color: $color-text-dark;
+        background: $color-bg-neutral;
+        border-color: $color-border;
+    }
+
+    &:disabled {
+        color: $color-text-light;
+        cursor: not-allowed;
+    }
+}

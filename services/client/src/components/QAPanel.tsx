@@ -69,6 +69,11 @@ export default function QAPanel({ documents, onSelectDocument }: Props) {
     reset: resetAskError,
   } = $api.useMutation("post", "/api/v1/qa/ask");
 
+  const { mutate: clearHistory, isPending: isClearing } = $api.useMutation(
+    "delete",
+    "/api/v1/qa/history",
+  );
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const trimmed = question.trim();
@@ -210,6 +215,31 @@ export default function QAPanel({ documents, onSelectDocument }: Props) {
             )}
           </article>
         ))}
+
+        {interactions.length > 0 && (
+          <div className="qa-clear">
+            <button
+              type="button"
+              className="qa-clear-button"
+              disabled={isClearing}
+              onClick={() => {
+                if (!confirm("Clear all Q&A history? This cannot be undone."))
+                  return;
+                clearHistory(
+                  {},
+                  {
+                    onSuccess() {
+                      setInteractions([]);
+                      historyLoaded.current = false;
+                    },
+                  },
+                );
+              }}
+            >
+              {isClearing ? "Clearing…" : "Clear history"}
+            </button>
+          </div>
+        )}
       </div>
     </section>
   );
