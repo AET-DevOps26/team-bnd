@@ -45,7 +45,7 @@ spec:
                 - ALL
           env:
             - name: GF_SERVER_ROOT_URL
-              value: /grafana
+              value: {{ if .Values.ingress.enabled }}https://{{ .Values.ingress.host }}/grafana/{{ else }}http://localhost:3000/grafana/{{ end }}
             - name: GF_SERVER_SERVE_FROM_SUB_PATH
               value: "true"
             - name: GF_USERS_ALLOW_SIGN_UP

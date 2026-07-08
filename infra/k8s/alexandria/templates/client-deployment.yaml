@@ -19,9 +19,12 @@ spec:
         app: client
         app.kubernetes.io/component: frontend
     spec:
+      automountServiceAccountToken: false
       # nginx (default image) has to bind to :80, so runAsNonRoot stays off here.
       securityContext:
         runAsNonRoot: false
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: client
           image: {{ include "alexandria.image" (dict "Values" .Values "service" "client") }}

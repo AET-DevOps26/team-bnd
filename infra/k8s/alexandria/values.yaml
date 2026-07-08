@@ -119,7 +119,7 @@ grafana:
   image:
     repository: grafana/grafana
     tag: 13.0.2
-  adminPassword: "admin"
+  adminPassword: ""
   persistence:
     size: 1Gi
   resources:
