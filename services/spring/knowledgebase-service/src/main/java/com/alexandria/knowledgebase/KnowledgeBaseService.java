@@ -2,12 +2,12 @@ package com.alexandria.knowledgebase;
 
 import com.alexandria.knowledgebase.document.*;
 import com.alexandria.knowledgebase.dto.UpdateDocumentRequest;
-import com.alexandria.knowledgebase.search.SearchQuery;
-import com.alexandria.knowledgebase.search.SearchQueryRepository;
 import com.alexandria.knowledgebase.integration.GenAiClient;
 import com.alexandria.knowledgebase.integration.GenAiClient.ExtractResponse;
 import com.alexandria.knowledgebase.integration.GenAiClient.ExtractedEntityDto;
 import com.alexandria.knowledgebase.integration.GenAiClient.SummarizeResponse;
+import com.alexandria.knowledgebase.search.SearchQuery;
+import com.alexandria.knowledgebase.search.SearchQueryRepository;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,6 +57,7 @@ public class KnowledgeBaseService {
         if (textContent != null && !textContent.isBlank()) {
             processSummary(document);
             processEntities(document);
+            processIndexing(document);
         }
 
         return document;
@@ -79,6 +80,7 @@ public class KnowledgeBaseService {
 
         processSummary(document);
         processEntities(document);
+        processIndexing(document);
 
         return document;
     }
@@ -105,6 +107,14 @@ public class KnowledgeBaseService {
         } catch (Exception e) {
             log.warn(
                     "GenAI entity extraction failed for document {}: {}", document.getId(), e.getMessage());
+        }
+    }
+
+    private void processIndexing(Document document) {
+        try {
+            genAiClient.index(document.getObjectKey());
+        } catch (Exception e) {
+            log.warn("GenAI indexing failed for document {}: {}", document.getId(), e.getMessage());
         }
     }
 
@@ -163,6 +173,11 @@ public class KnowledgeBaseService {
         String objectKey = document.getObjectKey();
         documentService.delete(id, ownerSubject);
         objectStorageService.delete(objectKey);
+        try {
+            genAiClient.deleteIndex(objectKey);
+        } catch (Exception e) {
+            log.warn("GenAI index deletion failed for object key {}: {}", objectKey, e.getMessage());
+        }
     }
 
     @Transactional
@@ -226,6 +241,11 @@ public class KnowledgeBaseService {
                 objectStorageService.delete(doc.getObjectKey());
             } catch (Exception e) {
                 log.warn("Failed to delete S3 object for document {}: {}", doc.getId(), e.getMessage());
+            }
+            try {
+                genAiClient.deleteIndex(doc.getObjectKey());
+            } catch (Exception e) {
+                log.warn("GenAI index deletion failed for document {}: {}", doc.getId(), e.getMessage());
             }
         }
         documentService.deleteAllByOwner(userSubject);
