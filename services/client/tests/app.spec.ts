@@ -80,6 +80,247 @@ test.describe("Alexandria client", () => {
     });
   });
 
+  test.describe("Document upload", () => {
+    const uploadedDoc = {
+      id: "00000000-0000-0000-0000-000000000099",
+      fileName: "test-upload.pdf",
+      fileType: "application/pdf",
+      fileSize: 1024,
+      createdAt: "2026-07-01T12:00:00Z",
+      tags: [],
+      extractedEntities: [],
+      summary: null,
+    };
+
+    // A tiny valid PDF in memory — enough for the file input; backend is mocked.
+    const pdfBuffer = Buffer.from(
+      "%PDF-1.0\n1 0 obj<</Type /Catalog>>endobj\n",
+    );
+
+    test("renders the upload area and Upload Document button", async ({
+      page,
+    }) => {
+      const uploadArea = page.locator(".upload-area");
+      await expect(uploadArea).toBeVisible();
+
+      const uploadButton = page.getByRole("button", {
+        name: "Upload Document",
+      });
+      await expect(uploadButton).toBeVisible();
+
+      const hint = page.locator(".upload-hint");
+      await expect(hint).toContainText("drag and drop");
+    });
+
+    test("shows uploading state while the request is in flight", async ({
+      page,
+    }) => {
+      // Use a long delay so we can assert the intermediate state.
+      await page.route(
+        "/api/v1/knowledgebase/documents/upload",
+        async (route) => {
+          await new Promise((resolve) => setTimeout(resolve, 3000));
+          await route.fulfill({
+            status: 201,
+            contentType: "application/json",
+            body: JSON.stringify(uploadedDoc),
+          });
+        },
+      );
+
+      const fileInput = page.locator('[aria-label="Upload document file"]');
+      await fileInput.setInputFiles({
+        name: "test-upload.pdf",
+        mimeType: "application/pdf",
+        buffer: pdfBuffer,
+      });
+
+      // Button and hint should be hidden while uploading
+      await expect(page.locator(".upload-status")).toBeVisible();
+      await expect(page.locator(".upload-status")).toContainText("Uploading");
+      await expect(
+        page.getByRole("button", { name: "Upload Document" }),
+      ).not.toBeVisible();
+      await expect(page.locator(".upload-hint")).not.toBeVisible();
+    });
+
+    test("shows success status after a successful upload", async ({ page }) => {
+      await page.route(
+        "/api/v1/knowledgebase/documents/upload",
+        async (route) => {
+          await route.fulfill({
+            status: 201,
+            contentType: "application/json",
+            body: JSON.stringify(uploadedDoc),
+          });
+        },
+      );
+
+      const fileInput = page.locator('[aria-label="Upload document file"]');
+      await fileInput.setInputFiles({
+        name: "test-upload.pdf",
+        mimeType: "application/pdf",
+        buffer: pdfBuffer,
+      });
+
+      const status = page.locator(".upload-status--success");
+      await expect(status).toBeVisible({ timeout: 5000 });
+      await expect(status).toHaveText("Document uploaded successfully.");
+
+      // Button and hint return after success
+      await expect(
+        page.getByRole("button", { name: "Upload Document" }),
+      ).toBeVisible();
+      await expect(page.locator(".upload-hint")).toBeVisible();
+    });
+
+    test("shows a generic error when the upload fails (500)", async ({
+      page,
+    }) => {
+      await page.route(
+        "/api/v1/knowledgebase/documents/upload",
+        async (route) => {
+          await route.fulfill({ status: 500, body: "Internal Server Error" });
+        },
+      );
+
+      const fileInput = page.locator('[aria-label="Upload document file"]');
+      await fileInput.setInputFiles({
+        name: "bad-upload.pdf",
+        mimeType: "application/pdf",
+        buffer: pdfBuffer,
+      });
+
+      const status = page.locator(".upload-status--error");
+      await expect(status).toBeVisible({ timeout: 5000 });
+      await expect(status).toHaveText("Upload failed. Please try again.");
+    });
+
+    test("shows 'Not authenticated.' when the server returns 401", async ({
+      page,
+    }) => {
+      await page.route(
+        "/api/v1/knowledgebase/documents/upload",
+        async (route) => {
+          await route.fulfill({ status: 401, body: "Unauthorized" });
+        },
+      );
+
+      const fileInput = page.locator('[aria-label="Upload document file"]');
+      await fileInput.setInputFiles({
+        name: "test-upload.pdf",
+        mimeType: "application/pdf",
+        buffer: pdfBuffer,
+      });
+
+      const status = page.locator(".upload-status--error");
+      await expect(status).toBeVisible({ timeout: 5000 });
+      await expect(status).toHaveText("Not authenticated.");
+    });
+
+    test("shows permission error when the server returns 403", async ({
+      page,
+    }) => {
+      await page.route(
+        "/api/v1/knowledgebase/documents/upload",
+        async (route) => {
+          await route.fulfill({ status: 403, body: "Forbidden" });
+        },
+      );
+
+      const fileInput = page.locator('[aria-label="Upload document file"]');
+      await fileInput.setInputFiles({
+        name: "test-upload.pdf",
+        mimeType: "application/pdf",
+        buffer: pdfBuffer,
+      });
+
+      const status = page.locator(".upload-status--error");
+      await expect(status).toBeVisible({ timeout: 5000 });
+      await expect(status).toHaveText(
+        "You do not have permission to upload documents.",
+      );
+    });
+
+    test("newly uploaded document appears in the document tree", async ({
+      page,
+    }) => {
+      // Initially the list is empty
+      await page.route("/api/v1/knowledgebase/documents", (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify([]),
+        }),
+      );
+
+      await page.route(
+        "/api/v1/knowledgebase/documents/upload",
+        async (route) => {
+          await route.fulfill({
+            status: 201,
+            contentType: "application/json",
+            body: JSON.stringify(uploadedDoc),
+          });
+        },
+      );
+
+      await page.goto("/");
+
+      // No documents yet — tree list should be absent or status shown
+      await expect(page.locator(".tree-item")).toHaveCount(0, {
+        timeout: 5000,
+      });
+
+      // After upload, mock the list endpoint to return the new document so the
+      // invalidateQueries refetch picks it up.
+      await page.unroute("/api/v1/knowledgebase/documents");
+      await page.route("/api/v1/knowledgebase/documents", (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify([uploadedDoc]),
+        }),
+      );
+
+      const fileInput = page.locator('[aria-label="Upload document file"]');
+      await fileInput.setInputFiles({
+        name: "test-upload.pdf",
+        mimeType: "application/pdf",
+        buffer: pdfBuffer,
+      });
+
+      // The success message should appear
+      await expect(page.locator(".upload-status--success")).toBeVisible({
+        timeout: 5000,
+      });
+
+      // The document should now be listed in the tree
+      const treeItem = page.locator(".tree-item").first();
+      await expect(treeItem).toBeVisible({ timeout: 5000 });
+      await expect(treeItem).toContainText("test-upload.pdf");
+    });
+
+    test("upload area gains drag-over style when a file is dragged over it", async ({
+      page,
+    }) => {
+      const uploadArea = page.locator(".upload-area");
+      await expect(uploadArea).toBeVisible();
+
+      // Simulate dragover — the component sets dragOver state which adds the CSS modifier
+      await uploadArea.dispatchEvent("dragover", {
+        dataTransfer: await page.evaluateHandle(() => new DataTransfer()),
+      });
+      await expect(uploadArea).toHaveClass(/upload-area--drag-over/);
+
+      // Simulate dragleave — modifier should be removed
+      await uploadArea.dispatchEvent("dragleave", {
+        dataTransfer: await page.evaluateHandle(() => new DataTransfer()),
+      });
+      await expect(uploadArea).not.toHaveClass(/upload-area--drag-over/);
+    });
+  });
+
   test.describe("Document detail", () => {
     test("shows a placeholder when no document is selected", async ({
       page,
@@ -211,6 +452,5 @@ test.describe("Alexandria client", () => {
         "Key decisions made during the meeting.",
       );
     });
-
   });
 });
