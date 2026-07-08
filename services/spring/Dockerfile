@@ -5,7 +5,7 @@
 # is specified at build time via `--build-arg SERVICE=<name>`.
 
 # Build stage
-FROM azul/zulu-openjdk-alpine:25@sha256:b3c19142e9989390bd6b5d0a738ab4184359752019404388e8fafe16666cd4f3 AS build
+FROM azul/zulu-openjdk-alpine:25@sha256:b1fe7cc8cb9735c7f03748813c66024c9e96857d9be661cfd84124719dacc100 AS build
 
 ARG SERVICE
 
@@ -23,7 +23,7 @@ COPY ${SERVICE}/src ${SERVICE}/src
 RUN ./gradlew :${SERVICE}:bootJar --no-daemon
 
 # Run stage
-FROM azul/zulu-openjdk-alpine:25-jre-headless@sha256:e8cb8b9d571afa0fb9c459e43e9c03c05ef1993018b1c038597e4c6536ab331d
+FROM azul/zulu-openjdk-alpine:25-jre-headless@sha256:adbc43f19a14c3b19037cbd7329b4859f3c97b2b525b2cbcfbf0df9fdb64f979
 
 ARG SERVICE
 
