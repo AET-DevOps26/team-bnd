@@ -70,4 +70,10 @@ repos:
         additional_dependencies: ["@redocly/cli@2.30.3"]
         files: '^api/openapi\.yaml$'
         pass_filenames: false
+      - id: client-generate-api
+        name: client-generate-api
+        entry: npm run generate:api --prefix services/client
+        language: system
+        files: '^api/openapi\.yaml$'
+        pass_filenames: false
 exclude: "infra/.*/(templates|charts)"
