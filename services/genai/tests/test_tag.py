@@ -106,3 +106,80 @@ def test_generate_tags_ignores_known_tags_when_empty():
         generate_tags("Some text.")
 
     assert "These tags already exist" not in captured["prompt"]
+
+
+def test_generate_tags_filters_unsafe_known_tags():
+    from app.tag import _TaggingResult
+
+    captured = {}
+
+    def fake_llm(inp):
+        captured["prompt"] = str(inp)
+        return _TaggingResult(tags=["finance"])
+
+    fake_structured_llm = RunnableLambda(fake_llm)
+    mock_llm = MagicMock()
+    mock_llm.with_structured_output.return_value = fake_structured_llm
+
+    long_tag = "x" * 30
+    with patch("app.tag.get_llm", return_value=mock_llm), patch("app.tag.get_model_name", return_value="test-model"):
+        from app.tag import generate_tags
+
+        generate_tags(
+            "text",
+            known_tags=["finance", "in\njected", "with\rtab", "with\ttab", long_tag, ""],
+        )
+
+    prompt = captured["prompt"]
+    assert "finance" in prompt
+    assert "in\njected" not in prompt
+    assert "with\rtab" not in prompt
+    assert "with\ttab" not in prompt
+    assert long_tag not in prompt
+
+
+def test_generate_tags_drops_overlong_output_tags():
+    mock_llm = _make_llm(["a-tag", "x" * 30])
+
+    with patch("app.tag.get_llm", return_value=mock_llm), patch("app.tag.get_model_name", return_value="test-model"):
+        from app.tag import generate_tags
+
+        tags, _ = generate_tags("text")
+
+    assert tags == ["a-tag"]
+
+
+def test_generate_tags_drops_tags_with_disallowed_characters():
+    mock_llm = _make_llm(["machine learning", "f1", "tags!", "café", "trailing-", "good-one"])
+
+    with patch("app.tag.get_llm", return_value=mock_llm), patch("app.tag.get_model_name", return_value="test-model"):
+        from app.tag import generate_tags
+
+        tags, _ = generate_tags("text")
+
+    assert tags == ["machine learning", "f1", "good-one"]
+
+
+def test_generate_tags_lowercases_and_filters_known_tags():
+    from app.tag import _TaggingResult
+
+    captured = {}
+
+    def fake_llm(inp):
+        captured["prompt"] = str(inp)
+        return _TaggingResult(tags=["finance"])
+
+    fake_structured_llm = RunnableLambda(fake_llm)
+    mock_llm = MagicMock()
+    mock_llm.with_structured_output.return_value = fake_structured_llm
+
+    with patch("app.tag.get_llm", return_value=mock_llm), patch("app.tag.get_model_name", return_value="test-model"):
+        from app.tag import generate_tags
+
+        generate_tags("text", known_tags=["Finance", "hot/dogs", "quantum"])
+
+    prompt = captured["prompt"]
+    assert "finance" in prompt
+    assert "quantum" in prompt
+    assert "Finance" not in prompt
+    assert "hot/dogs" not in prompt

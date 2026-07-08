@@ -1,5 +1,7 @@
 """Content-based tagging using LangChain structured output."""
 
+import re
+
 from langchain_core.prompts import ChatPromptTemplate
 from pydantic import BaseModel, Field
 
@@ -8,6 +10,17 @@ from app.llm import get_llm, get_model_name
 # Keep the number of tags per document small so the knowledge base stays
 # browsable instead of drowning in one-off labels.
 _MAX_TAGS = 5
+
+# Tags are short labels, not sentences.
+_MAX_TAG_LENGTH = 25
+
+# lowercase ascii words separated by a single space or hyphen; anything else
+# is rejected, which also blocks prompt injection via knownTags.
+_TAG_PATTERN = re.compile(r"^[a-z0-9]+(?:[ -][a-z0-9]+)*$")
+
+
+def _is_valid_tag(tag: str) -> bool:
+    return bool(_TAG_PATTERN.match(tag))
 
 
 class _TaggingResult(BaseModel):
@@ -42,7 +55,7 @@ def _normalize(tags: list[str]) -> list[str]:
     result: list[str] = []
     for tag in tags:
         cleaned = tag.strip().lower()
-        if cleaned and cleaned not in seen:
+        if cleaned and len(cleaned) <= _MAX_TAG_LENGTH and cleaned not in seen and _is_valid_tag(cleaned):
             seen.add(cleaned)
             result.append(cleaned)
     return result[:_MAX_TAGS]
@@ -62,8 +75,13 @@ def generate_tags(content: str, known_tags: list[str] | None = None) -> tuple[li
     chain = _PROMPT | structured_llm
     reuse = ""
     if known_tags:
-        # Cap so a large tag library doesn't bloat the prompt.
-        sample = ", ".join(known_tags[:50])
-        reuse = f"These tags already exist in the knowledge base: {sample}. Prefer reusing one of them when it fits the document."
+        # Lowercase + allowlist also blocks prompt injection: knownTags are
+        # interpolated into the system prompt, so reject anything that isn't a
+        # tag-shaped lowercase ascii string.
+        safe_tags = [t.strip().lower() for t in known_tags if len(t) <= _MAX_TAG_LENGTH]
+        safe_tags = [t for t in safe_tags if _is_valid_tag(t)]
+        sample = ", ".join(safe_tags[:50])
+        if sample:
+            reuse = f"These tags already exist in the knowledge base: {sample}. Prefer reusing one of them when it fits the document."
     result: _TaggingResult = chain.invoke({"content": content, "reuse_instructions": reuse})  # ty:ignore[invalid-assignment]
     return _normalize(result.tags), get_model_name()
