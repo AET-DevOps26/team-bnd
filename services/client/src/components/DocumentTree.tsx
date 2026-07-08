@@ -44,16 +44,11 @@ export default function DocumentTree({ selectedId, onSelect }: Props) {
               : "tree-status--error"
           }`}
         >
-          {errorMessage === "NOT_AUTHENTICATED" ? (
-            <>
-              Not authenticated. Provide an <code>access_token</code> in{" "}
-              <code>localStorage</code>.
-            </>
-          ) : errorMessage === "FORBIDDEN" ? (
-            "You do not have permission to view documents."
-          ) : (
-            "Failed to load documents."
-          )}
+          {errorMessage === "NOT_AUTHENTICATED"
+            ? "Your session is invalid. Please log in again."
+            : errorMessage === "FORBIDDEN"
+              ? "You do not have permission to view documents."
+              : "Failed to load documents."}
         </p>
       )}
       {!isLoading && !error && documents?.length === 0 && (
