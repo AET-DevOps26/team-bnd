@@ -1369,6 +1369,7 @@ components:
           title: Objectkeys
           type: array
         query:
+          maxLength: 1500
           title: Query
           type: string
       required:

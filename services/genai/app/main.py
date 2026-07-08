@@ -100,7 +100,7 @@ class GenAiAskResponse(BaseModel):
 
 
 class GenAiSearchRequest(BaseModel):
-    query: str
+    query: str = Field(max_length=1500)
     objectKeys: list[str]
     limit: int = Field(default=10, ge=1, le=50)
 

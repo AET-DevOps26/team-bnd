@@ -31,7 +31,7 @@ The processing endpoints take object keys, not raw text. The service downloads t
 
 `ask` takes `{"question": "...", "objectKeys": [...]}` and answers with retrieval-augmented generation: the question is embedded, matched against the indexed chunks of the listed documents, and the top matches are passed to the LLM. The response returns `sourceObjectKeys`, the documents whose chunks actually fed the answer. When nothing relevant is found (or no documents are in scope), it says so instead of guessing.
 
-`search` takes `{"query": "...", "objectKeys": [...], "limit": 10}` and returns documents ranked by semantic similarity to the query. The query is embedded and matched against the indexed chunks scoped to `objectKeys`; the chunk hits are rolled up to one entry per document, keeping each document's closest chunk. Every result carries a `snippet` (the matched chunk, truncated) and a `score` (higher is more relevant) so the client can show why a document matched. `limit` (1-50, default 10) caps the number of documents; an empty `objectKeys` returns no results. Only indexed documents are searchable, so this reuses the same embedding config and Weaviate collection as `/genai/index` and `/genai/ask`.
+`search` takes `{"query": "...", "objectKeys": [...], "limit": 10}` and returns documents ranked by semantic similarity to the query. The query (capped at 1500 characters) is embedded and matched against the indexed chunks scoped to `objectKeys`. Results are de-duplicated to one entry per document using Weaviate's `group_by` on `object_key`, so a document with many close chunks never crowds out the rest; each carries a `snippet` (the closest chunk, truncated at a word boundary) and a `score` in `[0, 1]` (higher is more relevant) so the client can show why a document matched. `limit` (1-50, default 10) caps the number of documents; an empty `objectKeys` returns no results. Only indexed documents are searchable, so this reuses the same embedding config and Weaviate collection as `/genai/index` and `/genai/ask`.
 
 FastAPI also exposes `/genai/openapi.json` and `/genai/docs` (Swagger UI) out of the box.
 
@@ -53,18 +53,17 @@ The service is configured entirely via environment variables. Copy `.env.example
 
 Document text is split into overlapping chunks and embedded into vectors for the RAG pipeline (see `app/embeddings.py`). The embedding provider is selected the same way as the LLM. By default the logos/openai providers reuse `LLM_BASE_URL` and `LLM_API_KEY` (so a single-provider setup needs no extra config), but you can point embeddings at a different endpoint/key via `EMBEDDING_BASE_URL` / `EMBEDDING_API_KEY`, e.g. to run chat on Logos and embeddings on OpenAI.
 
-| Variable             | Default                          | Description                                                             |
-| -------------------- | -------------------------------- | ----------------------------------------------------------------------- |
-| `EMBEDDING_PROVIDER` | `logos`                          | `logos`, `openai`, or `ollama`                                          |
-| `EMBEDDING_MODEL`    | `Qwen/Qwen3-Embedding-8B`        | Embedding model id (provider-specific default)                          |
-| `EMBEDDING_BASE_URL` | _(falls back to `LLM_BASE_URL`)_ | Override the embedding endpoint                                         |
-| `EMBEDDING_API_KEY`  | _(falls back to `LLM_API_KEY`)_  | Override the embedding API key                                          |
-| `CHUNK_SIZE`         | `1000`                           | Characters per chunk                                                    |
-| `CHUNK_OVERLAP`      | `200`                            | Character overlap between consecutive chunks                            |
-| `WEAVIATE_URL`       | `http://weaviate:8080`           | Weaviate HTTP endpoint                                                  |
-| `WEAVIATE_GRPC_PORT` | `50051`                          | Weaviate gRPC port (batch/query)                                        |
-| `RAG_TOP_K`          | `5`                              | Chunks retrieved per question in `/genai/ask`                           |
-| `SEARCH_CANDIDATES`  | `50`                             | Chunk hits pulled before de-duplicating to documents in `/genai/search` |
+| Variable             | Default                          | Description                                    |
+| -------------------- | -------------------------------- | ---------------------------------------------- |
+| `EMBEDDING_PROVIDER` | `logos`                          | `logos`, `openai`, or `ollama`                 |
+| `EMBEDDING_MODEL`    | `Qwen/Qwen3-Embedding-8B`        | Embedding model id (provider-specific default) |
+| `EMBEDDING_BASE_URL` | _(falls back to `LLM_BASE_URL`)_ | Override the embedding endpoint                |
+| `EMBEDDING_API_KEY`  | _(falls back to `LLM_API_KEY`)_  | Override the embedding API key                 |
+| `CHUNK_SIZE`         | `1000`                           | Characters per chunk                           |
+| `CHUNK_OVERLAP`      | `200`                            | Character overlap between consecutive chunks   |
+| `WEAVIATE_URL`       | `http://weaviate:8080`           | Weaviate HTTP endpoint                         |
+| `WEAVIATE_GRPC_PORT` | `50051`                          | Weaviate gRPC port (batch/query)               |
+| `RAG_TOP_K`          | `5`                              | Chunks retrieved per question in `/genai/ask`  |
 
 OpenAI defaults to `text-embedding-3-small`, Ollama to `nomic-embed-text`. Each provider/model emits a different vector size, and the Weaviate collection stores whatever the configured embedder produces rather than pinning a fixed dimension. Weaviate locks the collection to the first vector's width, so switching embedding providers to one with a different dimension means dropping and re-indexing the collection.
 

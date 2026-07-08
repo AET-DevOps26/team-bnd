@@ -369,6 +369,19 @@ def test_search_rejects_out_of_range_limit():
     assert response.status_code == 422
 
 
+def test_search_rejects_limit_above_max():
+    response = client.post("/genai/search", json={"query": "q", "objectKeys": ["k1"], "limit": 51})
+    assert response.status_code == 422
+
+
+def test_search_rejects_over_long_query():
+    response = client.post(
+        "/genai/search",
+        json={"query": "a" * 1501, "objectKeys": ["k1"]},
+    )
+    assert response.status_code == 422
+
+
 # --- index ---
 
 
