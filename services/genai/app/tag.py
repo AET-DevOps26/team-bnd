@@ -24,7 +24,8 @@ _PROMPT = ChatPromptTemplate.from_messages(
             "Each tag is one or two lowercase words naming a broad subject, field, or theme "
             "(for example 'machine learning', 'finance', 'climate policy'), not a specific name, date, or quote. "
             "Prefer common, reusable terms over document-specific wording so the same topic gets the same tag "
-            "across documents. No duplicates, no hashtags, no punctuation.",
+            "across documents. No duplicates, no hashtags, no punctuation. "
+            "{reuse_instructions}",
         ),
         ("human", "{content}"),
     ]
@@ -47,8 +48,11 @@ def _normalize(tags: list[str]) -> list[str]:
     return result[:_MAX_TAGS]
 
 
-def generate_tags(content: str) -> tuple[list[str], str]:
+def generate_tags(content: str, known_tags: list[str] | None = None) -> tuple[list[str], str]:
     """Generate content-based topical tags for a document.
+
+    When known_tags is given, the prompt is biased toward reusing those labels so the
+    vocabulary doesn't fragment into one-off tags across documents.
 
     Returns:
         (tags, model_name) where tags is a bounded, de-duplicated list of lowercase labels.
@@ -56,5 +60,10 @@ def generate_tags(content: str) -> tuple[list[str], str]:
     llm = get_llm()
     structured_llm = llm.with_structured_output(_TaggingResult)
     chain = _PROMPT | structured_llm
-    result: _TaggingResult = chain.invoke({"content": content})  # ty:ignore[invalid-assignment]
+    reuse = ""
+    if known_tags:
+        # Cap so a large tag library doesn't bloat the prompt.
+        sample = ", ".join(known_tags[:50])
+        reuse = f"These tags already exist in the knowledge base: {sample}. Prefer reusing one of them when it fits the document."
+    result: _TaggingResult = chain.invoke({"content": content, "reuse_instructions": reuse})  # ty:ignore[invalid-assignment]
     return _normalize(result.tags), get_model_name()

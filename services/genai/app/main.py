@@ -79,6 +79,7 @@ class GenAiExtractResponse(BaseModel):
 
 class GenAiTagRequest(BaseModel):
     objectKey: str
+    knownTags: list[str] = []
 
 
 class GenAiTagResponse(BaseModel):
@@ -178,7 +179,7 @@ def extract(request: GenAiExtractRequest) -> GenAiExtractResponse:
 def tag(request: GenAiTagRequest) -> GenAiTagResponse:
     """Assign content-based topical tags to the document stored under the given object key."""
     content = _load_document(request.objectKey)
-    tags, model = generate_tags(content)
+    tags, model = generate_tags(content, request.knownTags)
     return GenAiTagResponse(tags=tags, modelUsed=model)
 
 

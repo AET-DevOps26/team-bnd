@@ -182,7 +182,7 @@ def test_tag_returns_tags_and_model():
 def test_tag_passes_fetched_text_to_model():
     captured = {}
 
-    def fake_generate_tags(content):
+    def fake_generate_tags(content, known_tags=None):
         captured["content"] = content
         return (["topic"], "test-model")
 
@@ -193,6 +193,23 @@ def test_tag_passes_fetched_text_to_model():
         client.post("/genai/tag", json={"objectKey": "k"})
 
     assert captured["content"] == "Fetched body."
+
+
+def test_tag_forwards_known_tags_to_generator():
+    captured = {}
+
+    def fake_generate_tags(content, known_tags=None):
+        captured["known_tags"] = known_tags
+        return (["finance"], "test-model")
+
+    with (
+        patch("app.main.fetch_text", return_value="text"),
+        patch("app.main.generate_tags", side_effect=fake_generate_tags),
+    ):
+        response = client.post("/genai/tag", json={"objectKey": "k", "knownTags": ["finance", "markets"]})
+
+    assert response.status_code == 200
+    assert captured["known_tags"] == ["finance", "markets"]
 
 
 def test_tag_returns_empty_tags_list():

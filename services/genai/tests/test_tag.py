@@ -61,3 +61,48 @@ def test_generate_tags_returns_empty_list_when_no_tags():
         tags, _ = generate_tags("The quick brown fox.")
 
     assert tags == []
+
+
+def test_generate_tags_injects_known_tags_into_prompt():
+    from app.tag import _TaggingResult
+
+    captured = {}
+
+    def fake_llm(inp):
+        captured["prompt"] = str(inp)
+        return _TaggingResult(tags=["finance"])
+
+    fake_structured_llm = RunnableLambda(fake_llm)
+    mock_llm = MagicMock()
+    mock_llm.with_structured_output.return_value = fake_structured_llm
+
+    with patch("app.tag.get_llm", return_value=mock_llm), patch("app.tag.get_model_name", return_value="test-model"):
+        from app.tag import generate_tags
+
+        tags, _ = generate_tags("A finance report.", known_tags=["finance", "markets"])
+
+    assert "These tags already exist" in captured["prompt"]
+    assert "finance" in captured["prompt"]
+    assert "markets" in captured["prompt"]
+    assert tags == ["finance"]
+
+
+def test_generate_tags_ignores_known_tags_when_empty():
+    from app.tag import _TaggingResult
+
+    captured = {}
+
+    def fake_llm(inp):
+        captured["prompt"] = str(inp)
+        return _TaggingResult(tags=["topic"])
+
+    fake_structured_llm = RunnableLambda(fake_llm)
+    mock_llm = MagicMock()
+    mock_llm.with_structured_output.return_value = fake_structured_llm
+
+    with patch("app.tag.get_llm", return_value=mock_llm), patch("app.tag.get_model_name", return_value="test-model"):
+        from app.tag import generate_tags
+
+        generate_tags("Some text.")
+
+    assert "These tags already exist" not in captured["prompt"]
