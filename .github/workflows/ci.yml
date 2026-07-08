@@ -29,15 +29,28 @@ env:
   JAVA_DISTRIBUTION: "zulu"
   REGISTRY: ghcr.io
   IMAGE_NAMESPACE: ${{ github.repository }}
+  # ----------- Postgres -----------
   POSTGRES_HOST: ${{ vars.POSTGRES_HOST }}
   POSTGRES_PORT: ${{ vars.POSTGRES_PORT }}
   POSTGRES_DB: ${{ vars.POSTGRES_DB }}
   POSTGRES_USER: ${{ vars.POSTGRES_USER }}
   POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+  # ----------- Keycloak (OIDC) -----------
   KC_BOOTSTRAP_ADMIN_USERNAME: ${{ secrets.KC_BOOTSTRAP_ADMIN_USERNAME }}
   KC_BOOTSTRAP_ADMIN_PASSWORD: ${{ secrets.KC_BOOTSTRAP_ADMIN_PASSWORD }}
+  # ----------- Azure -----------
   AZURE_PUBLIC_IP: ${{ vars.AZURE_PUBLIC_IP }}
   AZURE_USER: ${{ vars.AZURE_USER }}
+  # ----------- Object Storage -----------
+  S3_REGION: ${{ vars.S3_REGION }}
+  S3_ACCESS_KEY: ${{ secrets.S3_ACCESS_KEY }}
+  S3_SECRET_KEY: ${{ secrets.S3_SECRET_KEY }}
+  S3_BUCKET: ${{ vars.S3_BUCKET }}
+  # ----------- Monitoring -----------
+  GRAFANA_ADMIN_PASSWORD: ${{ secrets.GRAFANA_ADMIN_PASSWORD }}
+  # ----------- GenAI -----------
+  LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+
 
 jobs:
   # ---------------------------------------------------------------------
