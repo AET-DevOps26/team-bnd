@@ -243,10 +243,10 @@ export interface paths {
         put?: never;
         /**
          * Ask
-         * @description Answer a natural language question about a set of documents.
+         * @description Answer a question from chunks retrieved for the given documents.
          *
-         *     If documentContents is provided, the answer is grounded in the actual document text.
-         *     Without it, the model answers from general knowledge and returns all documentIds as sources.
+         *     The question is embedded and matched against the indexed chunks scoped to the
+         *     requested object keys; the answer cites the documents its chunks came from.
          */
         post: operations["ask_genai_ask_post"];
         delete?: never;
@@ -266,7 +266,7 @@ export interface paths {
         put?: never;
         /**
          * Extract
-         * @description Extract named entities (people, dates, topics, organizations) from document text.
+         * @description Extract named entities from the document stored under the given object key.
          */
         post: operations["extract_genai_extract_post"];
         delete?: never;
@@ -315,6 +315,53 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/genai/index": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Index
+         * @description Chunk, embed, and index the document at the given object key into Weaviate.
+         *
+         *     Re-indexing the same key replaces its existing chunks, so the call is safe to
+         *     repeat (e.g. when Spring re-processes a document).
+         */
+        post: operations["index_genai_index_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/genai/index/{object_key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete Index
+         * @description Remove all indexed chunks for the document at the given object key.
+         *
+         *     Idempotent: deleting a document that was never indexed removes nothing and
+         *     still returns 200. The :path converter keeps object keys that contain slashes
+         *     intact.
+         */
+        delete: operations["delete_index_genai_index__object_key__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/genai/summarize": {
         parameters: {
             query?: never;
@@ -326,7 +373,7 @@ export interface paths {
         put?: never;
         /**
          * Summarize Document
-         * @description Generate a concise summary of the provided document text.
+         * @description Summarize the document stored under the given object key.
          */
         post: operations["summarize_document_genai_summarize_post"];
         delete?: never;
@@ -347,13 +394,12 @@ export interface components {
             id?: string;
             owner?: components["schemas"]["User"];
             fileName?: string;
-            filePath?: string;
+            objectKey?: string;
             fileType?: string;
             /** Format: int64 */
             fileSize?: number;
             /** Format: date-time */
             createdAt?: string;
-            fileContent?: components["schemas"]["FileContent"];
             summary?: components["schemas"]["Summary"];
             extractedEntities?: components["schemas"]["ExtractedEntity"][];
             tags?: components["schemas"]["Tag"][];
@@ -367,11 +413,6 @@ export interface components {
             type?: "PERSON" | "DATE" | "TOPIC" | "ORGANIZATION";
             /** Format: double */
             confidence?: number;
-        };
-        FileContent: {
-            /** Format: uuid */
-            id?: string;
-            document?: components["schemas"]["Document"];
         };
         Summary: {
             /** Format: uuid */
@@ -402,7 +443,7 @@ export interface components {
         };
         CreateDocumentRequest: {
             fileName?: string;
-            filePath?: string;
+            objectKey?: string;
             fileType?: string;
             /** Format: int64 */
             fileSize?: number;
@@ -417,7 +458,7 @@ export interface components {
             user?: components["schemas"]["User"];
             question?: string;
             answer?: string;
-            sourceDocumentIds?: string[];
+            sourceObjectKeys?: string[];
             /** Format: date-time */
             timestamp?: string;
             modelUsed?: string;
@@ -432,19 +473,10 @@ export interface components {
             /** Format: int32 */
             resultCount?: number;
         };
-        /** DocumentContent */
-        DocumentContent: {
-            /** Content */
-            content: string;
-            /** Id */
-            id: string;
-        };
         /** GenAiAskRequest */
         GenAiAskRequest: {
-            /** Documentcontents */
-            documentContents?: components["schemas"]["DocumentContent"][] | null;
-            /** Documentids */
-            documentIds: string[];
+            /** Objectkeys */
+            objectKeys: string[];
             /** Question */
             question: string;
         };
@@ -454,13 +486,20 @@ export interface components {
             answer: string;
             /** Modelused */
             modelUsed: string;
-            /** Sourcedocumentids */
-            sourceDocumentIds: string[];
+            /** Sourceobjectkeys */
+            sourceObjectKeys: string[];
+        };
+        /** GenAiDeleteIndexResponse */
+        GenAiDeleteIndexResponse: {
+            /** Chunksdeleted */
+            chunksDeleted: number;
+            /** Objectkey */
+            objectKey: string;
         };
         /** GenAiExtractRequest */
         GenAiExtractRequest: {
-            /** Content */
-            content: string;
+            /** Objectkey */
+            objectKey: string;
         };
         /** GenAiExtractResponse */
         GenAiExtractResponse: {
@@ -478,10 +517,24 @@ export interface components {
             /** Type */
             type: string;
         };
+        /** GenAiIndexRequest */
+        GenAiIndexRequest: {
+            /** Objectkey */
+            objectKey: string;
+        };
+        /** GenAiIndexResponse */
+        GenAiIndexResponse: {
+            /** Chunksindexed */
+            chunksIndexed: number;
+            /** Embeddingmodel */
+            embeddingModel: string;
+            /** Objectkey */
+            objectKey: string;
+        };
         /** GenAiSummarizeRequest */
         GenAiSummarizeRequest: {
-            /** Content */
-            content: string;
+            /** Objectkey */
+            objectKey: string;
         };
         /** GenAiSummarizeResponse */
         GenAiSummarizeResponse: {
@@ -949,6 +1002,20 @@ export interface operations {
                     "application/json": components["schemas"]["GenAiExtractResponse"];
                 };
             };
+            /** @description Object not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Object is not a supported file type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -1002,6 +1069,84 @@ export interface operations {
             };
         };
     };
+    index_genai_index_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GenAiIndexRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GenAiIndexResponse"];
+                };
+            };
+            /** @description Object not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Object is not a supported file type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_index_genai_index__object_key__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                object_key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GenAiDeleteIndexResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     summarize_document_genai_summarize_post: {
         parameters: {
             query?: never;
@@ -1023,6 +1168,20 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["GenAiSummarizeResponse"];
                 };
+            };
+            /** @description Object not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Object is not a supported file type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {
