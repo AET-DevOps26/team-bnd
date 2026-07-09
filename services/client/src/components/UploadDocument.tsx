@@ -49,7 +49,7 @@ export default function UploadDocument({ onUploaded }: Props) {
       setState("error");
       setErrorMessage(
         e?.message === "NOT_AUTHENTICATED"
-          ? "Not authenticated."
+          ? "Authentication error. Retrying login..."
           : e?.message === "FORBIDDEN"
             ? "You do not have permission to upload documents."
             : "Upload failed. Please try again.",
@@ -100,14 +100,10 @@ export default function UploadDocument({ onUploaded }: Props) {
         aria-label="Upload document file"
       />
 
-      {state === "uploading" && (
-        <p className="upload-status">Uploading…</p>
-      )}
+      {state === "uploading" && <p className="upload-status">Uploading…</p>}
 
       {state === "error" && (
-        <p className="upload-status upload-status--error">
-          {errorMessage}
-        </p>
+        <p className="upload-status upload-status--error">{errorMessage}</p>
       )}
 
       {state === "success" && (

@@ -45,7 +45,7 @@ export default function DocumentTree({ selectedId, onSelect }: Props) {
           }`}
         >
           {errorMessage === "NOT_AUTHENTICATED"
-            ? "Your session is invalid. Please log in again."
+            ? "Authentication error. Retrying login..."
             : errorMessage === "FORBIDDEN"
               ? "You do not have permission to view documents."
               : "Failed to load documents."}

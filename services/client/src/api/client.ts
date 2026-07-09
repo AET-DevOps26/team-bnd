@@ -15,12 +15,15 @@ fetchClient.use({
   },
   async onResponse({ response }) {
     if (!response.ok) {
+      if (response.status === 401) {
+        await userManager.signinSilent();
+        await userManager.signinRedirect();
+        throw new Error("NOT_AUTHENTICATED");
+      }
       throw new Error(
-        response.status === 401
-          ? "NOT_AUTHENTICATED"
-          : response.status === 403
-            ? "FORBIDDEN"
-            : `Request failed: ${response.status} ${response.statusText}`,
+        response.status === 403
+          ? "FORBIDDEN"
+          : `Request failed: ${response.status} ${response.statusText}`,
       );
     }
     return undefined;

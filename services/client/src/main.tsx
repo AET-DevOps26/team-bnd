@@ -11,11 +11,7 @@ const queryClient = new QueryClient({
     queries: {
       // Do not retry if we encounter an authentication or permission failure.
       retry: (failureCount, error) => {
-        if (
-          error instanceof Error &&
-          (error.message === "NOT_AUTHENTICATED" ||
-            error.message === "FORBIDDEN")
-        ) {
+        if (error instanceof Error && error.message === "FORBIDDEN") {
           return false;
         }
         return failureCount < 3;
