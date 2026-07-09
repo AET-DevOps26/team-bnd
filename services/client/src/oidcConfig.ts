@@ -15,8 +15,4 @@ export const userManager = new UserManager(oidcSettings);
 
 export const oidcConfig: AuthProviderProps = {
   userManager,
-  onSigninCallback: () => {
-    // Remove OIDC query params from URL after successful login
-    window.history.replaceState({}, document.title, window.location.pathname);
-  },
 };

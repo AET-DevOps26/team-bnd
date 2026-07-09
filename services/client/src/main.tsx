@@ -24,13 +24,25 @@ const queryClient = new QueryClient({
   },
 });
 
+const authConfig = {
+  ...oidcConfig,
+  onSigninCallback: () => {
+    // Remove OIDC query params from URL after successful login.
+    window.history.replaceState({}, document.title, window.location.pathname);
+    queryClient.invalidateQueries();
+  },
+  onSignoutCallback: () => {
+    queryClient.removeQueries();
+  },
+};
+
 const rootElement = document.getElementById("root");
 if (!rootElement) throw new Error("Root element not found");
 
 const root = createRoot(rootElement);
 root.render(
   <QueryClientProvider client={queryClient}>
-    <AuthProvider {...oidcConfig}>
+    <AuthProvider {...authConfig}>
       <App />
     </AuthProvider>
   </QueryClientProvider>,
