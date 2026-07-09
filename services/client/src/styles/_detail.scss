@@ -326,3 +326,30 @@ $color-entity-org-bg: #ede9fe;
         margin-bottom: 0;
     }
 }
+
+// Plain text preview
+
+.plaintext-status {
+    margin: 0;
+    font-size: 0.85rem;
+    color: $color-text-body;
+
+    &--error {
+        color: $color-error;
+    }
+}
+
+.plaintext-body {
+    margin: 0;
+    padding: 0.75rem 1rem;
+    border: 1px solid $color-border;
+    border-radius: 6px;
+    background: $color-bg-neutral;
+    font-family: monospace;
+    font-size: 0.85rem;
+    line-height: 1.6;
+    color: $color-text-dark;
+    white-space: pre-wrap;
+    word-break: break-all;
+    overflow-x: auto;
+}

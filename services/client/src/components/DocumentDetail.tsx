@@ -45,6 +45,7 @@ export default function DocumentDetail({ documentId }: Props) {
   const fileType = (document?.fileType ?? "").split(";")[0];
   const isPdf = fileType === "application/pdf";
   const isMarkdown = fileType === "text/markdown";
+  const isPlainText = fileType === "text/plain";
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
 
   const {
@@ -62,9 +63,9 @@ export default function DocumentDetail({ documentId }: Props) {
   );
 
   const {
-    data: markdownData,
-    isLoading: markdownLoading,
-    isError: markdownError,
+    data: textData,
+    isLoading: textLoading,
+    isError: textError,
   } = $api.useQuery(
     "get",
     "/api/v1/knowledgebase/documents/{id}/download",
@@ -72,7 +73,7 @@ export default function DocumentDetail({ documentId }: Props) {
       params: { path: { id: documentId! } },
       parseAs: "text",
     },
-    { enabled: !!documentId && isMarkdown },
+    { enabled: !!documentId && (isMarkdown || isPlainText) },
   );
 
   useEffect(() => {
@@ -210,19 +211,30 @@ export default function DocumentDetail({ documentId }: Props) {
       {isMarkdown && (
         <section className="detail-section">
           <h3>Document Preview</h3>
-          {markdownLoading && (
-            <p className="markdown-status">Loading preview…</p>
-          )}
-          {markdownError && (
+          {textLoading && <p className="markdown-status">Loading preview…</p>}
+          {textError && (
             <p className="markdown-status markdown-status--error">
               Failed to load markdown preview.
             </p>
           )}
-          {markdownData != null && (
+          {textData != null && (
             <div className="markdown-body">
-              <ReactMarkdown>{markdownData}</ReactMarkdown>
+              <ReactMarkdown>{textData}</ReactMarkdown>
             </div>
           )}
+        </section>
+      )}
+
+      {isPlainText && (
+        <section className="detail-section">
+          <h3>Document Preview</h3>
+          {textLoading && <p className="plaintext-status">Loading preview…</p>}
+          {textError && (
+            <p className="plaintext-status plaintext-status--error">
+              Failed to load preview.
+            </p>
+          )}
+          {textData != null && <pre className="plaintext-body">{textData}</pre>}
         </section>
       )}
     </article>
