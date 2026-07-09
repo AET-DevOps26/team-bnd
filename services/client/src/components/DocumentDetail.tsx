@@ -42,9 +42,9 @@ export default function DocumentDetail({ documentId }: Props) {
     { params: { path: { id: documentId! } } },
     { enabled: !!documentId },
   );
-
-  const isPdf = document?.fileType === "application/pdf";
-  const isMarkdown = document?.fileType === "text/markdown";
+  const fileType = (document?.fileType ?? "").split(";")[0];
+  const isPdf = fileType === "application/pdf";
+  const isMarkdown = fileType === "text/markdown";
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
 
   const {
@@ -225,7 +225,6 @@ export default function DocumentDetail({ documentId }: Props) {
           )}
         </section>
       )}
-
     </article>
   );
 }
