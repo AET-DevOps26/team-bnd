@@ -57,7 +57,7 @@ test.describe("Alexandria client", () => {
       await expect(heading).toBeVisible();
     });
 
-    test("shows a status message when not authenticated or empty", async ({
+    test("shows a status message when not uAthentication error. Retrying login...r empty", async ({
       page,
     }) => {
       // Without a real backend the tree will show either an auth warning,
@@ -457,8 +457,8 @@ test.describe("Alexandria client", () => {
   });
 
   test.describe("Q&A panel", () => {
-    // Stub the history endpoint for all Q&A tests so there is no history
-    // pre-loaded and the empty state is shown by default.
+    // Stub the history endpoint for all Q&A tests so there is no pre-loaded
+    // history and the empty state is shown by default.
     test.beforeEach(async ({ page }) => {
       await page.route("/api/v1/qa/history", (route) =>
         route.fulfill({
@@ -469,17 +469,23 @@ test.describe("Alexandria client", () => {
       );
     });
 
-    test("Ask tab renders the Q&A panel with input and button", async ({
-      page,
-    }) => {
+    test("Ask tab is active by default on load", async ({ page }) => {
       await page.goto("/");
 
-      const askTab = page.getByRole("tab", { name: "Ask" });
+      // Scope to the header nav to avoid matching the .qa-submit "Ask" button
+      const askTab = page
+        .locator(".app-header-nav .app-tab")
+        .filter({ hasText: "Ask" });
       await expect(askTab).toBeVisible();
-      await askTab.click();
+      await expect(askTab).toHaveClass(/app-tab--active/);
 
-      const panel = page.getByRole("region", { name: "Question and answer" });
+      // The QA panel itself should be visible (not hidden)
+      const panel = page.locator(".qa-panel");
       await expect(panel).toBeVisible();
+    });
+
+    test("Q&A panel renders input and submit button", async ({ page }) => {
+      await page.goto("/");
 
       const input = page.locator(".qa-input");
       await expect(input).toBeVisible();
@@ -489,11 +495,8 @@ test.describe("Alexandria client", () => {
       await expect(submit).toHaveText("Ask");
     });
 
-    test("Ask tab shows empty state when there is no history", async ({
-      page,
-    }) => {
+    test("shows empty state when there is no history", async ({ page }) => {
       await page.goto("/");
-      await page.getByRole("tab", { name: "Ask" }).click();
 
       const empty = page.locator(".qa-empty");
       await expect(empty).toBeVisible({ timeout: 5000 });
@@ -509,7 +512,6 @@ test.describe("Alexandria client", () => {
           contentType: "application/json",
           body: JSON.stringify({
             id: "aaaaaaaa-0000-0000-0000-000000000001",
-            userSubject: "user-1",
             question: "What is the main topic?",
             answer: "The main topic is testing.",
             sourceObjectKeys: [],
@@ -520,30 +522,52 @@ test.describe("Alexandria client", () => {
       );
 
       await page.goto("/");
-      await page.getByRole("tab", { name: "Ask" }).click();
 
-      const input = page.locator(".qa-input");
-      await input.fill("What is the main topic?");
-
+      await page.locator(".qa-input").fill("What is the main topic?");
       await page.locator(".qa-submit").click();
 
-      // Answer should appear
       const interaction = page.locator(".qa-interaction").first();
       await expect(interaction).toBeVisible({ timeout: 5000 });
       await expect(interaction).toContainText("What is the main topic?");
       await expect(interaction).toContainText("The main topic is testing.");
     });
 
-    test("answer shows model and timestamp in the meta line", async ({
+    test("submit button is disabled and shows 'Asking…' while request is in flight", async ({
       page,
     }) => {
+      // Use a long delay so we can assert the intermediate state before it resolves.
+      await page.route("/api/v1/qa/ask", async (route) => {
+        await new Promise((resolve) => setTimeout(resolve, 3000));
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            id: "aaaaaaaa-0000-0000-0000-000000000002",
+            question: "Slow question?",
+            answer: "Slow answer.",
+            sourceObjectKeys: [],
+            timestamp: "2026-07-08T11:30:00Z",
+            modelUsed: "gpt-4o",
+          }),
+        });
+      });
+
+      await page.goto("/");
+      await page.locator(".qa-input").fill("Slow question?");
+      await page.locator(".qa-submit").click();
+
+      const submit = page.locator(".qa-submit");
+      await expect(submit).toBeDisabled();
+      await expect(submit).toHaveText("Asking…");
+    });
+
+    test("answer shows model name in the meta line", async ({ page }) => {
       await page.route("/api/v1/qa/ask", (route) =>
         route.fulfill({
           status: 200,
           contentType: "application/json",
           body: JSON.stringify({
-            id: "aaaaaaaa-0000-0000-0000-000000000002",
-            userSubject: "user-1",
+            id: "aaaaaaaa-0000-0000-0000-000000000003",
             question: "When was it published?",
             answer: "It was published in 2024.",
             sourceObjectKeys: [],
@@ -554,7 +578,6 @@ test.describe("Alexandria client", () => {
       );
 
       await page.goto("/");
-      await page.getByRole("tab", { name: "Ask" }).click();
       await page.locator(".qa-input").fill("When was it published?");
       await page.locator(".qa-submit").click();
 
@@ -563,7 +586,7 @@ test.describe("Alexandria client", () => {
       await expect(meta).toContainText("test-model");
     });
 
-    test("answer includes clickable source references when sources are returned", async ({
+    test("resolved source references are shown with the document filename", async ({
       page,
     }) => {
       const docId = "00000000-0000-0000-0000-000000000010";
@@ -594,8 +617,7 @@ test.describe("Alexandria client", () => {
           status: 200,
           contentType: "application/json",
           body: JSON.stringify({
-            id: "aaaaaaaa-0000-0000-0000-000000000003",
-            userSubject: "user-1",
+            id: "aaaaaaaa-0000-0000-0000-000000000004",
             question: "What does the report say?",
             answer: "The report covers Q3 results.",
             sourceObjectKeys: [objectKey],
@@ -606,21 +628,58 @@ test.describe("Alexandria client", () => {
       );
 
       await page.goto("/");
-      await page.getByRole("tab", { name: "Ask" }).click();
       await page.locator(".qa-input").fill("What does the report say?");
       await page.locator(".qa-submit").click();
 
-      // Source references section should appear
       const sources = page.locator(".qa-sources").first();
       await expect(sources).toBeVisible({ timeout: 5000 });
 
-      // The resolved document link should use the document's fileName
+      // Resolved link uses the document's fileName, not the raw key
       const sourceLink = page.locator(".qa-source-link").first();
       await expect(sourceLink).toBeVisible();
       await expect(sourceLink).toHaveText("report.pdf");
+      await expect(sourceLink).not.toHaveClass(/qa-source-link--unresolved/);
     });
 
-    test("clicking a source reference navigates to the Documents tab and selects the document", async ({
+    test("unresolved source shows the last path segment of the object key", async ({
+      page,
+    }) => {
+      const objectKey = "users/user-1/documents/unknown-id/mystery.pdf";
+
+      // Return an empty documents list so the key cannot be resolved to a document
+      await page.route("/api/v1/knowledgebase/documents", (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify([]),
+        }),
+      );
+
+      await page.route("/api/v1/qa/ask", (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            id: "aaaaaaaa-0000-0000-0000-000000000005",
+            question: "What is this?",
+            answer: "Unknown source.",
+            sourceObjectKeys: [objectKey],
+            timestamp: "2026-07-08T11:10:00Z",
+            modelUsed: "gpt-4o",
+          }),
+        }),
+      );
+
+      await page.goto("/");
+      await page.locator(".qa-input").fill("What is this?");
+      await page.locator(".qa-submit").click();
+
+      const sourceLink = page.locator(".qa-source-link--unresolved").first();
+      await expect(sourceLink).toBeVisible({ timeout: 5000 });
+      await expect(sourceLink).toHaveText("mystery.pdf");
+    });
+
+    test("clicking a resolved source switches to Documents tab and selects the document", async ({
       page,
     }) => {
       const docId = "00000000-0000-0000-0000-000000000011";
@@ -646,24 +705,22 @@ test.describe("Alexandria client", () => {
         }),
       );
 
-      await page.route(
-        `/api/v1/knowledgebase/documents/${docId}`,
-        (route) =>
-          route.fulfill({
-            status: 200,
-            contentType: "application/json",
-            body: JSON.stringify({
-              id: docId,
-              fileName: "guide.pdf",
-              objectKey,
-              fileType: "application/pdf",
-              fileSize: 1024,
-              createdAt: "2026-07-01T00:00:00Z",
-              tags: [],
-              extractedEntities: [],
-              summary: null,
-            }),
+      await page.route(`/api/v1/knowledgebase/documents/${docId}`, (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            id: docId,
+            fileName: "guide.pdf",
+            objectKey,
+            fileType: "application/pdf",
+            fileSize: 1024,
+            createdAt: "2026-07-01T00:00:00Z",
+            tags: [],
+            extractedEntities: [],
+            summary: null,
           }),
+        }),
       );
 
       await page.route("/api/v1/qa/ask", (route) =>
@@ -671,8 +728,7 @@ test.describe("Alexandria client", () => {
           status: 200,
           contentType: "application/json",
           body: JSON.stringify({
-            id: "aaaaaaaa-0000-0000-0000-000000000004",
-            userSubject: "user-1",
+            id: "aaaaaaaa-0000-0000-0000-000000000006",
             question: "What is in the guide?",
             answer: "The guide explains installation steps.",
             sourceObjectKeys: [objectKey],
@@ -683,31 +739,29 @@ test.describe("Alexandria client", () => {
       );
 
       await page.goto("/");
-      await page.getByRole("tab", { name: "Ask" }).click();
       await page.locator(".qa-input").fill("What is in the guide?");
       await page.locator(".qa-submit").click();
 
       const sourceLink = page.locator(".qa-source-link").first();
       await expect(sourceLink).toBeVisible({ timeout: 5000 });
-
-      // Click the source link — should switch to Documents tab
       await sourceLink.click();
 
-      const documentsTab = page.getByRole("tab", { name: "Documents" });
-      await expect(documentsTab).toHaveAttribute("aria-selected", "true", {
+      // Documents tab should now be active
+      const documentsTab = page.getByRole("button", { name: "Documents" });
+      await expect(documentsTab).toHaveClass(/app-tab--active/, {
         timeout: 3000,
       });
 
-      // The document detail should now show the selected document's title
+      // The detail panel for the selected document should be visible
       const detailTitle = page.locator(".detail-title");
       await expect(detailTitle).toBeVisible({ timeout: 5000 });
       await expect(detailTitle).toHaveText("guide.pdf");
     });
 
-    test("history is loaded on mount and displayed as past interactions", async ({
+    test("history loaded on mount is displayed as past interactions", async ({
       page,
     }) => {
-      // Override the beforeEach empty-history stub with actual history
+      // Override the beforeEach empty-history stub with actual history data
       await page.unroute("/api/v1/qa/history");
       await page.route("/api/v1/qa/history", (route) =>
         route.fulfill({
@@ -715,8 +769,7 @@ test.describe("Alexandria client", () => {
           contentType: "application/json",
           body: JSON.stringify([
             {
-              id: "aaaaaaaa-0000-0000-0000-000000000005",
-              userSubject: "user-1",
+              id: "aaaaaaaa-0000-0000-0000-000000000007",
               question: "Previous question from history?",
               answer: "This is a historical answer.",
               sourceObjectKeys: [],
@@ -728,11 +781,12 @@ test.describe("Alexandria client", () => {
       );
 
       await page.goto("/");
-      await page.getByRole("tab", { name: "Ask" }).click();
 
       const interaction = page.locator(".qa-interaction").first();
       await expect(interaction).toBeVisible({ timeout: 5000 });
-      await expect(interaction).toContainText("Previous question from history?");
+      await expect(interaction).toContainText(
+        "Previous question from history?",
+      );
       await expect(interaction).toContainText("This is a historical answer.");
     });
 
@@ -744,7 +798,6 @@ test.describe("Alexandria client", () => {
       );
 
       await page.goto("/");
-      await page.getByRole("tab", { name: "Ask" }).click();
       await page.locator(".qa-input").fill("This will fail.");
       await page.locator(".qa-submit").click();
 
@@ -753,69 +806,109 @@ test.describe("Alexandria client", () => {
       await expect(error).toContainText("Failed to get an answer");
     });
 
-    test("shows 'Not authenticated.' when the ask endpoint returns 401", async ({
+    test("shows 'Authentication error. Retrying login...' when the ask endpoint returns 401", async ({
       page,
     }) => {
+      await page.route("**/protocol/openid-connect/token", (route) =>
+        route.fulfill({ status: 401, body: "Unauthorized" }),
+      );
+
       await page.route("/api/v1/qa/ask", (route) =>
         route.fulfill({ status: 401, body: "Unauthorized" }),
       );
 
       await page.goto("/");
-      await page.getByRole("tab", { name: "Ask" }).click();
       await page.locator(".qa-input").fill("Auth check question.");
       await page.locator(".qa-submit").click();
 
       const error = page.locator(".qa-error");
       await expect(error).toBeVisible({ timeout: 5000 });
-      await expect(error).toHaveText("Not authenticated.");
+      await expect(error).toHaveText("Authentication error. Retrying login...");
     });
 
-    test("submit button is disabled while request is in flight", async ({
+    test("Documents tab button switches back to document view", async ({
       page,
     }) => {
-      await page.route("/api/v1/qa/ask", async (route) => {
-        await new Promise((resolve) => setTimeout(resolve, 3000));
-        await route.fulfill({
-          status: 200,
-          contentType: "application/json",
-          body: JSON.stringify({
-            id: "aaaaaaaa-0000-0000-0000-000000000006",
-            question: "Slow question?",
-            answer: "Slow answer.",
-            sourceObjectKeys: [],
-            timestamp: "2026-07-08T11:30:00Z",
-            modelUsed: "gpt-4o",
-          }),
-        });
+      await page.goto("/");
+
+      // Scope to the header nav to avoid matching the .qa-submit "Ask" button
+      const askTab = page
+        .locator(".app-header-nav .app-tab")
+        .filter({ hasText: "Ask" });
+      const documentsTab = page
+        .locator(".app-header-nav .app-tab")
+        .filter({ hasText: "Documents" });
+
+      // Ask tab is active by default
+      await expect(askTab).toHaveClass(/app-tab--active/);
+      await expect(documentsTab).not.toHaveClass(/app-tab--active/);
+
+      // Click Documents tab — it becomes active, Ask tab becomes inactive
+      await documentsTab.click();
+      await expect(documentsTab).toHaveClass(/app-tab--active/);
+      await expect(askTab).not.toHaveClass(/app-tab--active/);
+
+      // Click Ask tab again — switches back
+      await askTab.click();
+      await expect(askTab).toHaveClass(/app-tab--active/);
+      await expect(documentsTab).not.toHaveClass(/app-tab--active/);
+    });
+
+    test("clear history button removes all interactions and shows empty state", async ({
+      page,
+    }) => {
+      const historyItems = [
+        {
+          id: "aaaaaaaa-0000-0000-0000-000000000008",
+          question: "First history question?",
+          answer: "First historical answer.",
+          sourceObjectKeys: [],
+          timestamp: "2026-07-06T08:00:00Z",
+          modelUsed: "gpt-4o",
+        },
+        {
+          id: "aaaaaaaa-0000-0000-0000-000000000009",
+          question: "Second history question?",
+          answer: "Second historical answer.",
+          sourceObjectKeys: [],
+          timestamp: "2026-07-06T09:00:00Z",
+          modelUsed: "gpt-4o",
+        },
+      ];
+
+      // Override the beforeEach empty-history stub with a single handler that
+      // serves the two history items on GET and accepts DELETE.
+      await page.unroute("/api/v1/qa/history");
+      await page.route("/api/v1/qa/history", (route, request) => {
+        if (request.method() === "DELETE") {
+          route.fulfill({ status: 200 });
+        } else {
+          route.fulfill({
+            status: 200,
+            contentType: "application/json",
+            body: JSON.stringify(historyItems),
+          });
+        }
       });
 
       await page.goto("/");
-      await page.getByRole("tab", { name: "Ask" }).click();
-      await page.locator(".qa-input").fill("Slow question?");
-      await page.locator(".qa-submit").click();
 
-      // While in flight the button should show "Asking…" and be disabled
-      const submit = page.locator(".qa-submit");
-      await expect(submit).toBeDisabled();
-      await expect(submit).toHaveText("Asking…");
-    });
+      // Both interactions should be visible
+      await expect(page.locator(".qa-interaction")).toHaveCount(2, {
+        timeout: 5000,
+      });
 
-    test("Documents tab is visible and switches back to document view", async ({
-      page,
-    }) => {
-      await page.goto("/");
+      // Accept the confirm dialog that QAPanel fires before clearing
+      page.on("dialog", (dialog) => dialog.accept());
 
-      const documentsTab = page.getByRole("tab", { name: "Documents" });
-      await expect(documentsTab).toBeVisible();
-      await expect(documentsTab).toHaveAttribute("aria-selected", "true");
+      await page.locator(".qa-clear-button").click();
 
-      // Switch to Ask tab
-      await page.getByRole("tab", { name: "Ask" }).click();
-      await expect(documentsTab).toHaveAttribute("aria-selected", "false");
-
-      // Switch back
-      await documentsTab.click();
-      await expect(documentsTab).toHaveAttribute("aria-selected", "true");
+      // All interactions should be gone and the empty state should appear
+      await expect(page.locator(".qa-interaction")).toHaveCount(0, {
+        timeout: 5000,
+      });
+      await expect(page.locator(".qa-empty")).toBeVisible({ timeout: 5000 });
+      await expect(page.locator(".qa-empty")).toContainText("No questions yet");
     });
   });
 });
