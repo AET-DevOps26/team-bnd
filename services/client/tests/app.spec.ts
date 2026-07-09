@@ -57,9 +57,7 @@ test.describe("Alexandria client", () => {
       await expect(heading).toBeVisible();
     });
 
-    test("shows a status message when not uAthentication error. Retrying login...r empty", async ({
-      page,
-    }) => {
+    test("shows a status message when not empty", async ({ page }) => {
       // Without a real backend the tree will show either an auth warning,
       // a fetch error, or a "No documents yet." message — all are valid.
       const nav = page.getByRole("navigation", { name: "Document list" });
