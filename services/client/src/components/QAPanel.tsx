@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import $api from "../api/client";
 import type { components } from "../api/schema";
+import { useQueryClient } from "@tanstack/react-query";
 
 type QAInteraction = components["schemas"]["QAInteraction"];
 type Document = components["schemas"]["Document"];
@@ -44,6 +45,7 @@ function findDocumentByKey(
 }
 
 export default function QAPanel({ documents, onSelectDocument }: Props) {
+  const queryClient = useQueryClient();
   const [question, setQuestion] = useState("");
   const [interactions, setInteractions] = useState<QAInteraction[]>([]);
   const historyLoaded = useRef(false);
@@ -72,6 +74,12 @@ export default function QAPanel({ documents, onSelectDocument }: Props) {
   const { mutate: clearHistory, isPending: isClearing } = $api.useMutation(
     "delete",
     "/api/v1/qa/history",
+    {
+      onSuccess: () =>
+        queryClient.invalidateQueries({
+          queryKey: ["get", "/api/v1/qa/history"],
+        }),
+    },
   );
 
   function handleSubmit(e: React.FormEvent) {
@@ -129,7 +137,7 @@ export default function QAPanel({ documents, onSelectDocument }: Props) {
           <button
             type="submit"
             className="qa-submit"
-            disabled={isPending || !question.trim()}
+            disabled={historyLoading || isPending || !question.trim()}
           >
             {isPending ? "Asking…" : "Ask"}
           </button>
