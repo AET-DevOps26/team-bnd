@@ -20,9 +20,11 @@ spec:
         app.kubernetes.io/component: frontend
     spec:
       automountServiceAccountToken: false
-      # nginx (default image) has to bind to :80, so runAsNonRoot stays off here.
       securityContext:
-        runAsNonRoot: false
+        runAsNonRoot: true
+        runAsUser: 101
+        runAsGroup: 101
+        fsGroup: 101
         seccompProfile:
           type: RuntimeDefault
       containers:
@@ -37,13 +39,9 @@ spec:
                 - ALL
           ports:
             - name: http
-              containerPort: 80
+              containerPort: 8080
               protocol: TCP
           volumeMounts:
-            - name: nginx-cache
-              mountPath: /var/cache/nginx
-            - name: nginx-run
-              mountPath: /var/run
             - name: tmp
               mountPath: /tmp
           resources:
@@ -65,9 +63,5 @@ spec:
             timeoutSeconds: 3
             failureThreshold: 3
       volumes:
-        - name: nginx-cache
-          emptyDir: {}
-        - name: nginx-run
-          emptyDir: {}
         - name: tmp
           emptyDir: {}

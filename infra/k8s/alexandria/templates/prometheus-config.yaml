@@ -3,7 +3,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: {{ include "alexandria.fullname" . }}-prometheus-config
-  namespace: {{ .Release.Namespace }}
+  namespace: {{ include "alexandria.monitoringNamespace" . }}
   labels:
     {{- include "alexandria.labels" . | nindent 4 }}
 data:
@@ -24,28 +24,33 @@ data:
       - job_name: user-service
         metrics_path: /actuator/prometheus
         static_configs:
-          - targets: ["{{ include "alexandria.fullname" . }}-user-service:8080"]
+          - targets: ["{{ include "alexandria.fullname" . }}-user-service.{{ .Release.Namespace }}:8080"]
 
       - job_name: knowledgebase-service
         metrics_path: /actuator/prometheus
         static_configs:
-          - targets: ["{{ include "alexandria.fullname" . }}-knowledgebase-service:8080"]
+          - targets: ["{{ include "alexandria.fullname" . }}-knowledgebase-service.{{ .Release.Namespace }}:8080"]
 
       - job_name: qa-service
         metrics_path: /actuator/prometheus
         static_configs:
-          - targets: ["{{ include "alexandria.fullname" . }}-qa-service:8080"]
+          - targets: ["{{ include "alexandria.fullname" . }}-qa-service.{{ .Release.Namespace }}:8080"]
 
       - job_name: genai
         metrics_path: /genai/metrics
         static_configs:
-          - targets: ["{{ include "alexandria.fullname" . }}-genai:8000"]
+          - targets: ["{{ include "alexandria.fullname" . }}-genai.{{ .Release.Namespace }}:8000"]
 
+      # SeaweedFS runs as separate deployments in the helm chart (unlike the
+      # all-in-one compose container), so we split the scrape by component to
+      # keep dashboard/label semantics clean.
       - job_name: s3-storage
         static_configs:
-          - targets:
-              - "{{ .Release.Name }}-seaweedfs-s3:9327"
-              - "{{ .Release.Name }}-seaweedfs-volume:9327"
+          - targets: ["{{ .Release.Name }}-seaweedfs-s3.{{ .Release.Namespace }}:9327"]
+
+      - job_name: seaweed-volume
+        static_configs:
+          - targets: ["{{ .Release.Name }}-seaweedfs-volume.{{ .Release.Namespace }}:9327"]
 
   alert.rules.yml: |
     groups:

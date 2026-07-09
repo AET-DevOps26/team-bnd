@@ -49,8 +49,8 @@
 			"targets": [
 				{
 					"datasource": { "type": "prometheus", "uid": "prometheus" },
-					"expr": "up{job=\"s3-storage\"}",
-					"legendFormat": "s3-storage",
+					"expr": "up{job=~\"s3-storage|seaweed-volume\"}",
+					"legendFormat": "{{job}}",
 					"refId": "A"
 				}
 			],
@@ -81,7 +81,7 @@
 			"targets": [
 				{
 					"datasource": { "type": "prometheus", "uid": "prometheus" },
-					"expr": "SeaweedFS_build_info{job=\"s3-storage\"}",
+					"expr": "SeaweedFS_build_info{job=~\"s3-storage|seaweed-volume\"}",
 					"legendFormat": "{{version}}",
 					"instant": true,
 					"refId": "A"
@@ -121,7 +121,7 @@
 			"targets": [
 				{
 					"datasource": { "type": "prometheus", "uid": "prometheus" },
-					"expr": "100 * sum(SeaweedFS_volumeServer_resource{job=\"s3-storage\", type=\"used\"}) / sum(SeaweedFS_volumeServer_resource{job=\"s3-storage\", type=\"all\"})",
+					"expr": "100 * sum(SeaweedFS_volumeServer_resource{job=~\"s3-storage|seaweed-volume\", type=\"used\"}) / sum(SeaweedFS_volumeServer_resource{job=~\"s3-storage|seaweed-volume\", type=\"all\"})",
 					"legendFormat": "disk used %",
 					"refId": "A"
 				}
@@ -253,13 +253,13 @@
 			"targets": [
 				{
 					"datasource": { "type": "prometheus", "uid": "prometheus" },
-					"expr": "sum(SeaweedFS_volumeServer_resource{job=\"s3-storage\", type=\"used\"})",
+					"expr": "sum(SeaweedFS_volumeServer_resource{job=~\"s3-storage|seaweed-volume\", type=\"used\"})",
 					"legendFormat": "used",
 					"refId": "A"
 				},
 				{
 					"datasource": { "type": "prometheus", "uid": "prometheus" },
-					"expr": "sum(SeaweedFS_volumeServer_resource{job=\"s3-storage\", type=\"avail\"})",
+					"expr": "sum(SeaweedFS_volumeServer_resource{job=~\"s3-storage|seaweed-volume\", type=\"avail\"})",
 					"legendFormat": "available",
 					"refId": "B"
 				}

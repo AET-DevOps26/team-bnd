@@ -3,7 +3,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: {{ include "alexandria.fullname" . }}-grafana-provisioning
-  namespace: {{ .Release.Namespace }}
+  namespace: {{ include "alexandria.monitoringNamespace" . }}
   labels:
     {{- include "alexandria.labels" . | nindent 4 }}
 data:
@@ -34,7 +34,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: {{ include "alexandria.fullname" . }}-grafana-dashboards
-  namespace: {{ .Release.Namespace }}
+  namespace: {{ include "alexandria.monitoringNamespace" . }}
   labels:
     {{- include "alexandria.labels" . | nindent 4 }}
 data:
