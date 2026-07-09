@@ -10,7 +10,7 @@ Build and run the production image (uses the multi-stage Dockerfile):
 ```bash
 # from repository root
 docker build -t team-bnd-client ./services/client
-docker run -p 8082:80 team-bnd-client
+docker run -p 8082:8080 team-bnd-client
 ```
 
 Or with docker-compose (builds the image and serves it with nginx):
@@ -54,5 +54,5 @@ npm run test:e2e
 Notes
 -----
 - The dev Dockerfile starts Vite with --host 0.0.0.0 so the dev server is reachable from the host when running in a container.
-- The production image serves the built files with nginx on port 80 inside the container (host port 8082 by default in docker-compose).
+- The production image is based on `nginxinc/nginx-unprivileged` and serves the built files on port 8080 inside the container (Traefik in docker-compose routes to it via the internal network, no host port published by default).
 - When starting the development server, `--build --renew-anon-volumes` has to be specified.
