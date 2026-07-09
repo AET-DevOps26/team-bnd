@@ -1,31 +1,34 @@
 package com.alexandria.qa.integration;
 
+import com.alexandria.genai.client.api.AiApi;
+import com.alexandria.genai.client.invoker.ApiClient;
+import com.alexandria.genai.client.model.GenAiAskRequest;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.MediaType;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
 import java.net.http.HttpClient;
+import java.time.Duration;
 import java.util.List;
 
 @Component
 public class GenAiClient {
 
-    private final RestClient restClient;
+    private final AiApi genaiClient;
 
     public GenAiClient(@Value("${genai.base-url:http://localhost:8000}") String baseUrl) {
-        HttpClient httpClient = HttpClient.newBuilder().version(HttpClient.Version.HTTP_1_1).connectTimeout(java.time.Duration.ofSeconds(5)).build();
+        HttpClient httpClient = HttpClient.newBuilder().version(HttpClient.Version.HTTP_1_1).connectTimeout(Duration.ofSeconds(5)).build();
         JdkClientHttpRequestFactory factory = new JdkClientHttpRequestFactory(httpClient);
-        factory.setReadTimeout(java.time.Duration.ofSeconds(30));
-        this.restClient = RestClient.builder().requestFactory(factory).baseUrl(baseUrl).build();
+        factory.setReadTimeout(Duration.ofSeconds(30));
+        RestClient restClient = ApiClient.buildRestClientBuilder().requestFactory(factory).build();
+        ApiClient apiClient = new ApiClient(restClient).setBasePath(baseUrl);
+        this.genaiClient = new AiApi(apiClient);
     }
 
     public AskResponse ask(String question, List<String> objectKeys) {
-        return restClient.post().uri("/genai/ask").contentType(MediaType.APPLICATION_JSON).body(new AskRequest(question, objectKeys)).retrieve().body(AskResponse.class);
-    }
-
-    public record AskRequest(String question, List<String> objectKeys) {
+        var r = genaiClient.askGenaiAskPost(new GenAiAskRequest().question(question).objectKeys(objectKeys));
+        return new AskResponse(r.getAnswer(), r.getSourceObjectKeys(), r.getModelUsed());
     }
 
     public record AskResponse(String answer, List<String> sourceObjectKeys, String modelUsed) {

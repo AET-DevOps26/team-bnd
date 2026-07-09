@@ -1,5 +1,6 @@
 plugins {
 	id 'org.springdoc.openapi-gradle-plugin'
+	id 'org.openapi.generator'
 }
 
 openApi {
@@ -10,3 +11,34 @@ openApi {
 		args = ["--spring.profiles.active=openapi"]
 	}
 }
+
+def genaiGeneratedDir = layout.buildDirectory.dir("generated/openapi").get().asFile
+
+openApiGenerate {
+	generatorName = "java"
+	library = "restclient"
+	inputSpec = "$rootDir/openapi.yaml"
+	outputDir = genaiGeneratedDir.toString()
+	apiPackage = "com.alexandria.genai.client.api"
+	modelPackage = "com.alexandria.genai.client.model"
+	invokerPackage = "com.alexandria.genai.client.invoker"
+	generateApiTests = false
+	generateModelTests = false
+	generateApiDocumentation = false
+	generateModelDocumentation = false
+	configOptions = [
+		dateLibrary         : "java8",
+		useJakartaEe        : "true",
+		openApiNullable     : "false",
+		serializationLibrary: "jackson",
+		useBeanValidation   : "false",
+		performBeanValidation: "false",
+		useTags             : "true",
+		hideGenerationTimestamp: "true",
+		annotationLibrary   : "none",
+		documentationProvider: "none",
+	]
+}
+
+sourceSets.main.java.srcDir("${genaiGeneratedDir}/src/main/java")
+tasks.named("compileJava").configure { dependsOn(tasks.named("openApiGenerate")) }

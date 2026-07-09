@@ -12,7 +12,7 @@ ARG SERVICE
 WORKDIR /workspace
 
 COPY gradle/ gradle/
-COPY gradlew settings.gradle build.gradle ./
+COPY gradlew settings.gradle build.gradle openapi.yaml ./
 COPY user-service/build.gradle user-service/build.gradle
 COPY knowledgebase-service/build.gradle knowledgebase-service/build.gradle
 COPY qa-service/build.gradle qa-service/build.gradle

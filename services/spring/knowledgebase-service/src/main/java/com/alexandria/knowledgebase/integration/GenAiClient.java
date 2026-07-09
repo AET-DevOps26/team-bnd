@@ -1,54 +1,69 @@
 package com.alexandria.knowledgebase.integration;
 
+import com.alexandria.genai.client.api.AiApi;
+import com.alexandria.genai.client.invoker.ApiClient;
+import com.alexandria.genai.client.model.GenAiAskRequest;
+import com.alexandria.genai.client.model.GenAiDeleteIndexResponse;
+import com.alexandria.genai.client.model.GenAiExtractRequest;
+import com.alexandria.genai.client.model.GenAiIndexRequest;
+import com.alexandria.genai.client.model.GenAiSummarizeRequest;
 import com.alexandria.knowledgebase.document.EntityType;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.MediaType;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
+import java.math.BigDecimal;
 import java.net.http.HttpClient;
+import java.time.Duration;
 import java.util.List;
 
 @Component
 public class GenAiClient {
 
-    private final RestClient restClient;
+    private final AiApi genaiClient;
 
     public GenAiClient(@Value("${genai.base-url:http://localhost:8000}") String baseUrl) {
-        HttpClient httpClient = HttpClient.newBuilder().version(HttpClient.Version.HTTP_1_1).connectTimeout(java.time.Duration.ofSeconds(5)).build();
+        HttpClient httpClient = HttpClient.newBuilder().version(HttpClient.Version.HTTP_1_1).connectTimeout(Duration.ofSeconds(5)).build();
         JdkClientHttpRequestFactory factory = new JdkClientHttpRequestFactory(httpClient);
-        factory.setReadTimeout(java.time.Duration.ofSeconds(30));
-        this.restClient = RestClient.builder().requestFactory(factory).baseUrl(baseUrl).build();
+        factory.setReadTimeout(Duration.ofSeconds(30));
+        RestClient restClient = ApiClient.buildRestClientBuilder().requestFactory(factory).build();
+        ApiClient apiClient = new ApiClient(restClient).setBasePath(baseUrl);
+        this.genaiClient = new AiApi(apiClient);
     }
 
     public SummarizeResponse summarize(String objectKey) {
-        return restClient.post().uri("/genai/summarize").contentType(MediaType.APPLICATION_JSON).body(new SummarizeRequest(objectKey)).retrieve().body(SummarizeResponse.class);
+        var r = genaiClient.summarizeDocumentGenaiSummarizePost(new GenAiSummarizeRequest().objectKey(objectKey));
+        return new SummarizeResponse(r.getSummary(), r.getModelUsed());
     }
 
     public ExtractResponse extract(String objectKey) {
-        return restClient.post().uri("/genai/extract").contentType(MediaType.APPLICATION_JSON).body(new ExtractRequest(objectKey)).retrieve().body(ExtractResponse.class);
+        var r = genaiClient.extractGenaiExtractPost(new GenAiExtractRequest().objectKey(objectKey));
+        List<ExtractedEntityDto> entities = r.getEntities().stream().map(
+                e -> new ExtractedEntityDto(e.getName(), EntityType.valueOf(e.getType()), toDouble(e.getConfidence()))).toList();
+        return new ExtractResponse(entities, r.getModelUsed());
     }
 
     public AskResponse ask(String question, List<String> objectKeys) {
-        return restClient.post().uri("/genai/ask").contentType(MediaType.APPLICATION_JSON).body(new AskRequest(question, objectKeys)).retrieve().body(AskResponse.class);
+        var r = genaiClient.askGenaiAskPost(new GenAiAskRequest().question(question).objectKeys(objectKeys));
+        return new AskResponse(r.getAnswer(), r.getSourceObjectKeys(), r.getModelUsed());
     }
 
     public IndexResponse index(String objectKey) {
-        return restClient.post().uri("/genai/index").contentType(MediaType.APPLICATION_JSON).body(new IndexRequest(objectKey)).retrieve().body(IndexResponse.class);
+        var r = genaiClient.indexGenaiIndexPost(new GenAiIndexRequest().objectKey(objectKey));
+        return new IndexResponse(r.getObjectKey(), r.getChunksIndexed(), r.getEmbeddingModel());
     }
 
     public DeleteIndexResponse deleteIndex(String objectKey) {
-        return restClient.delete().uri("/genai/index/{objectKey}", objectKey).retrieve().body(DeleteIndexResponse.class);
+        GenAiDeleteIndexResponse r = genaiClient.deleteIndexGenaiIndexObjectKeyDelete(objectKey);
+        return new DeleteIndexResponse(r.getObjectKey(), r.getChunksDeleted());
     }
 
-    public record SummarizeRequest(String objectKey) {
+    private static Double toDouble(BigDecimal value) {
+        return value == null ? null : value.doubleValue();
     }
 
     public record SummarizeResponse(String summary, String modelUsed) {
-    }
-
-    public record ExtractRequest(String objectKey) {
     }
 
     public record ExtractResponse(List<ExtractedEntityDto> entities, String modelUsed) {
@@ -57,13 +72,7 @@ public class GenAiClient {
     public record ExtractedEntityDto(String name, EntityType type, Double confidence) {
     }
 
-    public record AskRequest(String question, List<String> objectKeys) {
-    }
-
     public record AskResponse(String answer, List<String> sourceObjectKeys, String modelUsed) {
-    }
-
-    public record IndexRequest(String objectKey) {
     }
 
     public record IndexResponse(String objectKey, Integer chunksIndexed, String embeddingModel) {
