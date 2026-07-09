@@ -7,7 +7,7 @@ info:
   license:
     name: MIT
     identifier: MIT
-  version: 2.1.0
+  version: 2.2.0
 servers:
   - url: /
     description: Current server
@@ -963,6 +963,39 @@ paths:
       summary: Summarize Document
       tags:
         - ai
+  /genai/tag:
+    post:
+      description: >-
+        Assign content-based topical tags to the document stored under the given
+        object key.
+      operationId: tag_genai_tag_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenAiTagRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenAiTagResponse'
+          description: Successful Response
+        '404':
+          description: Object not found
+        '415':
+          description: Object is not a supported file type
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      security: []
+      summary: Tag
+      tags:
+        - ai
 components:
   schemas:
     UpdatePreferencesRequest:
@@ -1401,6 +1434,36 @@ components:
         - summary
         - modelUsed
       title: GenAiSummarizeResponse
+      type: object
+    GenAiTagRequest:
+      properties:
+        knownTags:
+          default: []
+          items:
+            type: string
+          title: Knowntags
+          type: array
+        objectKey:
+          title: Objectkey
+          type: string
+      required:
+        - objectKey
+      title: GenAiTagRequest
+      type: object
+    GenAiTagResponse:
+      properties:
+        modelUsed:
+          title: Modelused
+          type: string
+        tags:
+          items:
+            type: string
+          title: Tags
+          type: array
+      required:
+        - tags
+        - modelUsed
+      title: GenAiTagResponse
       type: object
     HTTPValidationError:
       properties:

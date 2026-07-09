@@ -7,7 +7,7 @@ info:
   license:
     name: MIT
     identifier: MIT
-  version: 2.1.0
+  version: 2.2.0
 servers:
   - url: /
     description: Current server
@@ -895,6 +895,43 @@ paths:
       summary: Delete Index
       tags:
         - ai
+  /genai/search:
+    post:
+      description: >-
+        Rank indexed documents by semantic similarity to the query.
+
+
+        The query is embedded and matched against the indexed chunks scoped to
+        the
+
+        requested object keys; chunk hits are rolled up to one entry per
+        document,
+
+        each carrying the closest chunk's snippet and a relevance score.
+      operationId: search_genai_search_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenAiSearchRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenAiSearchResponse'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      security: []
+      summary: Search
+      tags:
+        - ai
   /genai/summarize:
     post:
       description: Summarize the document stored under the given object key.
@@ -924,6 +961,39 @@ paths:
           description: Validation Error
       security: []
       summary: Summarize Document
+      tags:
+        - ai
+  /genai/tag:
+    post:
+      description: >-
+        Assign content-based topical tags to the document stored under the given
+        object key.
+      operationId: tag_genai_tag_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenAiTagRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenAiTagResponse'
+          description: Successful Response
+        '404':
+          description: Object not found
+        '415':
+          description: Object is not a supported file type
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      security: []
+      summary: Tag
       tags:
         - ai
 components:
@@ -1285,6 +1355,64 @@ components:
         - embeddingModel
       title: GenAiIndexResponse
       type: object
+    GenAiSearchRequest:
+      properties:
+        limit:
+          default: 10
+          maximum: 50
+          minimum: 1
+          title: Limit
+          type: integer
+        objectKeys:
+          items:
+            type: string
+          title: Objectkeys
+          type: array
+        query:
+          maxLength: 1500
+          title: Query
+          type: string
+      required:
+        - query
+        - objectKeys
+      title: GenAiSearchRequest
+      type: object
+    GenAiSearchResponse:
+      properties:
+        embeddingModel:
+          title: Embeddingmodel
+          type: string
+        results:
+          items:
+            $ref: '#/components/schemas/GenAiSearchResult'
+          title: Results
+          type: array
+      required:
+        - results
+        - embeddingModel
+      title: GenAiSearchResponse
+      type: object
+    GenAiSearchResult:
+      properties:
+        chunkIndex:
+          title: Chunkindex
+          type: integer
+        objectKey:
+          title: Objectkey
+          type: string
+        score:
+          title: Score
+          type: number
+        snippet:
+          title: Snippet
+          type: string
+      required:
+        - objectKey
+        - score
+        - snippet
+        - chunkIndex
+      title: GenAiSearchResult
+      type: object
     GenAiSummarizeRequest:
       properties:
         objectKey:
@@ -1306,6 +1434,36 @@ components:
         - summary
         - modelUsed
       title: GenAiSummarizeResponse
+      type: object
+    GenAiTagRequest:
+      properties:
+        knownTags:
+          default: []
+          items:
+            type: string
+          title: Knowntags
+          type: array
+        objectKey:
+          title: Objectkey
+          type: string
+      required:
+        - objectKey
+      title: GenAiTagRequest
+      type: object
+    GenAiTagResponse:
+      properties:
+        modelUsed:
+          title: Modelused
+          type: string
+        tags:
+          items:
+            type: string
+          title: Tags
+          type: array
+      required:
+        - tags
+        - modelUsed
+      title: GenAiTagResponse
       type: object
     HTTPValidationError:
       properties:

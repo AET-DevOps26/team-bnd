@@ -4,6 +4,80 @@
  */
 
 export interface paths {
+    "/api/v1/users/me/preferences": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update user preferences */
+        patch: operations["updateUserPreferences"];
+        trace?: never;
+    };
+    "/user-service/hello": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Health check (user-service)
+         * @description Returns 'Hello from user-service!' if service is running
+         */
+        get: operations["helloUser"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/users/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get user profile */
+        get: operations["userProfile"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/users/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete user account
+         * @description Users can only delete their own account
+         */
+        delete: operations["deleteUser"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/knowledgebase/documents/{id}/tags": {
         parameters: {
             query?: never;
@@ -15,6 +89,40 @@ export interface paths {
         put?: never;
         /** Add tag to document */
         post: operations["addTag"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/knowledgebase/documents/{id}/reprocess/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reprocess document summary */
+        post: operations["reprocessSummary"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/knowledgebase/documents/{id}/reprocess/entities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reprocess document entities */
+        post: operations["reprocessEntities"];
         delete?: never;
         options?: never;
         head?: never;
@@ -55,24 +163,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/knowledgebase/ask": {
+    "/api/v1/knowledgebase/documents/{id}": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /** Get document by ID */
+        get: operations["getDocument"];
         put?: never;
-        /** Ask a question about your documents */
-        post: operations["ask"];
-        delete?: never;
+        post?: never;
+        /** Delete document */
+        delete: operations["deleteDocument"];
         options?: never;
         head?: never;
-        patch?: never;
+        /** Update document metadata */
+        patch: operations["updateDocument"];
         trace?: never;
     };
-    "/hello": {
+    "/knowledgebase-service/hello": {
         parameters: {
             query?: never;
             header?: never;
@@ -80,10 +190,44 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Health check
-         * @description Returns 'Hello World!' if service is running
+         * Health check (knowledgebase-service)
+         * @description Returns 'Hello from knowledgebase-service!' if service is running
          */
-        get: operations["helloEndpoint"];
+        get: operations["helloKnowledgeBase"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/internal/knowledgebase/users/{subject}/document-keys": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List object keys for a user's documents (internal) */
+        get: operations["listDocumentKeys"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/knowledgebase/tags": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get all unique tags for user */
+        get: operations["getTags"];
         put?: never;
         post?: never;
         delete?: never;
@@ -120,24 +264,8 @@ export interface paths {
         get: operations["getSearchHistory"];
         put?: never;
         post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/knowledgebase/history/qa": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get Q&A history */
-        get: operations["getQAHistory"];
-        put?: never;
-        post?: never;
-        delete?: never;
+        /** Delete search history */
+        delete: operations["deleteSearchHistory"];
         options?: never;
         head?: never;
         patch?: never;
@@ -160,19 +288,35 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/knowledgebase/documents/{id}": {
+    "/api/v1/knowledgebase/documents/{id}/summary": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** Get document by ID */
-        get: operations["getDocument"];
+        /** Get document summary */
+        get: operations["getSummary"];
         put?: never;
         post?: never;
-        /** Delete document */
-        delete: operations["deleteDocument"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/knowledgebase/documents/{id}/entities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get document entities */
+        get: operations["getEntities"];
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -195,7 +339,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/users/{id}": {
+    "/internal/knowledgebase/users/{subject}": {
         parameters: {
             query?: never;
             header?: never;
@@ -205,11 +349,8 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        /**
-         * Delete user account
-         * @description Users can only delete their own account
-         */
-        delete: operations["deleteUser"];
+        /** Purge all knowledgebase data for a user (internal) */
+        delete: operations["kbInternalDeleteUserData"];
         options?: never;
         head?: never;
         patch?: never;
@@ -227,6 +368,78 @@ export interface paths {
         post?: never;
         /** Remove tag from document */
         delete: operations["removeTag"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/qa/ask": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Ask a question about your documents */
+        post: operations["ask"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/qa-service/hello": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Health check (qa-service)
+         * @description Returns 'Hello from qa-service!' if service is running
+         */
+        get: operations["helloQa"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/qa/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Q&A history */
+        get: operations["getHistory"];
+        put?: never;
+        post?: never;
+        /** Delete Q&A history */
+        delete: operations["deleteHistory"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/internal/qa/users/{subject}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Purge all QA data for a user (internal) */
+        delete: operations["qaInternalDeleteUserData"];
         options?: never;
         head?: never;
         patch?: never;
@@ -362,6 +575,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/genai/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Search
+         * @description Rank indexed documents by semantic similarity to the query.
+         *
+         *     The query is embedded and matched against the indexed chunks scoped to the
+         *     requested object keys; chunk hits are rolled up to one entry per document,
+         *     each carrying the closest chunk's snippet and a relevance score.
+         */
+        post: operations["search_genai_search_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/genai/summarize": {
         parameters: {
             query?: never;
@@ -382,17 +619,62 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/genai/tag": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Tag
+         * @description Assign content-based topical tags to the document stored under the given object key.
+         */
+        post: operations["tag_genai_tag_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        UpdatePreferencesRequest: {
+            darkTheme?: boolean;
+            language?: string;
+        };
+        UserPreferencesDto: {
+            darkTheme?: boolean;
+            language?: string;
+        };
+        UserProfileDto: {
+            /** Format: uuid */
+            id?: string;
+            oidcSubject?: string;
+            username?: string;
+            email?: string;
+            /** Format: date-time */
+            createdAt?: string;
+            preferences?: components["schemas"]["UserPreferencesDto"];
+        };
+        ErrorResponse: {
+            code?: string;
+            message?: string;
+            details?: {
+                [key: string]: Record<string, never>;
+            };
+        };
         AddTagRequest: {
             label?: string;
         };
         Document: {
             /** Format: uuid */
             id?: string;
-            owner?: components["schemas"]["User"];
+            ownerSubject?: string;
             fileName?: string;
             objectKey?: string;
             fileType?: string;
@@ -431,16 +713,6 @@ export interface components {
             source?: "AUTO" | "USER";
             documents?: components["schemas"]["Document"][];
         };
-        User: {
-            /** Format: uuid */
-            id?: string;
-            oidcSubject?: string;
-            username?: string;
-            email?: string;
-            /** Format: date-time */
-            createdAt?: string;
-            preferences?: string;
-        };
         CreateDocumentRequest: {
             fileName?: string;
             objectKey?: string;
@@ -449,29 +721,58 @@ export interface components {
             fileSize?: number;
             textContent?: string;
         };
+        UpdateDocumentRequest: {
+            fileName?: string;
+        };
+        TagDto: {
+            name?: string;
+            /** Format: int64 */
+            documentCount?: number;
+        };
+        TagListDto: {
+            tags?: components["schemas"]["TagDto"][];
+        };
+        SearchQuery: {
+            /** Format: uuid */
+            id?: string;
+            userSubject?: string;
+            queryText?: string;
+            /** Format: date-time */
+            timestamp?: string;
+            /** Format: int32 */
+            resultCount?: number;
+        };
+        DocumentSummaryDto: {
+            summary?: string;
+            modelUsed?: string;
+            /** Format: date-time */
+            generatedAt?: string;
+        };
+        DocumentEntityDto: {
+            name?: string;
+            /** @enum {string} */
+            type?: "PERSON" | "DATE" | "TOPIC" | "ORGANIZATION";
+            /** Format: double */
+            confidence?: number;
+        };
+        DocumentEntityResponseDto: {
+            /** Format: uuid */
+            documentId?: string;
+            entities?: components["schemas"]["DocumentEntityDto"][];
+        };
         AskRequest: {
             question?: string;
         };
         QAInteraction: {
             /** Format: uuid */
             id?: string;
-            user?: components["schemas"]["User"];
+            userSubject?: string;
             question?: string;
             answer?: string;
             sourceObjectKeys?: string[];
             /** Format: date-time */
             timestamp?: string;
             modelUsed?: string;
-        };
-        SearchQuery: {
-            /** Format: uuid */
-            id?: string;
-            user?: components["schemas"]["User"];
-            queryText?: string;
-            /** Format: date-time */
-            timestamp?: string;
-            /** Format: int32 */
-            resultCount?: number;
         };
         /** GenAiAskRequest */
         GenAiAskRequest: {
@@ -531,6 +832,36 @@ export interface components {
             /** Objectkey */
             objectKey: string;
         };
+        /** GenAiSearchRequest */
+        GenAiSearchRequest: {
+            /**
+             * Limit
+             * @default 10
+             */
+            limit: number;
+            /** Objectkeys */
+            objectKeys: string[];
+            /** Query */
+            query: string;
+        };
+        /** GenAiSearchResponse */
+        GenAiSearchResponse: {
+            /** Embeddingmodel */
+            embeddingModel: string;
+            /** Results */
+            results: components["schemas"]["GenAiSearchResult"][];
+        };
+        /** GenAiSearchResult */
+        GenAiSearchResult: {
+            /** Chunkindex */
+            chunkIndex: number;
+            /** Objectkey */
+            objectKey: string;
+            /** Score */
+            score: number;
+            /** Snippet */
+            snippet: string;
+        };
         /** GenAiSummarizeRequest */
         GenAiSummarizeRequest: {
             /** Objectkey */
@@ -542,6 +873,23 @@ export interface components {
             modelUsed: string;
             /** Summary */
             summary: string;
+        };
+        /** GenAiTagRequest */
+        GenAiTagRequest: {
+            /**
+             * Knowntags
+             * @default []
+             */
+            knownTags: string[];
+            /** Objectkey */
+            objectKey: string;
+        };
+        /** GenAiTagResponse */
+        GenAiTagResponse: {
+            /** Modelused */
+            modelUsed: string;
+            /** Tags */
+            tags: string[];
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -570,6 +918,135 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    updateUserPreferences: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdatePreferencesRequest"];
+            };
+        };
+        responses: {
+            /** @description User preferences updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserPreferencesDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description User not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    helloUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Service is running */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/plain": string;
+                };
+            };
+        };
+    };
+    userProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description User profile retrieved */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserProfileDto"];
+                };
+            };
+            /** @description User not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    deleteUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description User deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Cannot delete other users */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description User not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     addTag: {
         parameters: {
             query?: never;
@@ -597,7 +1074,85 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    reprocessSummary: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Document summary reprocessed */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Document not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    reprocessEntities: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Document entities reprocessed */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Document not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
             };
         };
     };
@@ -632,7 +1187,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Document"];
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };
@@ -661,31 +1216,111 @@ export interface operations {
             };
         };
     };
-    ask: {
+    getDocument: {
         parameters: {
             query?: never;
             header?: never;
-            path?: never;
+            path: {
+                id: string;
+            };
             cookie?: never;
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["AskRequest"];
-            };
-        };
+        requestBody?: never;
         responses: {
-            /** @description Answer generated */
+            /** @description Document retrieved */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["QAInteraction"];
+                    "application/json": components["schemas"]["Document"];
+                };
+            };
+            /** @description Document not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };
     };
-    helloEndpoint: {
+    deleteDocument: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Document deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Document not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    updateDocument: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateDocumentRequest"];
+            };
+        };
+        responses: {
+            /** @description Document updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Document"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Document not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    helloKnowledgeBase: {
         parameters: {
             query?: never;
             header?: never;
@@ -703,13 +1338,46 @@ export interface operations {
                     "text/plain": string;
                 };
             };
-            /** @description Endpoint not found */
-            404: {
+        };
+    };
+    listDocumentKeys: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                subject: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Object keys returned */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "text/plain": string;
+                    "application/json": string[];
+                };
+            };
+        };
+    };
+    getTags: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Tags retrieved successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TagListDto"];
                 };
             };
         };
@@ -756,7 +1424,7 @@ export interface operations {
             };
         };
     };
-    getQAHistory: {
+    deleteSearchHistory: {
         parameters: {
             query?: never;
             header?: never;
@@ -765,14 +1433,12 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Q&A history retrieved */
-            200: {
+            /** @description Search history deleted */
+            204: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "application/json": components["schemas"]["QAInteraction"][];
-                };
+                content?: never;
             };
         };
     };
@@ -796,7 +1462,7 @@ export interface operations {
             };
         };
     };
-    getDocument: {
+    getSummary: {
         parameters: {
             query?: never;
             header?: never;
@@ -807,13 +1473,31 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Document retrieved */
+            /** @description Document summary retrieved */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Document"];
+                    "application/json": components["schemas"]["DocumentSummaryDto"];
+                };
+            };
+            /** @description Summary not yet available */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentSummaryDto"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
             /** @description Document not found */
@@ -822,12 +1506,12 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Document"];
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };
     };
-    deleteDocument: {
+    getEntities: {
         parameters: {
             query?: never;
             header?: never;
@@ -838,19 +1522,32 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Document deleted */
-            204: {
+            /** @description Document entities retrieved */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["DocumentEntityResponseDto"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
             };
             /** @description Document not found */
             404: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
             };
         };
     };
@@ -880,38 +1577,24 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": string;
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };
     };
-    deleteUser: {
+    kbInternalDeleteUserData: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                id: string;
+                subject: string;
             };
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            /** @description User deleted */
+            /** @description User data purged */
             204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Cannot delete other users */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description User not found */
-            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -940,6 +1623,110 @@ export interface operations {
             };
             /** @description Document not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    ask: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AskRequest"];
+            };
+        };
+        responses: {
+            /** @description Answer generated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QAInteraction"];
+                };
+            };
+        };
+    };
+    helloQa: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Service is running */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/plain": string;
+                };
+            };
+        };
+    };
+    getHistory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Q&A history retrieved */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QAInteraction"][];
+                };
+            };
+        };
+    };
+    deleteHistory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Q&A history deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    qaInternalDeleteUserData: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                subject: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description User data purged */
+            204: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1147,6 +1934,39 @@ export interface operations {
             };
         };
     };
+    search_genai_search_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GenAiSearchRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GenAiSearchResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     summarize_document_genai_summarize_post: {
         parameters: {
             query?: never;
@@ -1167,6 +1987,53 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GenAiSummarizeResponse"];
+                };
+            };
+            /** @description Object not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Object is not a supported file type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    tag_genai_tag_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GenAiTagRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GenAiTagResponse"];
                 };
             };
             /** @description Object not found */
