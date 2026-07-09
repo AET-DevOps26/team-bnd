@@ -1,13 +1,9 @@
-import React, { useState } from "react";
+import React from "react";
 import { useAuth } from "react-oidc-context";
-import DocumentTree from "./components/DocumentTree";
-import DocumentDetail from "./components/DocumentDetail";
+import MainView from "./components/MainView";
 
 export default function App() {
   const auth = useAuth();
-  const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(
-    null,
-  );
 
   if (auth.isLoading) {
     return (
@@ -59,30 +55,5 @@ export default function App() {
     );
   }
 
-  return (
-    <div className="app">
-      <header className="app-header">
-        <div className="app-header-top">
-          <h1>Alexandria</h1>
-          <div className="user-info">
-            <span className="user-name">
-              {auth.user?.profile.preferred_username ?? auth.user?.profile.sub}
-            </span>
-            <button className="logout-button" onClick={() => auth.removeUser()}>
-              Logout
-            </button>
-          </div>
-        </div>
-      </header>
-      <div className="app-body">
-        <DocumentTree
-          selectedId={selectedDocumentId}
-          onSelect={setSelectedDocumentId}
-        />
-        <main className="app-main">
-          <DocumentDetail documentId={selectedDocumentId} />
-        </main>
-      </div>
-    </div>
-  );
+  return <MainView />;
 }
