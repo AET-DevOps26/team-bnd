@@ -16,8 +16,14 @@ fetchClient.use({
   async onResponse({ response }) {
     if (!response.ok) {
       if (response.status === 401) {
-        await userManager.signinSilent();
-        await userManager.signinRedirect();
+        await userManager
+          .signinSilent()
+          .then((r) => {
+            if (r == null) throw new Error("NOT_AUTHENTICATED");
+            return r;
+          })
+          .catch(() => userManager.signinRedirect())
+          .catch(() => null);
         throw new Error("NOT_AUTHENTICATED");
       }
       throw new Error(
