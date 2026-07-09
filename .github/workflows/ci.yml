@@ -51,7 +51,6 @@ env:
   # ----------- GenAI -----------
   LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
 
-
 jobs:
   # ---------------------------------------------------------------------
   # Detect what changed so downstream jobs can self-skip cleanly.
@@ -183,7 +182,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read # to clone the repo for scanning
-      actions: read  # to inspect workflow metadata
+      actions: read # to inspect workflow metadata
     steps:
       - uses: actions/checkout@v7
         with:
@@ -247,11 +246,11 @@ jobs:
       - name: Run kics Scan
         uses: checkmarx/kics-action@05aa5eb70eede1355220f4ca5238d96b397e30a6 # v2.1.20
         with:
-          path: 'docker-compose.yml,infra/k8s/alexandria,infra/azure/terraform'
+          path: "docker-compose.yml,infra/k8s/alexandria,infra/azure/terraform"
           config_path: .kics.yml
-          output_formats: 'sarif'
-          output_path: 'kics-results/'
-          ignore_on_exit: 'results'
+          output_formats: "sarif"
+          output_path: "kics-results/"
+          ignore_on_exit: "results"
 
       - name: Upload kics SARIF
         if: always()
@@ -472,9 +471,9 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/${{ matrix.service.name }}
           tags: |
+            type=sha,format=short
             type=ref,event=branch
             type=ref,event=pr
-            type=sha,format=short
             type=raw,value=latest,enable=${{ github.ref == format('refs/heads/{0}', github.event.repository.default_branch) }}
 
       - name: Login to GHCR
@@ -778,10 +777,14 @@ jobs:
             --namespace alexandria \
             --set "image.tag=$IMAGE_TAG" \
             --set "spring.database.password=$POSTGRES_PASSWORD" \
-            --set "keycloak.adminUser=$KC_BOOTSTRAP_ADMIN_USERNAME" \
-            --set "keycloak.adminPassword=$KC_BOOTSTRAP_ADMIN_PASSWORD" \
-            --set "keycloak.database.password=$POSTGRES_PASSWORD" \
+            --set "keycloak.keycloak.adminUser=$KC_BOOTSTRAP_ADMIN_USERNAME" \
+            --set "keycloak.keycloak.adminPassword=$KC_BOOTSTRAP_ADMIN_PASSWORD" \
+            --set "keycloak.keycloak.database.password=$POSTGRES_PASSWORD" \
             --set "postgres-db.auth.password=$POSTGRES_PASSWORD" \
+            --set "s3.accessKey=$S3_ACCESS_KEY" \
+            --set "s3.secretKey=$S3_SECRET_KEY" \
+            --set "seaweedfs.s3.credentials.admin.accessKey=$S3_ACCESS_KEY" \
+            --set "seaweedfs.s3.credentials.admin.secretKey=$S3_SECRET_KEY" \
             --wait \
             --timeout 5m
 
