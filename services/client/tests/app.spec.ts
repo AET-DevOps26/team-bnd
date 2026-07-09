@@ -196,7 +196,7 @@ test.describe("Alexandria client", () => {
       await expect(status).toHaveText("Upload failed. Please try again.");
     });
 
-    test("shows 'Not authenticated.' when the server returns 401", async ({
+    test("shows 'Authentication error. Retrying login...' when the server returns 401", async ({
       page,
     }) => {
       await page.route(
@@ -215,7 +215,9 @@ test.describe("Alexandria client", () => {
 
       const status = page.locator(".upload-status--error");
       await expect(status).toBeVisible({ timeout: 5000 });
-      await expect(status).toHaveText("Not authenticated.");
+      await expect(status).toHaveText(
+        "Authentication error. Retrying login...",
+      );
     });
 
     test("shows permission error when the server returns 403", async ({
