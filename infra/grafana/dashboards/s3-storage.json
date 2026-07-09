@@ -50,7 +50,7 @@
 				{
 					"datasource": { "type": "prometheus", "uid": "prometheus" },
 					"expr": "up{job=~\"s3-storage|seaweed-volume\"}",
-					"legendFormat": "{{job}}",
+					"legendFormat": "s3-storage",
 					"refId": "A"
 				}
 			],
