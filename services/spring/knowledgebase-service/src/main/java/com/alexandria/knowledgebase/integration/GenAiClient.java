@@ -8,6 +8,7 @@ import com.alexandria.genai.client.model.GenAiExtractRequest;
 import com.alexandria.genai.client.model.GenAiIndexRequest;
 import com.alexandria.genai.client.model.GenAiSummarizeRequest;
 import com.alexandria.knowledgebase.document.EntityType;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
@@ -24,6 +25,7 @@ public class GenAiClient {
 
     private final AiApi genaiClient;
 
+    @Autowired
     public GenAiClient(@Value("${genai.base-url:http://localhost:8000}") String baseUrl) {
         HttpClient httpClient = HttpClient.newBuilder().version(HttpClient.Version.HTTP_1_1).connectTimeout(Duration.ofSeconds(5)).build();
         JdkClientHttpRequestFactory factory = new JdkClientHttpRequestFactory(httpClient);
@@ -31,6 +33,10 @@ public class GenAiClient {
         RestClient restClient = ApiClient.buildRestClientBuilder().requestFactory(factory).build();
         ApiClient apiClient = new ApiClient(restClient).setBasePath(baseUrl);
         this.genaiClient = new AiApi(apiClient);
+    }
+
+    GenAiClient(AiApi genaiClient) {
+        this.genaiClient = genaiClient;
     }
 
     public SummarizeResponse summarize(String objectKey) {
