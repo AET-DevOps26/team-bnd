@@ -785,6 +785,7 @@ jobs:
             --set "s3.secretKey=$S3_SECRET_KEY" \
             --set "seaweedfs.s3.credentials.admin.accessKey=$S3_ACCESS_KEY" \
             --set "seaweedfs.s3.credentials.admin.secretKey=$S3_SECRET_KEY" \
+            --set "grafana.adminPassword=$GRAFANA_ADMIN_PASSWORD" \
             --wait \
             --timeout 5m
 
