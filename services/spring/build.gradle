@@ -108,13 +108,12 @@ configure(subprojects.findAll { it.name in ['knowledgebase-service', 'qa-service
 	// Copy API spec to local build context to avoid implicit
 	// dependencies between API generation and client generation tasks
 	tasks.register("prepareOpenApiSpec") {
-		outputs.file(specStagingFile)
 		doLast {
 			def apiSpec = rootProject.file('../../api/openapi.yaml')
-			if (apiSpec.exists()) {
+			if (apiSpec.isFile()) {
 				specStagingFile.parentFile.mkdirs()
 				specStagingFile.bytes = apiSpec.bytes
-			} else if (!specStagingFile.exists()) {
+			} else if (!specStagingFile.isFile()) {
 				throw new GradleException(
 					"OpenAPI spec not found at ${apiSpec} or ${specStagingFile}")
 			}
