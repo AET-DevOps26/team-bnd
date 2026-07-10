@@ -9,7 +9,6 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview --port 5173",
-    "generate:api": "openapi-typescript ../../api/openapi.yaml -o src/api/schema.d.ts",
     "typecheck": "tsc --noEmit",
     "test:e2e": "PW_TEST_CONNECT_WS_ENDPOINT=ws://127.0.0.1:3000/ playwright test"
   },
@@ -28,7 +27,6 @@
     "@types/node": "^26.0.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "openapi-typescript": "^7.13.0",
     "sass": "^1.101.0",
     "typescript": "^5",
     "vite": "^8.0.16"
