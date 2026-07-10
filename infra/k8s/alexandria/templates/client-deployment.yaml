@@ -19,16 +19,31 @@ spec:
         app: client
         app.kubernetes.io/component: frontend
     spec:
+      automountServiceAccountToken: false
       securityContext:
-        runAsNonRoot: false
+        runAsNonRoot: true
+        runAsUser: 101
+        runAsGroup: 101
+        fsGroup: 101
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: client
           image: {{ include "alexandria.image" (dict "Values" .Values "service" "client") }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
           ports:
             - name: http
-              containerPort: 80
+              containerPort: 8080
               protocol: TCP
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
           resources:
             {{- toYaml .Values.client.resources | nindent 12 }}
           livenessProbe:
@@ -47,3 +62,6 @@ spec:
             periodSeconds: 10
             timeoutSeconds: 3
             failureThreshold: 3
+      volumes:
+        - name: tmp
+          emptyDir: {}

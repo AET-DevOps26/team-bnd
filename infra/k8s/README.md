@@ -21,7 +21,20 @@ kubectl config use-context <context>
 ```bash
 helm install alexandria infra/k8s/alexandria \
   --namespace alexandria --create-namespace \
-  --dependency-update
+  --dependency-update \
+  --set grafana.adminPassword=admin
+```
+
+Prometheus and Grafana live in their own namespace (`alexandria-monitoring` by
+default, override via `monitoring.namespace`) and are intentionally not exposed
+through the ingress. To reach them, port-forward:
+
+```bash
+kubectl -n alexandria-monitoring port-forward svc/alexandria-prometheus 9090:9090
+# open http://localhost:9090/prometheus
+
+kubectl -n alexandria-monitoring port-forward svc/alexandria-grafana 3000:3000
+# open http://localhost:3000
 ```
 
 ## Secrets Setup:

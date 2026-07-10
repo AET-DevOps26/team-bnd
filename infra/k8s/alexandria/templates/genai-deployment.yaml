@@ -19,14 +19,23 @@ spec:
         app: genai
         app.kubernetes.io/component: ai-service
     spec:
+      automountServiceAccountToken: false
       securityContext:
         runAsNonRoot: true
         runAsUser: 1000
         fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: genai
           image: {{ include "alexandria.image" (dict "Values" .Values "service" "genai") }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
           ports:
             - name: http
               containerPort: 8000
@@ -45,6 +54,9 @@ spec:
                 secretKeyRef:
                   name: {{ include "alexandria.fullname" . }}-spring-secrets
                   key: s3-secret-key
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
           resources:
             {{- toYaml .Values.genai.resources | nindent 12 }}
           livenessProbe:
@@ -63,3 +75,6 @@ spec:
             periodSeconds: 10
             timeoutSeconds: 5
             failureThreshold: 3
+      volumes:
+        - name: tmp
+          emptyDir: {}

@@ -26,9 +26,10 @@ spring:
     usernameClaim: "preferred_username"
     rolesClaim: "roles"
 
-# CPU limits are sized so the sum of all `limits.cpu` in the alexandria
-# namespace stays under the 4 CPU quota enforced by the stud cluster
-# (ResourceQuota `default-h2d5c`).
+# Resource limits are sized to stay under the stud cluster ResourceQuota
+# `default-h2d5c` (3250m CPU / 5144Mi memory in the alexandria namespace).
+# Prometheus + Grafana live in alexandria-monitoring with its own 750m/1000Mi
+# quota, sized independently below.
 userService:
   resources:
     requests:
@@ -41,10 +42,10 @@ userService:
 knowledgebaseService:
   resources:
     requests:
-      cpu: 200m
+      cpu: 150m
       memory: 256Mi
     limits:
-      cpu: 400m
+      cpu: 300m
       memory: 512Mi
 
 qaService:
@@ -87,15 +88,56 @@ weaviate:
   resources:
     requests:
       cpu: 100m
-      memory: 256Mi
+      memory: 192Mi
     limits:
-      cpu: 500m
-      memory: 512Mi
+      cpu: 200m
+      memory: 384Mi
 
 ingress:
   enabled: true
   className: nginx
   host: alexandria.stud.k8s.aet.cit.tum.de
+
+# Self-hosted Prometheus and Grafana mirroring the docker-compose setup.
+# They live in their own namespace (per "Monitoring Best Practices in Kubernetes"
+# §1). Neither is exposed through the ingress — port-forward to reach them:
+#   kubectl -n alexandria-monitoring port-forward svc/alexandria-prometheus 9090:9090
+#   kubectl -n alexandria-monitoring port-forward svc/alexandria-grafana 3000:3000
+monitoring:
+  namespace: ""
+  createNamespace: false
+
+prometheus:
+  enabled: true
+  image:
+    repository: prom/prometheus
+    tag: v3.12.0
+  retention: 15d
+  persistence:
+    size: 5Gi
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 300m
+      memory: 512Mi
+
+grafana:
+  enabled: true
+  image:
+    repository: grafana/grafana
+    tag: 13.0.2
+  adminPassword: ""
+  persistence:
+    size: 1Gi
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
 
 keycloak:
   keycloak:
@@ -169,10 +211,10 @@ postgres-db:
         CREATE DATABASE alexandria;
   resources:
     requests:
-      memory: "512Mi"
+      memory: "384Mi"
       cpu: "250m"
     limits:
-      memory: "1Gi"
+      memory: "768Mi"
       cpu: "500m"
 
 s3:

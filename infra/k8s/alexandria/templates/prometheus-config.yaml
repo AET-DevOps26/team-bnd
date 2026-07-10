@@ -1,0 +1,103 @@
+{{- if .Values.prometheus.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "alexandria.fullname" . }}-prometheus-config
+  namespace: {{ include "alexandria.monitoringNamespace" . }}
+  labels:
+    {{- include "alexandria.labels" . | nindent 4 }}
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 15s
+      evaluation_interval: 15s
+
+    rule_files:
+      - /etc/prometheus/alert.rules.yml
+
+    scrape_configs:
+      - job_name: prometheus
+        metrics_path: /prometheus/metrics
+        static_configs:
+          - targets: ["localhost:9090"]
+
+      - job_name: user-service
+        metrics_path: /actuator/prometheus
+        static_configs:
+          - targets: ["{{ include "alexandria.fullname" . }}-user-service.{{ .Release.Namespace }}:8080"]
+
+      - job_name: knowledgebase-service
+        metrics_path: /actuator/prometheus
+        static_configs:
+          - targets: ["{{ include "alexandria.fullname" . }}-knowledgebase-service.{{ .Release.Namespace }}:8080"]
+
+      - job_name: qa-service
+        metrics_path: /actuator/prometheus
+        static_configs:
+          - targets: ["{{ include "alexandria.fullname" . }}-qa-service.{{ .Release.Namespace }}:8080"]
+
+      - job_name: genai
+        metrics_path: /genai/metrics
+        static_configs:
+          - targets: ["{{ include "alexandria.fullname" . }}-genai.{{ .Release.Namespace }}:8000"]
+
+      # SeaweedFS runs as separate deployments in the helm chart (unlike the
+      # all-in-one compose container), so we split the scrape by component to
+      # keep dashboard/label semantics clean.
+      - job_name: s3-storage
+        static_configs:
+          - targets: ["{{ .Release.Name }}-seaweedfs-s3.{{ .Release.Namespace }}:9327"]
+
+      - job_name: seaweed-volume
+        static_configs:
+          - targets: ["{{ .Release.Name }}-seaweedfs-volume.{{ .Release.Namespace }}:9327"]
+
+  alert.rules.yml: |
+    groups:
+      - name: alexandria
+        rules:
+          - alert: ServiceDown
+            expr: up == 0
+            for: 1m
+            labels:
+              severity: critical
+            annotations:
+              summary: "{{`{{ $labels.job }}`}} target is down"
+              description: "Prometheus has not been able to scrape {{`{{ $labels.instance }}`}} ({{`{{ $labels.job }}`}}) for over a minute."
+          - alert: SpringHighErrorRate
+            expr: |
+              sum by (job) (rate(http_server_requests_seconds_count{job=~"user-service|knowledgebase-service|qa-service", status=~"5.."}[5m]))
+                /
+              sum by (job) (rate(http_server_requests_seconds_count{job=~"user-service|knowledgebase-service|qa-service"}[5m]))
+                > 0.05
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "{{`{{ $labels.job }}`}} 5xx error rate above 5%"
+              description: "More than 5% of {{`{{ $labels.job }}`}} requests have failed with a 5xx status over the last 5 minutes."
+          - alert: GenAiSlowResponses
+            expr: |
+              histogram_quantile(
+                0.95,
+                sum(rate(http_request_duration_seconds_bucket{job="genai"}[5m])) by (le)
+              ) > 2
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "GenAI p95 latency above 2s"
+              description: "The 95th percentile of GenAI request latency has been above 2 seconds for 5 minutes."
+          - alert: S3StorageLowDiskSpace
+            expr: |
+              sum(SeaweedFS_volumeServer_resource{type="avail"})
+                /
+              sum(SeaweedFS_volumeServer_resource{type="all"})
+                < 0.10
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "Object storage disk space below 10%"
+              description: "The SeaweedFS volume server has less than 10% available disk space for over 5 minutes. Document uploads are at risk."
+{{- end }}

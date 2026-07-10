@@ -52,6 +52,7 @@ spec:
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           securityContext:
             allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
             capabilities:
               drop:
                 - ALL
@@ -68,6 +69,9 @@ spec:
                 secretKeyRef:
                   name: {{ include "alexandria.fullname" . }}-spring-secrets
                   key: postgres-password
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
           resources:
             {{- toYaml .Values.qaService.resources | nindent 12 }}
           startupProbe:
@@ -91,3 +95,6 @@ spec:
             periodSeconds: 10
             timeoutSeconds: 5
             failureThreshold: 3
+      volumes:
+        - name: tmp
+          emptyDir: {}

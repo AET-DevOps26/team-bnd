@@ -48,3 +48,7 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- define "alexandria.s3Endpoint" -}}
 http://{{ .Release.Name }}-seaweedfs-s3:{{ .Values.seaweedfs.s3.port }}
 {{- end }}
+
+{{- define "alexandria.monitoringNamespace" -}}
+{{- default (printf "%s-monitoring" .Release.Namespace) .Values.monitoring.namespace }}
+{{- end }}
