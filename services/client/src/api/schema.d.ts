@@ -253,15 +253,32 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/knowledgebase/search": {
+    "/api/v1/knowledgebase/search/text": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** Search documents */
-        get: operations["search"];
+        /** Keyword search over document filenames */
+        get: operations["searchText"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/knowledgebase/search/semantic": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Semantic search over document content, with keyword fallback */
+        get: operations["searchSemantic"];
         put?: never;
         post?: never;
         delete?: never;
@@ -748,6 +765,15 @@ export interface components {
         };
         TagListDto: {
             tags?: components["schemas"]["TagDto"][];
+        };
+        SemanticSearchResponseDto: {
+            results?: components["schemas"]["SemanticSearchResultDto"][];
+        };
+        SemanticSearchResultDto: {
+            document?: components["schemas"]["Document"];
+            /** Format: double */
+            score?: number;
+            snippet?: string;
         };
         SearchQuery: {
             /** Format: uuid */
@@ -1437,7 +1463,7 @@ export interface operations {
             };
         };
     };
-    search: {
+    searchText: {
         parameters: {
             query: {
                 q: string;
@@ -1455,6 +1481,29 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Document"][];
+                };
+            };
+        };
+    };
+    searchSemantic: {
+        parameters: {
+            query: {
+                q: string;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Ranked search results with match context */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SemanticSearchResponseDto"];
                 };
             };
         };

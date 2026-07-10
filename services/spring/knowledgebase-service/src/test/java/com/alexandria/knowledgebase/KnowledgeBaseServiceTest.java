@@ -18,6 +18,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -288,6 +290,64 @@ class KnowledgeBaseServiceTest {
                 return count;
             }
         };
+    }
+
+    @Test
+    void unit_kb_semanticSearchMapsHitsBackToUserDocumentsWithContext() {
+        Document reportDoc = new Document(OWNER, "report.pdf", "/uploads/report.pdf", "application/pdf", 1L);
+        Document notesDoc = new Document(OWNER, "notes.pdf", "/uploads/notes.pdf", "application/pdf", 1L);
+        when(documentService.findByOwnerSubject(OWNER)).thenReturn(List.of(reportDoc, notesDoc));
+        when(genAiClient.search(eq("budget"), anyList(), isNull())).thenReturn(new GenAiClient.SearchResponse(
+                List.of(new GenAiClient.SearchResult("/uploads/report.pdf", 0.91, "the annual budget was...")), "embed-model"));
+
+        List<com.alexandria.knowledgebase.dto.SemanticSearchResultDto> results = knowledgeBaseService.semanticSearch(OWNER, "budget", null);
+
+        assertThat(results).hasSize(1);
+        assertThat(results.get(0).document()).isEqualTo(reportDoc);
+        assertThat(results.get(0).score()).isEqualTo(0.91);
+        assertThat(results.get(0).snippet()).isEqualTo("the annual budget was...");
+        verify(searchQueryRepository).save(any(SearchQuery.class));
+    }
+
+    @Test
+    void unit_kb_semanticSearchScopesToUserObjectKeys() {
+        Document reportDoc = new Document(OWNER, "report.pdf", "/uploads/report.pdf", "application/pdf", 1L);
+        when(documentService.findByOwnerSubject(OWNER)).thenReturn(List.of(reportDoc));
+        when(genAiClient.search(anyString(), anyList(), any())).thenReturn(new GenAiClient.SearchResponse(List.of(), "embed-model"));
+        when(documentService.searchByFileName(OWNER, "budget")).thenReturn(List.of());
+
+        knowledgeBaseService.semanticSearch(OWNER, "budget", 5);
+
+        verify(genAiClient).search("budget", List.of("/uploads/report.pdf"), 5);
+    }
+
+    @Test
+    void unit_kb_semanticSearchFallsBackToKeywordOnGenAiFailure() {
+        Document reportDoc = new Document(OWNER, "report.pdf", "/uploads/report.pdf", "application/pdf", 1L);
+        when(documentService.findByOwnerSubject(OWNER)).thenReturn(List.of(reportDoc));
+        when(genAiClient.search(anyString(), anyList(), any())).thenThrow(new RuntimeException("genai down"));
+        when(documentService.searchByFileName(OWNER, "report")).thenReturn(List.of(reportDoc));
+
+        List<com.alexandria.knowledgebase.dto.SemanticSearchResultDto> results = knowledgeBaseService.semanticSearch(OWNER, "report", null);
+
+        assertThat(results).hasSize(1);
+        assertThat(results.get(0).document()).isEqualTo(reportDoc);
+        assertThat(results.get(0).score()).isNull();
+        assertThat(results.get(0).snippet()).isNull();
+    }
+
+    @Test
+    void unit_kb_semanticSearchFallsBackToKeywordOnEmptyIndex() {
+        Document reportDoc = new Document(OWNER, "report.pdf", "/uploads/report.pdf", "application/pdf", 1L);
+        when(documentService.findByOwnerSubject(OWNER)).thenReturn(List.of(reportDoc));
+        when(genAiClient.search(anyString(), anyList(), any())).thenReturn(new GenAiClient.SearchResponse(List.of(), "embed-model"));
+        when(documentService.searchByFileName(OWNER, "report")).thenReturn(List.of(reportDoc));
+
+        List<com.alexandria.knowledgebase.dto.SemanticSearchResultDto> results = knowledgeBaseService.semanticSearch(OWNER, "report", null);
+
+        assertThat(results).hasSize(1);
+        assertThat(results.get(0).document()).isEqualTo(reportDoc);
+        assertThat(results.get(0).snippet()).isNull();
     }
 
     @Test

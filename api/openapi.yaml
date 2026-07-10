@@ -452,12 +452,12 @@ paths:
                 $ref: '#/components/schemas/TagListDto'
       security:
         - bearerAuth: []
-  /api/v1/knowledgebase/search:
+  /api/v1/knowledgebase/search/text:
     get:
       tags:
         - KnowledgeBase Service
-      summary: Search documents
-      operationId: search
+      summary: Keyword search over document filenames
+      operationId: searchText
       parameters:
         - name: q
           in: query
@@ -473,6 +473,33 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Document'
+      security:
+        - bearerAuth: []
+  /api/v1/knowledgebase/search/semantic:
+    get:
+      tags:
+        - KnowledgeBase Service
+      summary: Semantic search over document content, with keyword fallback
+      operationId: searchSemantic
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+      responses:
+        '200':
+          description: Ranked search results with match context
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SemanticSearchResponseDto'
       security:
         - bearerAuth: []
   /api/v1/knowledgebase/history/search:
@@ -1190,6 +1217,23 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/TagDto'
+    SemanticSearchResponseDto:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/SemanticSearchResultDto'
+    SemanticSearchResultDto:
+      type: object
+      properties:
+        document:
+          $ref: '#/components/schemas/Document'
+        score:
+          type: number
+          format: double
+        snippet:
+          type: string
     SearchQuery:
       type: object
       properties:

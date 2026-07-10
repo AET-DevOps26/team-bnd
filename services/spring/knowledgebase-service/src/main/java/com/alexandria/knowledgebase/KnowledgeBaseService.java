@@ -1,6 +1,7 @@
 package com.alexandria.knowledgebase;
 
 import com.alexandria.knowledgebase.document.*;
+import com.alexandria.knowledgebase.dto.SemanticSearchResultDto;
 import com.alexandria.knowledgebase.dto.UpdateDocumentRequest;
 import com.alexandria.knowledgebase.integration.GenAiClient;
 import com.alexandria.knowledgebase.integration.GenAiClient.ExtractResponse;
@@ -18,6 +19,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -231,6 +233,37 @@ public class KnowledgeBaseService {
         searchQueryRepository.save(searchQuery);
 
         return results;
+    }
+
+    public List<SemanticSearchResultDto> semanticSearch(String userSubject, String queryText, Integer limit) {
+        List<Document> userDocuments = documentService.findByOwnerSubject(userSubject);
+        Map<String, Document> byObjectKey = userDocuments.stream().collect(Collectors.toMap(Document::getObjectKey, d -> d, (a, b) -> a));
+
+        List<SemanticSearchResultDto> results;
+        try {
+            GenAiClient.SearchResponse response = genAiClient.search(queryText, List.copyOf(byObjectKey.keySet()), limit);
+            results = response.results().stream().map(hit -> {
+                Document document = byObjectKey.get(hit.objectKey());
+                return document == null ? null : new SemanticSearchResultDto(document, hit.score(), hit.snippet());
+            }).filter(Objects::nonNull).toList();
+        } catch (Exception e) {
+            log.warn("GenAI semantic search failed for user {}: {}", userSubject, e.getMessage());
+            results = keywordFallback(userSubject, queryText);
+        }
+
+        // an empty index returns no hits, fall back to keyword search so the user still gets something
+        if (results.isEmpty()) {
+            results = keywordFallback(userSubject, queryText);
+        }
+
+        SearchQuery searchQuery = new SearchQuery(userSubject, queryText, results.size());
+        searchQueryRepository.save(searchQuery);
+
+        return results;
+    }
+
+    private List<SemanticSearchResultDto> keywordFallback(String userSubject, String queryText) {
+        return documentService.searchByFileName(userSubject, queryText).stream().map(d -> new SemanticSearchResultDto(d, null, null)).toList();
     }
 
     @Transactional

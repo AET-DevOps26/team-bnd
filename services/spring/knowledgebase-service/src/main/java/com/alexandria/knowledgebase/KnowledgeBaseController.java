@@ -108,11 +108,20 @@ public class KnowledgeBaseController {
         }).orElse(ResponseEntity.notFound().build());
     }
 
-    @GetMapping("/search")
-    @Operation(summary = "Search documents")
+    @GetMapping("/search/text")
+    @Operation(summary = "Keyword search over document filenames")
     @ApiResponse(responseCode = "200", description = "Search results")
-    public ResponseEntity<List<Document>> search(@RequestParam String q, Principal principal) {
+    public ResponseEntity<List<Document>> searchText(@RequestParam String q, Principal principal) {
         return ResponseEntity.ok(knowledgeBaseService.search(principal.getName(), q));
+    }
+
+    @GetMapping("/search/semantic")
+    @Operation(summary = "Semantic search over document content, with keyword fallback")
+    @ApiResponse(responseCode = "200", description = "Ranked search results with match context")
+    public ResponseEntity<SemanticSearchResponseDto> searchSemantic(
+                                                                    @RequestParam String q, @RequestParam(required = false) Integer limit, Principal principal) {
+        List<SemanticSearchResultDto> results = knowledgeBaseService.semanticSearch(principal.getName(), q, limit);
+        return ResponseEntity.ok(new SemanticSearchResponseDto(results));
     }
 
     @PostMapping("/documents/{id}/tags")

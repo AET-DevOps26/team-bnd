@@ -6,6 +6,7 @@ import com.alexandria.genai.client.model.GenAiAskRequest;
 import com.alexandria.genai.client.model.GenAiDeleteIndexResponse;
 import com.alexandria.genai.client.model.GenAiExtractRequest;
 import com.alexandria.genai.client.model.GenAiIndexRequest;
+import com.alexandria.genai.client.model.GenAiSearchRequest;
 import com.alexandria.genai.client.model.GenAiSummarizeRequest;
 import com.alexandria.genai.client.model.GenAiTagRequest;
 import com.alexandria.knowledgebase.document.EntityType;
@@ -73,6 +74,16 @@ public class GenAiClient {
         return new AskResponse(r.getAnswer(), r.getSourceObjectKeys(), r.getModelUsed());
     }
 
+    public SearchResponse search(String query, List<String> objectKeys, Integer limit) {
+        var request = new GenAiSearchRequest().query(query).objectKeys(objectKeys == null ? List.of() : objectKeys);
+        if (limit != null) {
+            request.limit(limit);
+        }
+        var r = genaiClient.searchGenaiSearchPost(request);
+        List<SearchResult> results = r.getResults().stream().map(res -> new SearchResult(res.getObjectKey(), toDouble(res.getScore()), res.getSnippet())).toList();
+        return new SearchResponse(results, r.getEmbeddingModel());
+    }
+
     public TagResponse tag(String objectKey, List<String> knownTags) {
         var request = new GenAiTagRequest().objectKey(objectKey).knownTags(knownTags == null ? List.of() : knownTags);
         var r = genaiClient.tagGenaiTagPost(request);
@@ -106,6 +117,12 @@ public class GenAiClient {
     }
 
     public record TagResponse(List<String> tags, String modelUsed) {
+    }
+
+    public record SearchResponse(List<SearchResult> results, String embeddingModel) {
+    }
+
+    public record SearchResult(String objectKey, Double score, String snippet) {
     }
 
     public record IndexResponse(String objectKey, Integer chunksIndexed, String embeddingModel) {
