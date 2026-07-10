@@ -17,6 +17,7 @@ import java.math.BigDecimal;
 import java.net.http.HttpClient;
 import java.time.Duration;
 import java.util.List;
+import java.util.Objects;
 
 @Component
 public class GenAiClient {
@@ -39,9 +40,25 @@ public class GenAiClient {
 
     public ExtractResponse extract(String objectKey) {
         var r = genaiClient.extractGenaiExtractPost(new GenAiExtractRequest().objectKey(objectKey));
-        List<ExtractedEntityDto> entities = r.getEntities().stream().map(
-                e -> new ExtractedEntityDto(e.getName(), EntityType.valueOf(e.getType()), toDouble(e.getConfidence()))).toList();
+        List<ExtractedEntityDto> entities = r.getEntities().stream().map(e -> {
+            EntityType type = parseEntityType(e.getType());
+            if (type == null) {
+                return null;
+            }
+            return new ExtractedEntityDto(e.getName(), type, toDouble(e.getConfidence()));
+        }).filter(Objects::nonNull).toList();
         return new ExtractResponse(entities, r.getModelUsed());
+    }
+
+    private static EntityType parseEntityType(String value) {
+        if (value == null) {
+            return null;
+        }
+        try {
+            return EntityType.valueOf(value);
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
     }
 
     public AskResponse ask(String question, List<String> objectKeys) {

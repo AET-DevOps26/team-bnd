@@ -7,6 +7,7 @@ import com.alexandria.knowledgebase.document.TagSource;
 import com.alexandria.knowledgebase.dto.*;
 import com.alexandria.knowledgebase.search.SearchQuery;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -137,7 +138,7 @@ public class KnowledgeBaseController {
     @GetMapping("/documents/{id}/summary")
     @Operation(summary = "Get document summary")
     @ApiResponse(responseCode = "200", description = "Document summary retrieved")
-    @ApiResponse(responseCode = "204", description = "Summary not yet available")
+    @ApiResponse(responseCode = "204", description = "Summary not yet available", content = @Content)
     @ApiResponse(responseCode = "401", description = "Unauthorized")
     @ApiResponse(responseCode = "404", description = "Document not found")
     public ResponseEntity<DocumentSummaryDto> getSummary(@PathVariable UUID id, Principal principal) {

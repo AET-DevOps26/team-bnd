@@ -54,6 +54,8 @@ services:
     build:
       context: services/spring/
       dockerfile: Dockerfile
+      additional_contexts:
+        api: ./api
       args:
         SERVICE: user-service
     container_name: user-service
@@ -103,6 +105,8 @@ services:
     build:
       context: services/spring/
       dockerfile: Dockerfile
+      additional_contexts:
+        api: ./api
       args:
         SERVICE: knowledgebase-service
     container_name: knowledgebase-service
@@ -160,6 +164,8 @@ services:
     build:
       context: services/spring/
       dockerfile: Dockerfile
+      additional_contexts:
+        api: ./api
       args:
         SERVICE: qa-service
     container_name: qa-service
