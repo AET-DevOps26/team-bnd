@@ -187,7 +187,7 @@ class KnowledgeBaseServiceTest {
     @Test
     void unit_kb_searchStoresQueryAndReturnsResults() {
         Document doc = new Document(OWNER, "report.pdf", "/uploads/report.pdf", "application/pdf", 1L);
-        when(documentService.searchByFileName(OWNER, "report")).thenReturn(List.of(doc));
+        when(documentService.searchByFileNameOrContent(OWNER, "report")).thenReturn(List.of(doc));
 
         List<Document> results = knowledgeBaseService.search(OWNER, "report");
 
@@ -314,7 +314,7 @@ class KnowledgeBaseServiceTest {
         Document reportDoc = new Document(OWNER, "report.pdf", "/uploads/report.pdf", "application/pdf", 1L);
         when(documentService.findByOwnerSubject(OWNER)).thenReturn(List.of(reportDoc));
         when(genAiClient.search(anyString(), anyList(), any())).thenReturn(new GenAiClient.SearchResponse(List.of(), "embed-model"));
-        when(documentService.searchByFileName(OWNER, "budget")).thenReturn(List.of());
+        when(documentService.searchByFileNameOrContent(OWNER, "budget")).thenReturn(List.of());
 
         knowledgeBaseService.semanticSearch(OWNER, "budget", 5);
 
@@ -326,7 +326,7 @@ class KnowledgeBaseServiceTest {
         Document reportDoc = new Document(OWNER, "report.pdf", "/uploads/report.pdf", "application/pdf", 1L);
         when(documentService.findByOwnerSubject(OWNER)).thenReturn(List.of(reportDoc));
         when(genAiClient.search(anyString(), anyList(), any())).thenThrow(new RuntimeException("genai down"));
-        when(documentService.searchByFileName(OWNER, "report")).thenReturn(List.of(reportDoc));
+        when(documentService.searchByFileNameOrContent(OWNER, "report")).thenReturn(List.of(reportDoc));
 
         List<com.alexandria.knowledgebase.dto.SemanticSearchResultDto> results = knowledgeBaseService.semanticSearch(OWNER, "report", null);
 
@@ -341,7 +341,7 @@ class KnowledgeBaseServiceTest {
         Document reportDoc = new Document(OWNER, "report.pdf", "/uploads/report.pdf", "application/pdf", 1L);
         when(documentService.findByOwnerSubject(OWNER)).thenReturn(List.of(reportDoc));
         when(genAiClient.search(anyString(), anyList(), any())).thenReturn(new GenAiClient.SearchResponse(List.of(), "embed-model"));
-        when(documentService.searchByFileName(OWNER, "report")).thenReturn(List.of(reportDoc));
+        when(documentService.searchByFileNameOrContent(OWNER, "report")).thenReturn(List.of(reportDoc));
 
         List<com.alexandria.knowledgebase.dto.SemanticSearchResultDto> results = knowledgeBaseService.semanticSearch(OWNER, "report", null);
 

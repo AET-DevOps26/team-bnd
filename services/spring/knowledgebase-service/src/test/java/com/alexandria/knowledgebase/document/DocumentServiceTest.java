@@ -143,11 +143,11 @@ class DocumentServiceTest {
     }
 
     @Test
-    void unit_document_searchByFileNameDelegatesToRepository() {
+    void unit_document_searchByFileNameOrContentDelegatesToRepository() {
         Document doc = new Document(OWNER, "report.pdf", "/files/report.pdf", "application/pdf", 1024L);
-        when(documentRepository.findByOwnerSubjectAndFileNameContainingIgnoreCase(OWNER, "report")).thenReturn(List.of(doc));
+        when(documentRepository.searchByFileNameOrContent(OWNER, "report")).thenReturn(List.of(doc));
 
-        List<Document> result = documentService.searchByFileName(OWNER, "report");
+        List<Document> result = documentService.searchByFileNameOrContent(OWNER, "report");
 
         assertThat(result).extracting(Document::getFileName).containsExactly("report.pdf");
     }

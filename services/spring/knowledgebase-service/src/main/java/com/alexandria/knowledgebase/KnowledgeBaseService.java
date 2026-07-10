@@ -227,7 +227,7 @@ public class KnowledgeBaseService {
     }
 
     public List<Document> search(String userSubject, String queryText) {
-        List<Document> results = documentService.searchByFileName(userSubject, queryText);
+        List<Document> results = documentService.searchByFileNameOrContent(userSubject, queryText);
 
         SearchQuery searchQuery = new SearchQuery(userSubject, queryText, results.size());
         searchQueryRepository.save(searchQuery);
@@ -263,7 +263,7 @@ public class KnowledgeBaseService {
     }
 
     private List<SemanticSearchResultDto> keywordFallback(String userSubject, String queryText) {
-        return documentService.searchByFileName(userSubject, queryText).stream().map(d -> new SemanticSearchResultDto(d, null, null)).toList();
+        return documentService.searchByFileNameOrContent(userSubject, queryText).stream().map(d -> new SemanticSearchResultDto(d, null, null)).toList();
     }
 
     @Transactional

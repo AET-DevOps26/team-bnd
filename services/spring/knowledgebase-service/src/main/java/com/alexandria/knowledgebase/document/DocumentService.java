@@ -34,8 +34,8 @@ public class DocumentService {
         return repository.findByOwnerSubject(ownerSubject);
     }
 
-    public List<Document> searchByFileName(String ownerSubject, String fileName) {
-        return repository.findByOwnerSubjectAndFileNameContainingIgnoreCase(ownerSubject, fileName);
+    public List<Document> searchByFileNameOrContent(String ownerSubject, String query) {
+        return repository.searchByFileNameOrContent(ownerSubject, query);
     }
 
     public void delete(UUID id, String ownerSubject) {
