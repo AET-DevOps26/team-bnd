@@ -16,6 +16,8 @@ COPY gradlew settings.gradle build.gradle ./
 COPY user-service/build.gradle user-service/build.gradle
 COPY knowledgebase-service/build.gradle knowledgebase-service/build.gradle
 COPY qa-service/build.gradle qa-service/build.gradle
+# hadolint ignore=DL3022
+COPY --from=api openapi.yaml ${SERVICE}/build/openapi-input/openapi.yaml
 
 RUN ./gradlew :${SERVICE}:dependencies --no-daemon
 

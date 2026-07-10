@@ -430,26 +430,31 @@ jobs:
             context: services/spring
             dockerfile: services/spring/Dockerfile
             build_args: SERVICE=user-service
+            build_contexts: api=api
           - name: knowledgebase-service
             title: KnowledgeBase Service
             context: services/spring
             dockerfile: services/spring/Dockerfile
             build_args: SERVICE=knowledgebase-service
+            build_contexts: api=api
           - name: qa-service
             title: QA Service
             context: services/spring
             dockerfile: services/spring/Dockerfile
             build_args: SERVICE=qa-service
+            build_contexts: api=api
           - name: client
             title: Client
             context: services/client
             dockerfile: services/client/Dockerfile
             build_args: ""
+            build_contexts: ""
           - name: genai
             title: GenAI
             context: services/genai
             dockerfile: services/genai/Dockerfile
             build_args: ""
+            build_contexts: ""
     permissions:
       contents: read
       packages: write # needed to push to GHCR on main
@@ -492,6 +497,7 @@ jobs:
           context: ${{ matrix.service.context }}
           file: ${{ matrix.service.dockerfile }}
           build-args: ${{ matrix.service.build_args }}
+          build-contexts: ${{ matrix.service.build_contexts }}
           push: ${{ github.event_name == 'push' }}
           load: ${{ github.event_name != 'push' }}
           tags: ${{ steps.meta.outputs.tags }}

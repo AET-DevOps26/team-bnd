@@ -5,6 +5,8 @@ extends:
 apis:
   alexandria@v1:
     root: api/openapi.yaml
+    x-openapi-ts:
+      output: services/client/src/api/schema.d.ts
 
 rules:
   # Relaxed until we have a real hosted URL. Localhost still trips this rule;

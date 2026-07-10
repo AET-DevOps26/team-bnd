@@ -10,6 +10,7 @@ plugins {
 	id 'io.spring.dependency-management' version '1.1.7' apply false
 	id 'org.springdoc.openapi-gradle-plugin' version '1.9.0' apply false
 	id 'com.diffplug.spotless' version '8.8.0' apply false
+	id 'org.openapi.generator' version '7.16.0' apply false
 }
 
 subprojects {
@@ -70,4 +71,58 @@ subprojects {
 	tasks.named('test') {
 		useJUnitPlatform()
 	}
+}
+
+configure(subprojects.findAll { it.name in ['knowledgebase-service', 'qa-service'] }) {
+	apply plugin: 'org.openapi.generator'
+
+	def genaiGeneratedDir = layout.buildDirectory.dir("generated/openapi").get().asFile
+	def specStagingFile = layout.buildDirectory.file("openapi-input/openapi.yaml").get().asFile
+
+	openApiGenerate {
+		generatorName = "java"
+		library = "restclient"
+		inputSpec = specStagingFile.toString()
+		outputDir = genaiGeneratedDir.toString()
+		apiPackage = "com.alexandria.genai.client.api"
+		modelPackage = "com.alexandria.genai.client.model"
+		invokerPackage = "com.alexandria.genai.client.invoker"
+		generateApiTests = false
+		generateModelTests = false
+		generateApiDocumentation = false
+		generateModelDocumentation = false
+		configOptions = [
+			dateLibrary            : "java8",
+			useJakartaEe           : "true",
+			openApiNullable        : "false",
+			serializationLibrary   : "jackson",
+			useBeanValidation      : "false",
+			performBeanValidation  : "false",
+			useTags                : "true",
+			hideGenerationTimestamp: "true",
+			annotationLibrary      : "none",
+			documentationProvider  : "none",
+		]
+	}
+
+	// Copy API spec to local build context to avoid implicit
+	// dependencies between API generation and client generation tasks
+	tasks.register("prepareOpenApiSpec") {
+		doLast {
+			def apiSpec = rootProject.file('../../api/openapi.yaml')
+			if (apiSpec.isFile()) {
+				specStagingFile.parentFile.mkdirs()
+				specStagingFile.bytes = apiSpec.bytes
+			} else if (!specStagingFile.isFile()) {
+				throw new GradleException(
+					"OpenAPI spec not found at ${apiSpec} or ${specStagingFile}")
+			}
+		}
+	}
+	tasks.named("openApiGenerate").configure {
+		dependsOn(tasks.named("prepareOpenApiSpec"))
+	}
+
+	sourceSets.main.java.srcDir("${genaiGeneratedDir}/src/main/java")
+	tasks.named("compileJava").configure { dependsOn(tasks.named("openApiGenerate")) }
 }
