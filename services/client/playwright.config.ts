@@ -29,8 +29,8 @@ export default defineConfig({
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
     /* Base URL to use in actions like `await page.goto('')`.
-     * The full stack (local and CI) is served via Traefik on port 80. */
-    baseURL: 'http://client',
+     * The SPA is served on port 8080. */
+    baseURL: 'http://client:8080',
 
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',

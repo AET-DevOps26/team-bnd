@@ -52,10 +52,10 @@ export default async function globalSetup() {
   const profile = JSON.parse(Buffer.from(padded, "base64").toString("utf-8"));
 
   // Build the oidc-client-ts User object
-  // The `authority` inside the running browser is http://client/auth/realms/alexandria
-  // because the Playwright browser navigates to http://client and the app sets:
+  // The `authority` inside the running browser is http://client:8080/auth/realms/alexandria
+  // because the Playwright browser navigates to http://client:8080 and the app sets:
   //   authority: `${window.location.origin}/auth/realms/alexandria`
-  const authority = "http://client/auth/realms/alexandria";
+  const authority = "http://client:8080/auth/realms/alexandria";
   const clientId = "alexandria-client";
   const storageKey = `oidc.user:${authority}:${clientId}`;
 
