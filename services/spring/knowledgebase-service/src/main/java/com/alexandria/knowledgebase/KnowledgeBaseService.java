@@ -6,6 +6,7 @@ import com.alexandria.knowledgebase.integration.GenAiClient;
 import com.alexandria.knowledgebase.integration.GenAiClient.ExtractResponse;
 import com.alexandria.knowledgebase.integration.GenAiClient.ExtractedEntityDto;
 import com.alexandria.knowledgebase.integration.GenAiClient.SummarizeResponse;
+import com.alexandria.knowledgebase.integration.GenAiClient.TagResponse;
 import com.alexandria.knowledgebase.search.SearchQuery;
 import com.alexandria.knowledgebase.search.SearchQueryRepository;
 import jakarta.validation.Valid;
@@ -57,6 +58,7 @@ public class KnowledgeBaseService {
         if (textContent != null && !textContent.isBlank()) {
             processSummary(document);
             processEntities(document);
+            processTags(document);
             processIndexing(document);
         }
 
@@ -80,6 +82,7 @@ public class KnowledgeBaseService {
 
         processSummary(document);
         processEntities(document);
+        processTags(document);
         processIndexing(document);
 
         return document;
@@ -107,6 +110,24 @@ public class KnowledgeBaseService {
         } catch (Exception e) {
             log.warn(
                     "GenAI entity extraction failed for document {}: {}", document.getId(), e.getMessage());
+        }
+    }
+
+    private void processTags(Document document) {
+        try {
+            // pass existing labels so the model reuses them instead of inventing near-duplicates
+            List<String> knownTags = List.copyOf(getTagsForUserWithCount(document.getOwnerSubject()).keySet());
+            TagResponse response = genAiClient.tag(document.getObjectKey(), knownTags);
+            for (String label : response.tags()) {
+                if (label == null || label.isBlank()) {
+                    continue;
+                }
+                Tag tag = tagRepository.findByLabel(label).orElseGet(() -> tagRepository.save(new Tag(label, TagSource.AUTO)));
+                document.addTag(tag);
+            }
+            documentService.save(document);
+        } catch (Exception e) {
+            log.warn("GenAI tagging failed for document {}: {}", document.getId(), e.getMessage());
         }
     }
 
@@ -144,6 +165,19 @@ public class KnowledgeBaseService {
         extractedEntityRepository.deleteByDocumentId(id);
         extractedEntityRepository.flush();
         processEntities(document);
+    }
+
+    @Transactional
+    public void reprocessTags(UUID id, String ownerSubject) {
+        Document document = getDocument(id, ownerSubject);
+        // only drop the auto tags, user-added tags stay
+        for (Tag tag : document.getTags()) {
+            if (tag.getSource() == TagSource.AUTO) {
+                document.removeTag(tag);
+            }
+        }
+        documentService.save(document);
+        processTags(document);
     }
 
     public Summary getDocumentSummary(UUID id, String ownerSubject) {

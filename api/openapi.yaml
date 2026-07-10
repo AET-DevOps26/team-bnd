@@ -167,6 +167,36 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
       security:
         - bearerAuth: []
+  /api/v1/knowledgebase/documents/{id}/reprocess/tags:
+    post:
+      tags:
+        - KnowledgeBase Service
+      summary: Reprocess document tags
+      operationId: reprocessTags
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Document tags reprocessed
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Document not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - bearerAuth: []
   /api/v1/knowledgebase/documents/{id}/reprocess/summary:
     post:
       tags:

@@ -187,6 +187,16 @@ public class KnowledgeBaseController {
         return ResponseEntity.noContent().build();
     }
 
+    @PostMapping("/documents/{id}/reprocess/tags")
+    @Operation(summary = "Reprocess document tags")
+    @ApiResponse(responseCode = "204", description = "Document tags reprocessed")
+    @ApiResponse(responseCode = "401", description = "Unauthorized")
+    @ApiResponse(responseCode = "404", description = "Document not found")
+    public ResponseEntity<Void> reprocessTags(@PathVariable UUID id, Principal principal) {
+        knowledgeBaseService.reprocessTags(id, principal.getName());
+        return ResponseEntity.noContent().build();
+    }
+
     @GetMapping("/history/search")
     @Operation(summary = "Get search history")
     @ApiResponse(responseCode = "200", description = "Search history retrieved")

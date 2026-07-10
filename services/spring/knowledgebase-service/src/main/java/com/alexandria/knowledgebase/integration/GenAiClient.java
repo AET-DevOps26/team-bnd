@@ -7,6 +7,7 @@ import com.alexandria.genai.client.model.GenAiDeleteIndexResponse;
 import com.alexandria.genai.client.model.GenAiExtractRequest;
 import com.alexandria.genai.client.model.GenAiIndexRequest;
 import com.alexandria.genai.client.model.GenAiSummarizeRequest;
+import com.alexandria.genai.client.model.GenAiTagRequest;
 import com.alexandria.knowledgebase.document.EntityType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -72,6 +73,12 @@ public class GenAiClient {
         return new AskResponse(r.getAnswer(), r.getSourceObjectKeys(), r.getModelUsed());
     }
 
+    public TagResponse tag(String objectKey, List<String> knownTags) {
+        var request = new GenAiTagRequest().objectKey(objectKey).knownTags(knownTags == null ? List.of() : knownTags);
+        var r = genaiClient.tagGenaiTagPost(request);
+        return new TagResponse(r.getTags(), r.getModelUsed());
+    }
+
     public IndexResponse index(String objectKey) {
         var r = genaiClient.indexGenaiIndexPost(new GenAiIndexRequest().objectKey(objectKey));
         return new IndexResponse(r.getObjectKey(), r.getChunksIndexed(), r.getEmbeddingModel());
@@ -96,6 +103,9 @@ public class GenAiClient {
     }
 
     public record AskResponse(String answer, List<String> sourceObjectKeys, String modelUsed) {
+    }
+
+    public record TagResponse(List<String> tags, String modelUsed) {
     }
 
     public record IndexResponse(String objectKey, Integer chunksIndexed, String embeddingModel) {
