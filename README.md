@@ -37,7 +37,7 @@ All services are accessed through Traefik as the reverse proxy. See [`docs/traef
 
 ### Infrastructure & Deployment
 
-- **Azure VM (Terraform + Ansible)**: Provisioning details live under [`infra/azure/README.md`](infra/azure/README.md).
+- **Azure VM (Terraform + Ansible)**: _Currently disabled_ since our Azure for Students credit expired. The config is kept under [`infra/azure/README.md`](infra/azure/README.md) and can be brought back later again.
 - **Kubernetes (Helm)**: Cluster deployment and troubleshooting details live under [`infra/k8s/README.md`](infra/k8s/README.md).
 
 ### Git Repository
