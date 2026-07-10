@@ -1,6 +1,7 @@
 package com.alexandria.knowledgebase;
 
 import com.alexandria.knowledgebase.document.*;
+import com.alexandria.knowledgebase.dto.DocumentRefDto;
 import com.alexandria.knowledgebase.dto.SemanticSearchResultDto;
 import com.alexandria.knowledgebase.dto.UpdateDocumentRequest;
 import com.alexandria.knowledgebase.integration.GenAiClient;
@@ -226,13 +227,13 @@ public class KnowledgeBaseService {
         return documentService.save(document);
     }
 
-    public List<Document> search(String userSubject, String queryText) {
-        List<Document> results = documentService.searchByFileNameOrContent(userSubject, queryText);
+    public List<DocumentRefDto> search(String userSubject, String queryText) {
+        List<Document> matches = documentService.searchByFileNameOrContent(userSubject, queryText);
 
-        SearchQuery searchQuery = new SearchQuery(userSubject, queryText, results.size());
+        SearchQuery searchQuery = new SearchQuery(userSubject, queryText, matches.size());
         searchQueryRepository.save(searchQuery);
 
-        return results;
+        return matches.stream().map(DocumentRefDto::from).toList();
     }
 
     public List<SemanticSearchResultDto> semanticSearch(String userSubject, String queryText, Integer limit) {
@@ -244,7 +245,7 @@ public class KnowledgeBaseService {
             GenAiClient.SearchResponse response = genAiClient.search(queryText, List.copyOf(byObjectKey.keySet()), limit);
             results = response.results().stream().map(hit -> {
                 Document document = byObjectKey.get(hit.objectKey());
-                return document == null ? null : new SemanticSearchResultDto(document, hit.score(), hit.snippet());
+                return document == null ? null : new SemanticSearchResultDto(DocumentRefDto.from(document), hit.score(), hit.snippet());
             }).filter(Objects::nonNull).toList();
         } catch (Exception e) {
             log.warn("GenAI semantic search failed for user {}: {}", userSubject, e.getMessage());
@@ -263,7 +264,7 @@ public class KnowledgeBaseService {
     }
 
     private List<SemanticSearchResultDto> keywordFallback(String userSubject, String queryText) {
-        return documentService.searchByFileNameOrContent(userSubject, queryText).stream().map(d -> new SemanticSearchResultDto(d, null, null)).toList();
+        return documentService.searchByFileNameOrContent(userSubject, queryText).stream().map(d -> new SemanticSearchResultDto(DocumentRefDto.from(d), null, null)).toList();
     }
 
     @Transactional

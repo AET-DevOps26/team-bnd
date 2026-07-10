@@ -189,9 +189,10 @@ class KnowledgeBaseServiceTest {
         Document doc = new Document(OWNER, "report.pdf", "/uploads/report.pdf", "application/pdf", 1L);
         when(documentService.searchByFileNameOrContent(OWNER, "report")).thenReturn(List.of(doc));
 
-        List<Document> results = knowledgeBaseService.search(OWNER, "report");
+        List<com.alexandria.knowledgebase.dto.DocumentRefDto> results = knowledgeBaseService.search(OWNER, "report");
 
         assertThat(results).hasSize(1);
+        assertThat(results.get(0).fileName()).isEqualTo("report.pdf");
         verify(searchQueryRepository).save(any(SearchQuery.class));
     }
 
@@ -303,7 +304,7 @@ class KnowledgeBaseServiceTest {
         List<com.alexandria.knowledgebase.dto.SemanticSearchResultDto> results = knowledgeBaseService.semanticSearch(OWNER, "budget", null);
 
         assertThat(results).hasSize(1);
-        assertThat(results.get(0).document()).isEqualTo(reportDoc);
+        assertThat(results.get(0).document().fileName()).isEqualTo("report.pdf");
         assertThat(results.get(0).score()).isEqualTo(0.91);
         assertThat(results.get(0).snippet()).isEqualTo("the annual budget was...");
         verify(searchQueryRepository).save(any(SearchQuery.class));
@@ -331,7 +332,7 @@ class KnowledgeBaseServiceTest {
         List<com.alexandria.knowledgebase.dto.SemanticSearchResultDto> results = knowledgeBaseService.semanticSearch(OWNER, "report", null);
 
         assertThat(results).hasSize(1);
-        assertThat(results.get(0).document()).isEqualTo(reportDoc);
+        assertThat(results.get(0).document().fileName()).isEqualTo("report.pdf");
         assertThat(results.get(0).score()).isNull();
         assertThat(results.get(0).snippet()).isNull();
     }
@@ -346,7 +347,7 @@ class KnowledgeBaseServiceTest {
         List<com.alexandria.knowledgebase.dto.SemanticSearchResultDto> results = knowledgeBaseService.semanticSearch(OWNER, "report", null);
 
         assertThat(results).hasSize(1);
-        assertThat(results.get(0).document()).isEqualTo(reportDoc);
+        assertThat(results.get(0).document().fileName()).isEqualTo("report.pdf");
         assertThat(results.get(0).snippet()).isNull();
     }
 

@@ -109,9 +109,9 @@ public class KnowledgeBaseController {
     }
 
     @GetMapping("/search/text")
-    @Operation(summary = "Keyword search over document filenames")
+    @Operation(summary = "Keyword search over document filenames and content")
     @ApiResponse(responseCode = "200", description = "Search results")
-    public ResponseEntity<List<Document>> searchText(@RequestParam String q, Principal principal) {
+    public ResponseEntity<List<DocumentRefDto>> searchText(@RequestParam String q, Principal principal) {
         return ResponseEntity.ok(knowledgeBaseService.search(principal.getName(), q));
     }
 

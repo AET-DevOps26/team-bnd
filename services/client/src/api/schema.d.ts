@@ -260,7 +260,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Keyword search over document filenames */
+        /** Keyword search over document filenames and content */
         get: operations["searchText"];
         put?: never;
         post?: never;
@@ -766,11 +766,21 @@ export interface components {
         TagListDto: {
             tags?: components["schemas"]["TagDto"][];
         };
+        DocumentRefDto: {
+            /** Format: uuid */
+            id?: string;
+            fileName?: string;
+            fileType?: string;
+            /** Format: int64 */
+            fileSize?: number;
+            /** Format: date-time */
+            createdAt?: string;
+        };
         SemanticSearchResponseDto: {
             results?: components["schemas"]["SemanticSearchResultDto"][];
         };
         SemanticSearchResultDto: {
-            document?: components["schemas"]["Document"];
+            document?: components["schemas"]["DocumentRefDto"];
             /** Format: double */
             score?: number;
             snippet?: string;
@@ -1480,7 +1490,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Document"][];
+                    "application/json": components["schemas"]["DocumentRefDto"][];
                 };
             };
         };

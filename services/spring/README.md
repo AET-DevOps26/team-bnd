@@ -31,10 +31,11 @@ Reprocessing tags drops the document's existing `AUTO` tags but keeps `USER` tag
 
 Two separate search endpoints:
 
-- `GET /search/text?q=...`: keyword match over document filenames and raw text content (case-insensitive substring), returns a plain document list
+- `GET /search/text?q=...`: keyword match over document filenames and raw text content (case-insensitive substring)
 - `GET /search/semantic?q=...&limit=...`: embeds the query and ranks the user's indexed documents by semantic similarity.
   If the GenAI call fails or the index is empty, it falls back to keyword results (with `score` and `snippet` left null), so the endpoint always returns something usable.
 
+Both endpoints return slim `DocumentRefDto` hits (`id`, `fileName`, `fileType`, `fileSize`, `createdAt`) rather than the full document entity, so a search over many documents doesn't drag along every summary, entity list and tag set.
 Both endpoints record the query in the user's search history.
 
 ## Database migrations

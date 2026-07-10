@@ -456,7 +456,7 @@ paths:
     get:
       tags:
         - KnowledgeBase Service
-      summary: Keyword search over document filenames
+      summary: Keyword search over document filenames and content
       operationId: searchText
       parameters:
         - name: q
@@ -472,7 +472,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Document'
+                  $ref: '#/components/schemas/DocumentRefDto'
       security:
         - bearerAuth: []
   /api/v1/knowledgebase/search/semantic:
@@ -1217,6 +1217,22 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/TagDto'
+    DocumentRefDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        fileName:
+          type: string
+        fileType:
+          type: string
+        fileSize:
+          type: integer
+          format: int64
+        createdAt:
+          type: string
+          format: date-time
     SemanticSearchResponseDto:
       type: object
       properties:
@@ -1228,7 +1244,7 @@ components:
       type: object
       properties:
         document:
-          $ref: '#/components/schemas/Document'
+          $ref: '#/components/schemas/DocumentRefDto'
         score:
           type: number
           format: double
