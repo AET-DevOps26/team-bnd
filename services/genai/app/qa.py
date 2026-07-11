@@ -113,8 +113,10 @@ def _build_citations(source_ids: list[int], sources: list[_Source]) -> list[Cita
     """Resolve the model's 1-based source ids into ordered, numbered citations.
 
     Ids outside the provided range are dropped and duplicates collapsed, keeping
-    the model's ordering. When the model names no valid source we fall back to
-    every retrieved document, so an answer never loses its provenance.
+    the model's ordering. If the model returns ids but none resolve (all out of
+    range) we fall back to every retrieved document; an empty source_ids means the
+    model attributed the answer to nothing, so we return no citations rather than
+    inventing them.
     """
     seen: set[int] = set()
     chosen: list[_Source] = []
@@ -122,7 +124,7 @@ def _build_citations(source_ids: list[int], sources: list[_Source]) -> list[Cita
         if 1 <= sid <= len(sources) and sid not in seen:
             seen.add(sid)
             chosen.append(sources[sid - 1])
-    if not chosen:
+    if source_ids and not chosen:
         chosen = sources
     return [Citation(marker=i, object_key=s.object_key, snippet=s.snippet) for i, s in enumerate(chosen, start=1)]
 

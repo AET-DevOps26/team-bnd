@@ -72,13 +72,27 @@ def test_out_of_range_and_duplicate_ids_are_dropped():
     assert [(c.marker, c.object_key) for c in result.citations] == [(1, "doc-2")]
 
 
-def test_no_named_sources_falls_back_to_all_retrieved():
+def test_empty_source_ids_yields_no_citations():
     hits = [_hit("doc-1", 0, "a"), _hit("doc-2", 0, "b")]
 
     with (
         patch("app.qa.embed_query", return_value=[0.0]),
         patch("app.qa.search", return_value=hits),
-        patch("app.qa.get_llm", return_value=_structured_llm("answer", [])),
+        patch("app.qa.get_llm", return_value=_structured_llm("nothing here supports that", [])),
+        patch("app.qa.get_model_name", return_value="m"),
+    ):
+        result = answer_question("q", ["doc-1", "doc-2"])
+
+    assert result.citations == []
+
+
+def test_all_invalid_source_ids_fall_back_to_all_retrieved():
+    hits = [_hit("doc-1", 0, "a"), _hit("doc-2", 0, "b")]
+
+    with (
+        patch("app.qa.embed_query", return_value=[0.0]),
+        patch("app.qa.search", return_value=hits),
+        patch("app.qa.get_llm", return_value=_structured_llm("answer", [9, -1])),
         patch("app.qa.get_model_name", return_value="m"),
     ):
         result = answer_question("q", ["doc-1", "doc-2"])
