@@ -1,6 +1,8 @@
 package com.alexandria.knowledgebase;
 
 import com.alexandria.knowledgebase.document.*;
+import com.alexandria.knowledgebase.dto.DocumentRefDto;
+import com.alexandria.knowledgebase.dto.SemanticSearchResultDto;
 import com.alexandria.knowledgebase.integration.GenAiClient;
 import com.alexandria.knowledgebase.search.SearchQuery;
 import com.alexandria.knowledgebase.search.SearchQueryRepository;
@@ -12,6 +14,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockMultipartFile;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -189,7 +192,7 @@ class KnowledgeBaseServiceTest {
         Document doc = new Document(OWNER, "report.pdf", "/uploads/report.pdf", "application/pdf", 1L);
         when(documentService.searchByFileNameOrContent(OWNER, "report")).thenReturn(List.of(doc));
 
-        List<com.alexandria.knowledgebase.dto.DocumentRefDto> results = knowledgeBaseService.search(OWNER, "report");
+        List<DocumentRefDto> results = knowledgeBaseService.search(OWNER, "report");
 
         assertThat(results).hasSize(1);
         assertThat(results.get(0).fileName()).isEqualTo("report.pdf");
@@ -203,7 +206,7 @@ class KnowledgeBaseServiceTest {
         when(genAiClient.extract(anyString())).thenReturn(new GenAiClient.ExtractResponse(List.of(), "model"));
         when(genAiClient.index(anyString())).thenReturn(new GenAiClient.IndexResponse("/uploads/a.pdf", 1, "embed-model"));
         when(genAiClient.tag(anyString(), anyList())).thenReturn(new GenAiClient.TagResponse(List.of("finance", "report"), "model"));
-        when(tagRepository.findByLabel(anyString())).thenReturn(java.util.Optional.empty());
+        when(tagRepository.findByLabel(anyString())).thenReturn(Optional.empty());
         when(tagRepository.save(any(Tag.class))).thenAnswer(inv -> inv.getArgument(0));
 
         Document result = knowledgeBaseService.createDocument(
@@ -222,7 +225,7 @@ class KnowledgeBaseServiceTest {
         when(genAiClient.extract(anyString())).thenReturn(new GenAiClient.ExtractResponse(List.of(), "model"));
         when(genAiClient.index(anyString())).thenReturn(new GenAiClient.IndexResponse("/uploads/a.pdf", 1, "embed-model"));
         when(genAiClient.tag(anyString(), anyList())).thenReturn(new GenAiClient.TagResponse(List.of("finance"), "model"));
-        when(tagRepository.findByLabel("finance")).thenReturn(java.util.Optional.of(existing));
+        when(tagRepository.findByLabel("finance")).thenReturn(Optional.of(existing));
 
         Document result = knowledgeBaseService.createDocument(
                 OWNER, "a.pdf", "/uploads/a.pdf", "application/pdf", 100L, "hello world");
@@ -271,7 +274,7 @@ class KnowledgeBaseServiceTest {
         when(documentService.findByIdAndOwner(docId, OWNER)).thenReturn(doc);
         when(documentService.save(any(Document.class))).thenAnswer(inv -> inv.getArgument(0));
         when(genAiClient.tag(anyString(), anyList())).thenReturn(new GenAiClient.TagResponse(List.of("fresh"), "model"));
-        when(tagRepository.findByLabel("fresh")).thenReturn(java.util.Optional.empty());
+        when(tagRepository.findByLabel("fresh")).thenReturn(Optional.empty());
         when(tagRepository.save(any(Tag.class))).thenAnswer(inv -> inv.getArgument(0));
 
         knowledgeBaseService.reprocessTags(docId, OWNER);
@@ -301,7 +304,7 @@ class KnowledgeBaseServiceTest {
         when(genAiClient.search(eq("budget"), anyList(), isNull())).thenReturn(new GenAiClient.SearchResponse(
                 List.of(new GenAiClient.SearchResult("/uploads/report.pdf", 0.91, "the annual budget was...")), "embed-model"));
 
-        List<com.alexandria.knowledgebase.dto.SemanticSearchResultDto> results = knowledgeBaseService.semanticSearch(OWNER, "budget", null);
+        List<SemanticSearchResultDto> results = knowledgeBaseService.semanticSearch(OWNER, "budget", null);
 
         assertThat(results).hasSize(1);
         assertThat(results.get(0).document().fileName()).isEqualTo("report.pdf");
@@ -329,7 +332,7 @@ class KnowledgeBaseServiceTest {
         when(genAiClient.search(anyString(), anyList(), any())).thenThrow(new RuntimeException("genai down"));
         when(documentService.searchByFileNameOrContent(OWNER, "report")).thenReturn(List.of(reportDoc));
 
-        List<com.alexandria.knowledgebase.dto.SemanticSearchResultDto> results = knowledgeBaseService.semanticSearch(OWNER, "report", null);
+        List<SemanticSearchResultDto> results = knowledgeBaseService.semanticSearch(OWNER, "report", null);
 
         assertThat(results).hasSize(1);
         assertThat(results.get(0).document().fileName()).isEqualTo("report.pdf");
@@ -344,7 +347,7 @@ class KnowledgeBaseServiceTest {
         when(genAiClient.search(anyString(), anyList(), any())).thenReturn(new GenAiClient.SearchResponse(List.of(), "embed-model"));
         when(documentService.searchByFileNameOrContent(OWNER, "report")).thenReturn(List.of(reportDoc));
 
-        List<com.alexandria.knowledgebase.dto.SemanticSearchResultDto> results = knowledgeBaseService.semanticSearch(OWNER, "report", null);
+        List<SemanticSearchResultDto> results = knowledgeBaseService.semanticSearch(OWNER, "report", null);
 
         assertThat(results).hasSize(1);
         assertThat(results.get(0).document().fileName()).isEqualTo("report.pdf");

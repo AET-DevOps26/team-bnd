@@ -174,10 +174,9 @@ public class KnowledgeBaseService {
     public void reprocessTags(UUID id, String ownerSubject) {
         Document document = getDocument(id, ownerSubject);
         // only drop the auto tags, user-added tags stay
-        for (Tag tag : document.getTags()) {
-            if (tag.getSource() == TagSource.AUTO) {
-                document.removeTag(tag);
-            }
+        List<Tag> autoTags = document.getTags().stream().filter(tag -> tag.getSource() == TagSource.AUTO).toList();
+        for (Tag tag : autoTags) {
+            document.removeTag(tag);
         }
         documentService.save(document);
         processTags(document);
