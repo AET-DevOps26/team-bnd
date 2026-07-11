@@ -4,6 +4,9 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -26,7 +29,7 @@ public class QAController {
     @PostMapping("/ask")
     @Operation(summary = "Ask a question about your documents")
     @ApiResponse(responseCode = "200", description = "Answer generated")
-    public ResponseEntity<QAInteraction> ask(@RequestBody AskRequest request, Principal principal) {
+    public ResponseEntity<QAInteraction> ask(@Valid @RequestBody AskRequest request, Principal principal) {
         return ResponseEntity.ok(qaService.ask(principal.getName(), request.question()));
     }
 
@@ -45,6 +48,6 @@ public class QAController {
         return ResponseEntity.noContent().build();
     }
 
-    public record AskRequest(String question) {
+    public record AskRequest(@NotBlank @Size(max = 1500) String question) {
     }
 }

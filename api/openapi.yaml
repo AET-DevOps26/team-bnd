@@ -1222,6 +1222,10 @@ components:
       properties:
         question:
           type: string
+          maxLength: 1500
+          minLength: 0
+      required:
+        - question
     QAInteraction:
       type: object
       properties:

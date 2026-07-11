@@ -763,7 +763,7 @@ export interface components {
             entities?: components["schemas"]["DocumentEntityDto"][];
         };
         AskRequest: {
-            question?: string;
+            question: string;
         };
         QAInteraction: {
             /** Format: uuid */
