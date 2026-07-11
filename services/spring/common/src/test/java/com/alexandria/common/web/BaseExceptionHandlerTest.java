@@ -102,7 +102,9 @@ class BaseExceptionHandlerTest {
 
     @Test
     void accessDenied_returns403() {
-        ResponseEntity<ErrorResponse> resp = advice.handleAccessDenied(new AccessDeniedException("denied"));
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/v1/secret");
+        request.setRemoteUser("mallory");
+        ResponseEntity<ErrorResponse> resp = advice.handleAccessDenied(new AccessDeniedException("denied"), request);
         assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
         assertThat(resp.getBody()).isNotNull();
         assertThat(resp.getBody().code()).isEqualTo("FORBIDDEN");
@@ -110,7 +112,8 @@ class BaseExceptionHandlerTest {
 
     @Test
     void authenticationException_returns401() {
-        ResponseEntity<ErrorResponse> resp = advice.handleAuthentication(new StubAuthenticationException("no token"));
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/v1/private");
+        ResponseEntity<ErrorResponse> resp = advice.handleAuthentication(new StubAuthenticationException("no token"), request);
         assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
         assertThat(resp.getBody()).isNotNull();
         assertThat(resp.getBody().code()).isEqualTo("UNAUTHORIZED");
