@@ -23,7 +23,7 @@ The processing endpoints take object keys, not raw text. The service downloads t
 
 `summarize` returns `{"summary": "...", "modelUsed": "..."}`: a concise 2-4 sentence, third-person summary of the document's main points.
 
-`extract` returns `{"entities": [...], "modelUsed": "..."}` with typed entities (`PERSON`, `DATE`, `TOPIC`, `ORGANIZATION`) and confidence scores.
+`extract` returns `{"entities": [...], "modelUsed": "..."}` with typed entities (`PERSON`, `DATE`, `TOPIC`, `ORGANIZATION`) and confidence scores. To keep a long document from producing an unscannable list, the result is capped: callers may pass `{"objectKey": "...", "maxEntities": N}` (1-100, default 20) and the highest-confidence entities up to that limit are returned.
 
 `tag` returns `{"tags": [...], "modelUsed": "..."}`: a small set of broad, lowercase topical tags describing what the document is about, so the knowledge base can categorise and filter documents. Tags are restricted to lowercase ascii letters, digits, spaces, and hyphens (e.g. `machine learning`, `covid-19`); anything else the model returns is dropped. The result is capped at 5 tags and de-duplicated regardless of what the model returns, and the prompt steers it toward common, reusable terms rather than document-specific phrasing so the same topic lands on the same tag across documents. A document with no clear topic yields an empty list. Callers may pass `{"objectKey": "...", "knownTags": [...]}` to bias the model toward reusing existing labels, which keeps the vocabulary from fragmenting into one-off tags; those are validated against the same allowlist before they reach the prompt.
 
