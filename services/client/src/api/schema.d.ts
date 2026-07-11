@@ -856,6 +856,11 @@ export interface components {
         };
         /** GenAiExtractRequest */
         GenAiExtractRequest: {
+            /**
+             * Maxentities
+             * @default 20
+             */
+            maxEntities: number;
             /** Objectkey */
             objectKey: string;
         };

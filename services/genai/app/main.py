@@ -6,7 +6,7 @@ from prometheus_fastapi_instrumentator import Instrumentator
 from pydantic import BaseModel, Field, field_validator
 
 from app.embeddings import chunk_text, embed_chunks, get_embedding_model_name
-from app.extract import extract_entities
+from app.extract import DEFAULT_MAX_ENTITIES, extract_entities
 from app.qa import answer_question
 from app.search import search_documents
 from app.storage import ObjectNotFoundError, UnsupportedFileError, fetch_text
@@ -15,7 +15,7 @@ from app.tag import generate_tags
 from app.vectorstore import close_client, delete_document, index_chunks
 
 SERVICE_NAME = "alexandria-genai"
-SERVICE_VERSION = "2.2.0"
+SERVICE_VERSION = "2.3.0"
 
 
 @asynccontextmanager
@@ -71,6 +71,7 @@ class GenAiExtractedEntity(BaseModel):
 
 class GenAiExtractRequest(BaseModel):
     objectKey: str
+    maxEntities: int = Field(default=DEFAULT_MAX_ENTITIES, ge=1, le=100)
 
 
 class GenAiExtractResponse(BaseModel):
@@ -197,7 +198,7 @@ def summarize_document(request: GenAiSummarizeRequest) -> GenAiSummarizeResponse
 def extract(request: GenAiExtractRequest) -> GenAiExtractResponse:
     """Extract named entities from the document stored under the given object key."""
     content = _load_document(request.objectKey)
-    entities, model = extract_entities(content)
+    entities, model = extract_entities(content, request.maxEntities)
     return GenAiExtractResponse(
         entities=[GenAiExtractedEntity(**e) for e in entities],
         modelUsed=model,

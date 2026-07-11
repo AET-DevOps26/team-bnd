@@ -1392,6 +1392,12 @@ components:
       type: object
     GenAiExtractRequest:
       properties:
+        maxEntities:
+          default: 20
+          maximum: 100
+          minimum: 1
+          title: Maxentities
+          type: integer
         objectKey:
           title: Objectkey
           type: string
