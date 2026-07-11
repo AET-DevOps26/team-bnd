@@ -4,6 +4,7 @@ from unittest.mock import patch
 
 from fastapi.testclient import TestClient
 
+from app.extract import DEFAULT_MAX_ENTITIES
 from app.main import SERVICE_NAME, SERVICE_VERSION, app
 from app.storage import ObjectNotFoundError, UnsupportedFileError
 
@@ -162,6 +163,34 @@ def test_extract_returns_404_for_missing_object():
 def test_extract_rejects_missing_object_key():
     response = client.post("/genai/extract", json={})
     assert response.status_code == 422
+
+
+def test_extract_forwards_max_entities_to_extractor():
+    with (
+        patch("app.main.fetch_text", return_value="some text"),
+        patch("app.main.extract_entities", return_value=([], "test-model")) as mock_extract,
+    ):
+        response = client.post("/genai/extract", json={"objectKey": "k", "maxEntities": 5})
+
+    assert response.status_code == 200
+    assert mock_extract.call_args.args[1] == 5
+
+
+def test_extract_defaults_max_entities_when_omitted():
+    with (
+        patch("app.main.fetch_text", return_value="some text"),
+        patch("app.main.extract_entities", return_value=([], "test-model")) as mock_extract,
+    ):
+        response = client.post("/genai/extract", json={"objectKey": "k"})
+
+    assert response.status_code == 200
+    assert mock_extract.call_args.args[1] == DEFAULT_MAX_ENTITIES
+
+
+def test_extract_rejects_out_of_range_max_entities():
+    for bad in (0, 101):
+        response = client.post("/genai/extract", json={"objectKey": "k", "maxEntities": bad})
+        assert response.status_code == 422
 
 
 # --- tag ---
