@@ -7,7 +7,7 @@ info:
   license:
     name: MIT
     identifier: MIT
-  version: 4.0.0
+  version: 5.0.0
 servers:
   - url: /
     description: Current server
@@ -1373,19 +1373,36 @@ components:
         answer:
           title: Answer
           type: string
+        citations:
+          items:
+            $ref: '#/components/schemas/GenAiCitation'
+          title: Citations
+          type: array
         modelUsed:
           title: Modelused
           type: string
-        sourceObjectKeys:
-          items:
-            type: string
-          title: Sourceobjectkeys
-          type: array
       required:
         - answer
-        - sourceObjectKeys
+        - citations
         - modelUsed
       title: GenAiAskResponse
+      type: object
+    GenAiCitation:
+      properties:
+        marker:
+          title: Marker
+          type: integer
+        objectKey:
+          title: Objectkey
+          type: string
+        snippet:
+          title: Snippet
+          type: string
+      required:
+        - marker
+        - objectKey
+        - snippet
+      title: GenAiCitation
       type: object
     GenAiDeleteIndexResponse:
       properties:

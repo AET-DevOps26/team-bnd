@@ -279,11 +279,15 @@ def test_tag_rejects_missing_object_key():
 # --- ask ---
 
 
-def test_ask_returns_answer_and_cited_sources():
-    with patch(
-        "app.main.answer_question",
-        return_value=("The answer is 42.", ["key-1"], "openai/gpt-oss-120b"),
-    ):
+def test_ask_returns_answer_with_citations():
+    from app.qa import AnswerResult, Citation
+
+    result = AnswerResult(
+        "The answer is 42.",
+        [Citation(marker=1, object_key="key-1", snippet="the meaning of life")],
+        "openai/gpt-oss-120b",
+    )
+    with patch("app.main.answer_question", return_value=result):
         response = client.post(
             "/genai/ask",
             json={"question": "What is the answer?", "objectKeys": ["key-1", "key-2"]},
@@ -292,17 +296,19 @@ def test_ask_returns_answer_and_cited_sources():
     assert response.status_code == 200
     body = response.json()
     assert body["answer"] == "The answer is 42."
-    assert body["sourceObjectKeys"] == ["key-1"]
+    assert body["citations"] == [{"marker": 1, "objectKey": "key-1", "snippet": "the meaning of life"}]
     assert body["modelUsed"] == "openai/gpt-oss-120b"
 
 
 def test_ask_passes_question_and_object_keys_to_retrieval():
+    from app.qa import AnswerResult
+
     captured = {}
 
     def fake_answer(question, object_keys):
         captured["question"] = question
         captured["object_keys"] = object_keys
-        return ("answer", ["key-1"], "test-model")
+        return AnswerResult("answer", [], "test-model")
 
     with patch("app.main.answer_question", side_effect=fake_answer):
         response = client.post(

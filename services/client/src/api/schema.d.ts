@@ -844,10 +844,19 @@ export interface components {
         GenAiAskResponse: {
             /** Answer */
             answer: string;
+            /** Citations */
+            citations: components["schemas"]["GenAiCitation"][];
             /** Modelused */
             modelUsed: string;
-            /** Sourceobjectkeys */
-            sourceObjectKeys: string[];
+        };
+        /** GenAiCitation */
+        GenAiCitation: {
+            /** Marker */
+            marker: number;
+            /** Objectkey */
+            objectKey: string;
+            /** Snippet */
+            snippet: string;
         };
         /** GenAiDeleteIndexResponse */
         GenAiDeleteIndexResponse: {

@@ -2,7 +2,6 @@ package com.alexandria.knowledgebase.integration;
 
 import com.alexandria.genai.client.api.AiApi;
 import com.alexandria.genai.client.invoker.ApiClient;
-import com.alexandria.genai.client.model.GenAiAskRequest;
 import com.alexandria.genai.client.model.GenAiDeleteIndexResponse;
 import com.alexandria.genai.client.model.GenAiExtractRequest;
 import com.alexandria.genai.client.model.GenAiIndexRequest;
@@ -69,11 +68,6 @@ public class GenAiClient {
         }
     }
 
-    public AskResponse ask(String question, List<String> objectKeys) {
-        var r = genaiClient.askGenaiAskPost(new GenAiAskRequest().question(question).objectKeys(objectKeys));
-        return new AskResponse(r.getAnswer(), r.getSourceObjectKeys(), r.getModelUsed());
-    }
-
     public SearchResponse search(String query, List<String> objectKeys, Integer limit) {
         var request = new GenAiSearchRequest().query(query).objectKeys(objectKeys == null ? List.of() : objectKeys);
         if (limit != null) {
@@ -111,9 +105,6 @@ public class GenAiClient {
     }
 
     public record ExtractedEntityDto(String name, EntityType type, Double confidence) {
-    }
-
-    public record AskResponse(String answer, List<String> sourceObjectKeys, String modelUsed) {
     }
 
     public record TagResponse(List<String> tags, String modelUsed) {
