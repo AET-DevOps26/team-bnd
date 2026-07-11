@@ -7,7 +7,7 @@ info:
   license:
     name: MIT
     identifier: MIT
-  version: 2.2.0
+  version: 4.0.0
 servers:
   - url: /
     description: Current server
