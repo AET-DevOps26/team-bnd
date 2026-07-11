@@ -16,12 +16,13 @@ COPY gradlew settings.gradle build.gradle ./
 COPY user-service/build.gradle user-service/build.gradle
 COPY knowledgebase-service/build.gradle knowledgebase-service/build.gradle
 COPY qa-service/build.gradle qa-service/build.gradle
+COPY common/build.gradle common/build.gradle
 # hadolint ignore=DL3022
 COPY --from=api openapi.yaml ${SERVICE}/build/openapi-input/openapi.yaml
-COPY common/ common/
 
 RUN ./gradlew :${SERVICE}:dependencies --no-daemon
 
+COPY common/src common/src
 COPY ${SERVICE}/src ${SERVICE}/src
 RUN ./gradlew :${SERVICE}:bootJar --no-daemon
 
