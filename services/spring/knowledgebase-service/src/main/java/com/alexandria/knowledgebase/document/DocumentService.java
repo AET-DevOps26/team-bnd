@@ -3,6 +3,7 @@ package com.alexandria.knowledgebase.document;
 import com.alexandria.knowledgebase.exception.DocumentNotFoundException;
 import org.springframework.stereotype.Service;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
@@ -32,6 +33,14 @@ public class DocumentService {
 
     public List<Document> findByOwnerSubject(String ownerSubject) {
         return repository.findByOwnerSubject(ownerSubject);
+    }
+
+    public List<String> findObjectKeysByOwnerSubject(String ownerSubject) {
+        return repository.findObjectKeysByOwnerSubject(ownerSubject);
+    }
+
+    public List<Document> findByOwnerSubjectAndObjectKeyIn(String ownerSubject, Collection<String> objectKeys) {
+        return repository.findByOwnerSubjectAndObjectKeyIn(ownerSubject, objectKeys);
     }
 
     public List<Document> searchByFileNameOrContent(String ownerSubject, String query) {

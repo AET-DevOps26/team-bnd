@@ -47,6 +47,29 @@ class DocumentRepositoryIntegrationTest {
     }
 
     @Test
+    void integration_docRepo_findObjectKeysByOwnerSubjectReturnsOnlyKeys() {
+        documentRepository.save(new Document(OWNER, "a.pdf", "/uploads/a.pdf", "application/pdf", 1L));
+        documentRepository.save(new Document(OWNER, "b.pdf", "/uploads/b.pdf", "application/pdf", 1L));
+        documentRepository.save(new Document(OTHER, "c.pdf", "/uploads/c.pdf", "application/pdf", 1L));
+
+        List<String> keys = documentRepository.findObjectKeysByOwnerSubject(OWNER);
+
+        assertThat(keys).containsExactlyInAnyOrder("/uploads/a.pdf", "/uploads/b.pdf");
+    }
+
+    @Test
+    void integration_docRepo_findByOwnerSubjectAndObjectKeyInScopesToOwner() {
+        documentRepository.save(new Document(OWNER, "a.pdf", "/uploads/a.pdf", "application/pdf", 1L));
+        documentRepository.save(new Document(OWNER, "b.pdf", "/uploads/b.pdf", "application/pdf", 1L));
+        documentRepository.save(new Document(OTHER, "c.pdf", "/uploads/c.pdf", "application/pdf", 1L));
+
+        List<Document> results = documentRepository.findByOwnerSubjectAndObjectKeyIn(OWNER, List.of("/uploads/a.pdf", "/uploads/c.pdf"));
+
+        assertThat(results).hasSize(1);
+        assertThat(results.get(0).getObjectKey()).isEqualTo("/uploads/a.pdf");
+    }
+
+    @Test
     void integration_docRepo_searchByFileNameOrContentMatchesFileName() {
         documentRepository.save(new Document(OWNER, "Annual Report.pdf", "/uploads/a.pdf", "application/pdf", 1L));
         documentRepository.save(new Document(OWNER, "Meeting notes.txt", "/uploads/b.txt", "text/plain", 1L));

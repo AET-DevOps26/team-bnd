@@ -776,8 +776,12 @@ export interface components {
             /** Format: date-time */
             createdAt?: string;
         };
+        TextSearchResponseDto: {
+            results?: components["schemas"]["DocumentRefDto"][];
+        };
         SemanticSearchResponseDto: {
             results?: components["schemas"]["SemanticSearchResultDto"][];
+            fallbackUsed?: boolean;
         };
         SemanticSearchResultDto: {
             document?: components["schemas"]["DocumentRefDto"];
@@ -1490,7 +1494,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["DocumentRefDto"][];
+                    "application/json": components["schemas"]["TextSearchResponseDto"];
                 };
             };
         };
@@ -1514,6 +1518,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SemanticSearchResponseDto"];
+                };
+            };
+            /** @description Invalid limit */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };

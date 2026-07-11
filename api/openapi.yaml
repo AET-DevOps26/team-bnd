@@ -7,7 +7,7 @@ info:
   license:
     name: MIT
     identifier: MIT
-  version: 2.2.0
+  version: 2.3.0
 servers:
   - url: /
     description: Current server
@@ -470,9 +470,7 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/DocumentRefDto'
+                $ref: '#/components/schemas/TextSearchResponseDto'
       security:
         - bearerAuth: []
   /api/v1/knowledgebase/search/semantic:
@@ -493,6 +491,9 @@ paths:
           schema:
             type: integer
             format: int32
+            default: 10
+            maximum: 50
+            minimum: 1
       responses:
         '200':
           description: Ranked search results with match context
@@ -500,6 +501,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SemanticSearchResponseDto'
+        '400':
+          description: Invalid limit
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
       security:
         - bearerAuth: []
   /api/v1/knowledgebase/history/search:
@@ -1233,6 +1240,13 @@ components:
         createdAt:
           type: string
           format: date-time
+    TextSearchResponseDto:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/DocumentRefDto'
     SemanticSearchResponseDto:
       type: object
       properties:
@@ -1240,6 +1254,8 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/SemanticSearchResultDto'
+        fallbackUsed:
+          type: boolean
     SemanticSearchResultDto:
       type: object
       properties:

@@ -2,7 +2,7 @@ package com.alexandria.knowledgebase;
 
 import com.alexandria.knowledgebase.document.*;
 import com.alexandria.knowledgebase.dto.DocumentRefDto;
-import com.alexandria.knowledgebase.dto.SemanticSearchResultDto;
+import com.alexandria.knowledgebase.dto.SemanticSearchResponseDto;
 import com.alexandria.knowledgebase.integration.GenAiClient;
 import com.alexandria.knowledgebase.search.SearchQuery;
 import com.alexandria.knowledgebase.search.SearchQueryRepository;
@@ -22,7 +22,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -299,24 +298,24 @@ class KnowledgeBaseServiceTest {
     @Test
     void unit_kb_semanticSearchMapsHitsBackToUserDocumentsWithContext() {
         Document reportDoc = new Document(OWNER, "report.pdf", "/uploads/report.pdf", "application/pdf", 1L);
-        Document notesDoc = new Document(OWNER, "notes.pdf", "/uploads/notes.pdf", "application/pdf", 1L);
-        when(documentService.findByOwnerSubject(OWNER)).thenReturn(List.of(reportDoc, notesDoc));
-        when(genAiClient.search(eq("budget"), anyList(), isNull())).thenReturn(new GenAiClient.SearchResponse(
+        when(documentService.findObjectKeysByOwnerSubject(OWNER)).thenReturn(List.of("/uploads/report.pdf", "/uploads/notes.pdf"));
+        when(genAiClient.search(eq("budget"), anyList(), eq(10))).thenReturn(new GenAiClient.SearchResponse(
                 List.of(new GenAiClient.SearchResult("/uploads/report.pdf", 0.91, "the annual budget was...")), "embed-model"));
+        when(documentService.findByOwnerSubjectAndObjectKeyIn(OWNER, List.of("/uploads/report.pdf"))).thenReturn(List.of(reportDoc));
 
-        List<SemanticSearchResultDto> results = knowledgeBaseService.semanticSearch(OWNER, "budget", null);
+        SemanticSearchResponseDto response = knowledgeBaseService.semanticSearch(OWNER, "budget", 10);
 
-        assertThat(results).hasSize(1);
-        assertThat(results.get(0).document().fileName()).isEqualTo("report.pdf");
-        assertThat(results.get(0).score()).isEqualTo(0.91);
-        assertThat(results.get(0).snippet()).isEqualTo("the annual budget was...");
+        assertThat(response.results()).hasSize(1);
+        assertThat(response.results().get(0).document().fileName()).isEqualTo("report.pdf");
+        assertThat(response.results().get(0).score()).isEqualTo(0.91);
+        assertThat(response.results().get(0).snippet()).isEqualTo("the annual budget was...");
+        assertThat(response.fallbackUsed()).isFalse();
         verify(searchQueryRepository).save(any(SearchQuery.class));
     }
 
     @Test
     void unit_kb_semanticSearchScopesToUserObjectKeys() {
-        Document reportDoc = new Document(OWNER, "report.pdf", "/uploads/report.pdf", "application/pdf", 1L);
-        when(documentService.findByOwnerSubject(OWNER)).thenReturn(List.of(reportDoc));
+        when(documentService.findObjectKeysByOwnerSubject(OWNER)).thenReturn(List.of("/uploads/report.pdf"));
         when(genAiClient.search(anyString(), anyList(), any())).thenReturn(new GenAiClient.SearchResponse(List.of(), "embed-model"));
         when(documentService.searchByFileNameOrContent(OWNER, "budget")).thenReturn(List.of());
 
@@ -328,30 +327,32 @@ class KnowledgeBaseServiceTest {
     @Test
     void unit_kb_semanticSearchFallsBackToKeywordOnGenAiFailure() {
         Document reportDoc = new Document(OWNER, "report.pdf", "/uploads/report.pdf", "application/pdf", 1L);
-        when(documentService.findByOwnerSubject(OWNER)).thenReturn(List.of(reportDoc));
+        when(documentService.findObjectKeysByOwnerSubject(OWNER)).thenReturn(List.of("/uploads/report.pdf"));
         when(genAiClient.search(anyString(), anyList(), any())).thenThrow(new RuntimeException("genai down"));
         when(documentService.searchByFileNameOrContent(OWNER, "report")).thenReturn(List.of(reportDoc));
 
-        List<SemanticSearchResultDto> results = knowledgeBaseService.semanticSearch(OWNER, "report", null);
+        SemanticSearchResponseDto response = knowledgeBaseService.semanticSearch(OWNER, "report", 10);
 
-        assertThat(results).hasSize(1);
-        assertThat(results.get(0).document().fileName()).isEqualTo("report.pdf");
-        assertThat(results.get(0).score()).isNull();
-        assertThat(results.get(0).snippet()).isNull();
+        assertThat(response.results()).hasSize(1);
+        assertThat(response.results().get(0).document().fileName()).isEqualTo("report.pdf");
+        assertThat(response.results().get(0).score()).isNull();
+        assertThat(response.results().get(0).snippet()).isNull();
+        assertThat(response.fallbackUsed()).isTrue();
     }
 
     @Test
     void unit_kb_semanticSearchFallsBackToKeywordOnEmptyIndex() {
         Document reportDoc = new Document(OWNER, "report.pdf", "/uploads/report.pdf", "application/pdf", 1L);
-        when(documentService.findByOwnerSubject(OWNER)).thenReturn(List.of(reportDoc));
+        when(documentService.findObjectKeysByOwnerSubject(OWNER)).thenReturn(List.of("/uploads/report.pdf"));
         when(genAiClient.search(anyString(), anyList(), any())).thenReturn(new GenAiClient.SearchResponse(List.of(), "embed-model"));
         when(documentService.searchByFileNameOrContent(OWNER, "report")).thenReturn(List.of(reportDoc));
 
-        List<SemanticSearchResultDto> results = knowledgeBaseService.semanticSearch(OWNER, "report", null);
+        SemanticSearchResponseDto response = knowledgeBaseService.semanticSearch(OWNER, "report", 10);
 
-        assertThat(results).hasSize(1);
-        assertThat(results.get(0).document().fileName()).isEqualTo("report.pdf");
-        assertThat(results.get(0).snippet()).isNull();
+        assertThat(response.results()).hasSize(1);
+        assertThat(response.results().get(0).document().fileName()).isEqualTo("report.pdf");
+        assertThat(response.results().get(0).snippet()).isNull();
+        assertThat(response.fallbackUsed()).isTrue();
     }
 
     @Test

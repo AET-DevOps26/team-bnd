@@ -2,6 +2,7 @@ package com.alexandria.knowledgebase;
 
 import com.alexandria.knowledgebase.document.*;
 import com.alexandria.knowledgebase.dto.DocumentRefDto;
+import com.alexandria.knowledgebase.dto.SemanticSearchResponseDto;
 import com.alexandria.knowledgebase.dto.SemanticSearchResultDto;
 import com.alexandria.knowledgebase.dto.UpdateDocumentRequest;
 import com.alexandria.knowledgebase.integration.GenAiClient;
@@ -235,31 +236,35 @@ public class KnowledgeBaseService {
         return matches.stream().map(DocumentRefDto::from).toList();
     }
 
-    public List<SemanticSearchResultDto> semanticSearch(String userSubject, String queryText, Integer limit) {
-        List<Document> userDocuments = documentService.findByOwnerSubject(userSubject);
-        Map<String, Document> byObjectKey = userDocuments.stream().collect(Collectors.toMap(Document::getObjectKey, d -> d, (a, b) -> a));
+    public SemanticSearchResponseDto semanticSearch(String userSubject, String queryText, Integer limit) {
+        List<String> objectKeys = documentService.findObjectKeysByOwnerSubject(userSubject);
 
         List<SemanticSearchResultDto> results;
+        boolean fallbackUsed = false;
         try {
-            GenAiClient.SearchResponse response = genAiClient.search(queryText, List.copyOf(byObjectKey.keySet()), limit);
-            results = response.results().stream().map(hit -> {
+            GenAiClient.SearchResponse response = genAiClient.search(queryText, objectKeys, limit);
+            List<GenAiClient.SearchResult> hits = response.results();
+            Map<String, Document> byObjectKey = hits.isEmpty() ? Map.of() : documentService.findByOwnerSubjectAndObjectKeyIn(userSubject, hits.stream().map(GenAiClient.SearchResult::objectKey).toList()).stream().collect(Collectors.toMap(Document::getObjectKey, d -> d, (a, b) -> a));
+            results = hits.stream().map(hit -> {
                 Document document = byObjectKey.get(hit.objectKey());
                 return document == null ? null : new SemanticSearchResultDto(DocumentRefDto.from(document), hit.score(), hit.snippet());
             }).filter(Objects::nonNull).toList();
         } catch (Exception e) {
             log.warn("GenAI semantic search failed for user {}: {}", userSubject, e.getMessage());
             results = keywordFallback(userSubject, queryText);
+            fallbackUsed = true;
         }
 
         // an empty index returns no hits, fall back to keyword search so the user still gets something
-        if (results.isEmpty()) {
+        if (results.isEmpty() && !fallbackUsed) {
             results = keywordFallback(userSubject, queryText);
+            fallbackUsed = true;
         }
 
         SearchQuery searchQuery = new SearchQuery(userSubject, queryText, results.size());
         searchQueryRepository.save(searchQuery);
 
-        return results;
+        return new SemanticSearchResponseDto(results, fallbackUsed);
     }
 
     private List<SemanticSearchResultDto> keywordFallback(String userSubject, String queryText) {
