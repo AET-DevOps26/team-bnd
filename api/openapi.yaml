@@ -1223,7 +1223,7 @@ components:
         question:
           type: string
           maxLength: 1500
-          minLength: 0
+          minLength: 1
       required:
         - question
     QAInteraction:

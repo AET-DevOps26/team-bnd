@@ -48,6 +48,6 @@ public class QAController {
         return ResponseEntity.noContent().build();
     }
 
-    public record AskRequest(@NotBlank @Size(max = 1500) String question) {
+    public record AskRequest(@NotBlank @Size(min = 1, max = 1500) String question) {
     }
 }

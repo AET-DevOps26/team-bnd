@@ -20,6 +20,7 @@ import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public abstract class BaseExceptionHandler {
 
@@ -44,7 +45,7 @@ public abstract class BaseExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleValidation(MethodArgumentNotValidException e) {
-        List<FieldError> fieldErrors = e.getBindingResult().getFieldErrors().stream().map(err -> new FieldError(err.getField(), err.getDefaultMessage())).toList();
+        List<FieldError> fieldErrors = Stream.concat(e.getBindingResult().getFieldErrors().stream().map(err -> new FieldError(err.getField(), err.getDefaultMessage() == null ? "null" : err.getDefaultMessage())), e.getBindingResult().getGlobalErrors().stream().map(err -> new FieldError(null, err.getDefaultMessage() == null ? "null" : err.getDefaultMessage()))).toList();
         log.debug("Validation failed: {}", sanitize(fieldErrors));
         return ResponseEntity.badRequest().body(new ErrorResponse("VALIDATION_ERROR", "Request validation failed", fieldErrors));
     }
@@ -58,7 +59,7 @@ public abstract class BaseExceptionHandler {
 
     @ExceptionHandler(HandlerMethodValidationException.class)
     public ResponseEntity<ErrorResponse> handleHandlerMethodValidation(HandlerMethodValidationException e) {
-        List<FieldError> fieldErrors = e.getParameterValidationResults().stream().flatMap(r -> r.getResolvableErrors().stream().map(err -> new FieldError(r.getMethodParameter().getParameterName(), err.getDefaultMessage()))).toList();
+        List<FieldError> fieldErrors = e.getParameterValidationResults().stream().flatMap(r -> r.getResolvableErrors().stream().map(err -> new FieldError(r.getMethodParameter().getParameterName(), err.getDefaultMessage() == null ? "null" : err.getDefaultMessage()))).toList();
         log.debug("Handler-method validation failed: {}", sanitize(fieldErrors));
         return ResponseEntity.badRequest().body(new ErrorResponse("VALIDATION_ERROR", "Request validation failed", fieldErrors));
     }
