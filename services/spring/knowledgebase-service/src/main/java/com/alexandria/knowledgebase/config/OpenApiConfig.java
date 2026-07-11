@@ -1,6 +1,6 @@
 package com.alexandria.knowledgebase.config;
 
-import com.alexandria.knowledgebase.exception.GlobalExceptionHandler;
+import com.alexandria.common.web.ErrorResponse;
 import io.swagger.v3.core.converter.AnnotatedType;
 import io.swagger.v3.core.converter.ModelConverters;
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
@@ -36,7 +36,7 @@ public class OpenApiConfig {
     public OpenApiCustomizer errorResponseCustomizer() {
         return openApi -> {
             if (openApi.getComponents() != null) {
-                ModelConverters.getInstance().resolveAsResolvedSchema(new AnnotatedType(GlobalExceptionHandler.ErrorResponse.class)).referencedSchemas.forEach(openApi.getComponents()::addSchemas);
+                ModelConverters.getInstance().resolveAsResolvedSchema(new AnnotatedType(ErrorResponse.class)).referencedSchemas.forEach(openApi.getComponents()::addSchemas);
             }
             if (openApi.getPaths() == null) {
                 return;

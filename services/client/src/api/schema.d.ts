@@ -664,9 +664,11 @@ export interface components {
         ErrorResponse: {
             code?: string;
             message?: string;
-            details?: {
-                [key: string]: Record<string, never>;
-            };
+            fieldErrors?: components["schemas"]["FieldError"][];
+        };
+        FieldError: {
+            field?: string;
+            message?: string;
         };
         AddTagRequest: {
             label?: string;
