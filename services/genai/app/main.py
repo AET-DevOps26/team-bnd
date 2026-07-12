@@ -15,7 +15,7 @@ from app.tag import generate_tags
 from app.vectorstore import close_client, delete_document, index_chunks
 
 SERVICE_NAME = "alexandria-genai"
-SERVICE_VERSION = "2.3.0"
+SERVICE_VERSION = "5.0.0"
 
 
 @asynccontextmanager
@@ -102,9 +102,15 @@ class GenAiAskRequest(BaseModel):
     _validate_question = field_validator("question")(_reject_blank)
 
 
+class GenAiCitation(BaseModel):
+    marker: int
+    objectKey: str
+    snippet: str
+
+
 class GenAiAskResponse(BaseModel):
     answer: str
-    sourceObjectKeys: list[str]
+    citations: list[GenAiCitation]
     modelUsed: str
 
 
@@ -220,8 +226,12 @@ def ask(request: GenAiAskRequest) -> GenAiAskResponse:
     The question is embedded and matched against the indexed chunks scoped to the
     requested object keys; the answer cites the documents its chunks came from.
     """
-    answer, source_keys, model = answer_question(request.question, request.objectKeys)
-    return GenAiAskResponse(answer=answer, sourceObjectKeys=source_keys, modelUsed=model)
+    result = answer_question(request.question, request.objectKeys)
+    return GenAiAskResponse(
+        answer=result.answer,
+        citations=[GenAiCitation(marker=c.marker, objectKey=c.object_key, snippet=c.snippet) for c in result.citations],
+        modelUsed=result.model,
+    )
 
 
 @app.post("/genai/search", tags=["ai"], response_model=GenAiSearchResponse, openapi_extra={"security": []})
