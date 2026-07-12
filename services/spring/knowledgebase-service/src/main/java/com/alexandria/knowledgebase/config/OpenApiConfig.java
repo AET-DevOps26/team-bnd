@@ -1,6 +1,6 @@
 package com.alexandria.knowledgebase.config;
 
-import com.alexandria.knowledgebase.exception.GlobalExceptionHandler;
+import com.alexandria.common.web.ErrorResponse;
 import io.swagger.v3.core.converter.AnnotatedType;
 import io.swagger.v3.core.converter.ModelConverters;
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
@@ -19,7 +19,7 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @OpenAPIDefinition(
         info = @Info(
-                title = "Alexandria KnowledgeBase Service API", version = "3.0.0", description = "Document management, tagging, and text search. Owns the documents/tags/search-queries tables and calls the GenAI service for summarization and entity extraction.", license = @License(name = "MIT", identifier = "MIT")
+                title = "Alexandria KnowledgeBase Service API", version = "4.0.0", description = "Document management, tagging, and text search. Owns the documents/tags/search-queries tables and calls the GenAI service for summarization and entity extraction.", license = @License(name = "MIT", identifier = "MIT")
         ), servers = @Server(url = "/", description = "Current server")
 )
 @SecurityScheme(
@@ -36,7 +36,7 @@ public class OpenApiConfig {
     public OpenApiCustomizer errorResponseCustomizer() {
         return openApi -> {
             if (openApi.getComponents() != null) {
-                ModelConverters.getInstance().resolveAsResolvedSchema(new AnnotatedType(GlobalExceptionHandler.ErrorResponse.class)).referencedSchemas.forEach(openApi.getComponents()::addSchemas);
+                ModelConverters.getInstance().resolveAsResolvedSchema(new AnnotatedType(ErrorResponse.class)).referencedSchemas.forEach(openApi.getComponents()::addSchemas);
             }
             if (openApi.getPaths() == null) {
                 return;

@@ -1,6 +1,6 @@
 package com.alexandria.user.config;
 
-import com.alexandria.user.exception.GlobalExceptionHandler;
+import com.alexandria.common.web.ErrorResponse;
 import io.swagger.v3.core.converter.AnnotatedType;
 import io.swagger.v3.core.converter.ModelConverters;
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
@@ -19,7 +19,7 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @OpenAPIDefinition(
         info = @Info(
-                title = "Alexandria User Service API", version = "3.0.0", description = "User account management. Owns the users table; exposes internal fan-out endpoints consumed by knowledgebase-service and qa-service.", license = @License(name = "MIT", identifier = "MIT")
+                title = "Alexandria User Service API", version = "4.0.0", description = "User account management. Owns the users table; exposes internal fan-out endpoints consumed by knowledgebase-service and qa-service.", license = @License(name = "MIT", identifier = "MIT")
         ), servers = @Server(url = "/", description = "Current server")
 )
 @SecurityScheme(
@@ -36,7 +36,7 @@ public class OpenApiConfig {
     public OpenApiCustomizer errorResponseCustomizer() {
         return openApi -> {
             if (openApi.getComponents() != null) {
-                ModelConverters.getInstance().resolveAsResolvedSchema(new AnnotatedType(GlobalExceptionHandler.ErrorResponse.class)).referencedSchemas.forEach(openApi.getComponents()::addSchemas);
+                ModelConverters.getInstance().resolveAsResolvedSchema(new AnnotatedType(ErrorResponse.class)).referencedSchemas.forEach(openApi.getComponents()::addSchemas);
             }
             if (openApi.getPaths() == null) {
                 return;

@@ -10,3 +10,7 @@ openApi {
 		args = ["--spring.profiles.active=openapi"]
 	}
 }
+
+dependencies {
+	implementation project(':common')
+}

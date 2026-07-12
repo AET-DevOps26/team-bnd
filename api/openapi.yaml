@@ -7,7 +7,7 @@ info:
   license:
     name: MIT
     identifier: MIT
-  version: 3.0.0
+  version: 4.0.0
 servers:
   - url: /
     description: Current server
@@ -1097,10 +1097,16 @@ components:
           type: string
         message:
           type: string
-        details:
-          type: object
-          additionalProperties:
-            type: object
+        fieldErrors:
+          type: array
+          items:
+            $ref: '#/components/schemas/FieldError'
+    FieldError:
+      properties:
+        field:
+          type: string
+        message:
+          type: string
     AddTagRequest:
       type: object
       properties:
@@ -1322,6 +1328,10 @@ components:
       properties:
         question:
           type: string
+          maxLength: 1500
+          minLength: 1
+      required:
+        - question
     QAInteraction:
       type: object
       properties:

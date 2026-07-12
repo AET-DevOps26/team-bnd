@@ -1,0 +1,12 @@
+// Shared web-layer utilities (exception advice, error schema) reused by every
+// Alexandria Spring service. This module is a plain JAR library, not a Spring
+// Boot application, so we disable bootJar and enable the standard jar task.
+
+bootJar {
+	enabled = false
+}
+
+jar {
+	enabled = true
+	archiveClassifier = ''
+}
