@@ -12,10 +12,13 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -29,6 +32,7 @@ import java.util.UUID;
 @Tag(
         name = "KnowledgeBase Service", description = "Document management and AI-powered knowledge operations")
 @SecurityRequirement(name = "bearerAuth")
+@Validated
 public class KnowledgeBaseController {
 
     private final KnowledgeBaseService knowledgeBaseService;
@@ -108,11 +112,20 @@ public class KnowledgeBaseController {
         }).orElse(ResponseEntity.notFound().build());
     }
 
-    @GetMapping("/search")
-    @Operation(summary = "Search documents")
+    @GetMapping("/search/text")
+    @Operation(summary = "Keyword search over document filenames and content")
     @ApiResponse(responseCode = "200", description = "Search results")
-    public ResponseEntity<List<Document>> search(@RequestParam String q, Principal principal) {
-        return ResponseEntity.ok(knowledgeBaseService.search(principal.getName(), q));
+    public ResponseEntity<TextSearchResponseDto> searchText(@RequestParam String q, Principal principal) {
+        return ResponseEntity.ok(new TextSearchResponseDto(knowledgeBaseService.search(principal.getName(), q)));
+    }
+
+    @GetMapping("/search/semantic")
+    @Operation(summary = "Semantic search over document content, with keyword fallback")
+    @ApiResponse(responseCode = "200", description = "Ranked search results with match context")
+    @ApiResponse(responseCode = "400", description = "Invalid limit")
+    public ResponseEntity<SemanticSearchResponseDto> searchSemantic(
+                                                                    @RequestParam String q, @RequestParam(defaultValue = "10") @Min(1) @Max(50) int limit, Principal principal) {
+        return ResponseEntity.ok(knowledgeBaseService.semanticSearch(principal.getName(), q, limit));
     }
 
     @PostMapping("/documents/{id}/tags")
@@ -184,6 +197,16 @@ public class KnowledgeBaseController {
     @ApiResponse(responseCode = "404", description = "Document not found")
     public ResponseEntity<Void> reprocessEntities(@PathVariable UUID id, Principal principal) {
         knowledgeBaseService.reprocessEntities(id, principal.getName());
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/documents/{id}/reprocess/tags")
+    @Operation(summary = "Reprocess document tags")
+    @ApiResponse(responseCode = "204", description = "Document tags reprocessed")
+    @ApiResponse(responseCode = "401", description = "Unauthorized")
+    @ApiResponse(responseCode = "404", description = "Document not found")
+    public ResponseEntity<Void> reprocessTags(@PathVariable UUID id, Principal principal) {
+        knowledgeBaseService.reprocessTags(id, principal.getName());
         return ResponseEntity.noContent().build();
     }
 

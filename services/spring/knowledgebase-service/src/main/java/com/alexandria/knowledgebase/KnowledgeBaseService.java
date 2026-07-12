@@ -1,11 +1,15 @@
 package com.alexandria.knowledgebase;
 
 import com.alexandria.knowledgebase.document.*;
+import com.alexandria.knowledgebase.dto.DocumentRefDto;
+import com.alexandria.knowledgebase.dto.SemanticSearchResponseDto;
+import com.alexandria.knowledgebase.dto.SemanticSearchResultDto;
 import com.alexandria.knowledgebase.dto.UpdateDocumentRequest;
 import com.alexandria.knowledgebase.integration.GenAiClient;
 import com.alexandria.knowledgebase.integration.GenAiClient.ExtractResponse;
 import com.alexandria.knowledgebase.integration.GenAiClient.ExtractedEntityDto;
 import com.alexandria.knowledgebase.integration.GenAiClient.SummarizeResponse;
+import com.alexandria.knowledgebase.integration.GenAiClient.TagResponse;
 import com.alexandria.knowledgebase.search.SearchQuery;
 import com.alexandria.knowledgebase.search.SearchQueryRepository;
 import jakarta.validation.Valid;
@@ -17,6 +21,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -57,6 +62,7 @@ public class KnowledgeBaseService {
         if (textContent != null && !textContent.isBlank()) {
             processSummary(document);
             processEntities(document);
+            processTags(document);
             processIndexing(document);
         }
 
@@ -80,6 +86,7 @@ public class KnowledgeBaseService {
 
         processSummary(document);
         processEntities(document);
+        processTags(document);
         processIndexing(document);
 
         return document;
@@ -107,6 +114,24 @@ public class KnowledgeBaseService {
         } catch (Exception e) {
             log.warn(
                     "GenAI entity extraction failed for document {}: {}", document.getId(), e.getMessage());
+        }
+    }
+
+    private void processTags(Document document) {
+        try {
+            // pass existing labels so the model reuses them instead of inventing near-duplicates
+            List<String> knownTags = List.copyOf(getTagsForUserWithCount(document.getOwnerSubject()).keySet());
+            TagResponse response = genAiClient.tag(document.getObjectKey(), knownTags);
+            for (String label : response.tags()) {
+                if (label == null || label.isBlank()) {
+                    continue;
+                }
+                Tag tag = tagRepository.findByLabel(label).orElseGet(() -> tagRepository.save(new Tag(label, TagSource.AUTO)));
+                document.addTag(tag);
+            }
+            documentService.save(document);
+        } catch (Exception e) {
+            log.warn("GenAI tagging failed for document {}: {}", document.getId(), e.getMessage());
         }
     }
 
@@ -144,6 +169,18 @@ public class KnowledgeBaseService {
         extractedEntityRepository.deleteByDocumentId(id);
         extractedEntityRepository.flush();
         processEntities(document);
+    }
+
+    @Transactional
+    public void reprocessTags(UUID id, String ownerSubject) {
+        Document document = getDocument(id, ownerSubject);
+        // only drop the auto tags, user-added tags stay
+        List<Tag> autoTags = document.getTags().stream().filter(tag -> tag.getSource() == TagSource.AUTO).toList();
+        for (Tag tag : autoTags) {
+            document.removeTag(tag);
+        }
+        documentService.save(document);
+        processTags(document);
     }
 
     public Summary getDocumentSummary(UUID id, String ownerSubject) {
@@ -190,13 +227,48 @@ public class KnowledgeBaseService {
         return documentService.save(document);
     }
 
-    public List<Document> search(String userSubject, String queryText) {
-        List<Document> results = documentService.searchByFileName(userSubject, queryText);
+    public List<DocumentRefDto> search(String userSubject, String queryText) {
+        List<Document> matches = documentService.searchByFileNameOrContent(userSubject, queryText);
+
+        SearchQuery searchQuery = new SearchQuery(userSubject, queryText, matches.size());
+        searchQueryRepository.save(searchQuery);
+
+        return matches.stream().map(DocumentRefDto::from).toList();
+    }
+
+    public SemanticSearchResponseDto semanticSearch(String userSubject, String queryText, Integer limit) {
+        List<String> objectKeys = documentService.findObjectKeysByOwnerSubject(userSubject);
+
+        List<SemanticSearchResultDto> results;
+        boolean fallbackUsed = false;
+        try {
+            GenAiClient.SearchResponse response = genAiClient.search(queryText, objectKeys, limit);
+            List<GenAiClient.SearchResult> hits = response.results();
+            Map<String, Document> byObjectKey = hits.isEmpty() ? Map.of() : documentService.findByOwnerSubjectAndObjectKeyIn(userSubject, hits.stream().map(GenAiClient.SearchResult::objectKey).toList()).stream().collect(Collectors.toMap(Document::getObjectKey, d -> d, (a, b) -> a));
+            results = hits.stream().map(hit -> {
+                Document document = byObjectKey.get(hit.objectKey());
+                return document == null ? null : new SemanticSearchResultDto(DocumentRefDto.from(document), hit.score(), hit.snippet());
+            }).filter(Objects::nonNull).toList();
+        } catch (Exception e) {
+            log.warn("GenAI semantic search failed for user {}: {}", userSubject, e.getMessage());
+            results = keywordFallback(userSubject, queryText);
+            fallbackUsed = true;
+        }
+
+        // an empty index returns no hits, fall back to keyword search so the user still gets something
+        if (results.isEmpty() && !fallbackUsed) {
+            results = keywordFallback(userSubject, queryText);
+            fallbackUsed = true;
+        }
 
         SearchQuery searchQuery = new SearchQuery(userSubject, queryText, results.size());
         searchQueryRepository.save(searchQuery);
 
-        return results;
+        return new SemanticSearchResponseDto(results, fallbackUsed);
+    }
+
+    private List<SemanticSearchResultDto> keywordFallback(String userSubject, String queryText) {
+        return documentService.searchByFileNameOrContent(userSubject, queryText).stream().map(d -> new SemanticSearchResultDto(DocumentRefDto.from(d), null, null)).toList();
     }
 
     @Transactional
