@@ -7,7 +7,7 @@ info:
   license:
     name: MIT
     identifier: MIT
-  version: 2.3.0
+  version: 3.0.0
 servers:
   - url: /
     description: Current server
@@ -159,6 +159,36 @@ paths:
       responses:
         '204':
           description: Tag added
+        '404':
+          description: Document not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - bearerAuth: []
+  /api/v1/knowledgebase/documents/{id}/reprocess/tags:
+    post:
+      tags:
+        - KnowledgeBase Service
+      summary: Reprocess document tags
+      operationId: reprocessTags
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Document tags reprocessed
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '404':
           description: Document not found
           content:
@@ -422,12 +452,12 @@ paths:
                 $ref: '#/components/schemas/TagListDto'
       security:
         - bearerAuth: []
-  /api/v1/knowledgebase/search:
+  /api/v1/knowledgebase/search/text:
     get:
       tags:
         - KnowledgeBase Service
-      summary: Search documents
-      operationId: search
+      summary: Keyword search over document filenames and content
+      operationId: searchText
       parameters:
         - name: q
           in: query
@@ -440,9 +470,43 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Document'
+                $ref: '#/components/schemas/TextSearchResponseDto'
+      security:
+        - bearerAuth: []
+  /api/v1/knowledgebase/search/semantic:
+    get:
+      tags:
+        - KnowledgeBase Service
+      summary: Semantic search over document content, with keyword fallback
+      operationId: searchSemantic
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 10
+            maximum: 50
+            minimum: 1
+      responses:
+        '200':
+          description: Ranked search results with match context
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SemanticSearchResponseDto'
+        '400':
+          description: Invalid limit
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
       security:
         - bearerAuth: []
   /api/v1/knowledgebase/history/search:
@@ -1160,6 +1224,48 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/TagDto'
+    DocumentRefDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        fileName:
+          type: string
+        fileType:
+          type: string
+        fileSize:
+          type: integer
+          format: int64
+        createdAt:
+          type: string
+          format: date-time
+    TextSearchResponseDto:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/DocumentRefDto'
+    SemanticSearchResponseDto:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/SemanticSearchResultDto'
+        fallbackUsed:
+          type: boolean
+    SemanticSearchResultDto:
+      type: object
+      properties:
+        document:
+          $ref: '#/components/schemas/DocumentRefDto'
+        score:
+          type: number
+          format: double
+        snippet:
+          type: string
     SearchQuery:
       type: object
       properties:
