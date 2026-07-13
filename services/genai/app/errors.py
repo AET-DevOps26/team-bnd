@@ -83,10 +83,12 @@ def _body(code: str, message: str, field_errors: list[dict] | None = None) -> di
 
 
 def _field_path(location: tuple) -> str:
-    # Drop the leading "body"/"query"/... segment so the field reads like the
-    # request field the client sent (e.g. "objectKey", "maxEntities").
-    parts = [str(p) for p in location if p not in ("body", "query", "path")]
-    return ".".join(parts)
+    # Drop only the leading "body"/"query"/"path" marker, so a nested field
+    # named e.g. "query" isn't stripped too.
+    parts = list(location)
+    if parts and parts[0] in ("body", "query", "path"):
+        parts = parts[1:]
+    return ".".join(str(p) for p in parts)
 
 
 def register_error_handlers(app: FastAPI) -> None:

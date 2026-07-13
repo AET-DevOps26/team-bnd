@@ -539,6 +539,14 @@ def test_validation_error_uses_shared_schema_with_field_errors():
     assert any(fe["field"] == "objectKey" for fe in body["fieldErrors"])
 
 
+def test_validation_error_keeps_field_named_like_a_location_marker():
+    # loc is ("body", "query"); only the leading "body" marker should be dropped.
+    response = client.post("/genai/search", json={"query": "  ", "objectKeys": ["k1"]})
+
+    assert response.status_code == 422
+    assert any(fe["field"] == "query" for fe in response.json()["fieldErrors"])
+
+
 def test_summarize_maps_provider_failure_to_502():
     with (
         patch("app.main.fetch_text", return_value="document body"),
