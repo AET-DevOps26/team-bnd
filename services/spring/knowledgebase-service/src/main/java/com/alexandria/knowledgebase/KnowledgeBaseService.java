@@ -15,6 +15,8 @@ import com.alexandria.knowledgebase.search.SearchQueryRepository;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -39,9 +41,12 @@ public class KnowledgeBaseService {
     private final GenAiClient genAiClient;
     private final TextExtractor textExtractor;
     private final ObjectStorageService objectStorageService;
+    // Self-reference so the @Async pipeline method is entered through the Spring proxy;
+    // a plain this.processDocumentAsync(...) call would run inline and defeat the point.
+    private final ObjectProvider<KnowledgeBaseService> self;
 
     public KnowledgeBaseService(
-                                DocumentService documentService, SummaryRepository summaryRepository, ExtractedEntityRepository extractedEntityRepository, TagRepository tagRepository, SearchQueryRepository searchQueryRepository, GenAiClient genAiClient, TextExtractor textExtractor, ObjectStorageService objectStorageService) {
+                                DocumentService documentService, SummaryRepository summaryRepository, ExtractedEntityRepository extractedEntityRepository, TagRepository tagRepository, SearchQueryRepository searchQueryRepository, GenAiClient genAiClient, TextExtractor textExtractor, ObjectStorageService objectStorageService, ObjectProvider<KnowledgeBaseService> self) {
         this.documentService = documentService;
         this.summaryRepository = summaryRepository;
         this.extractedEntityRepository = extractedEntityRepository;
@@ -50,6 +55,7 @@ public class KnowledgeBaseService {
         this.genAiClient = genAiClient;
         this.textExtractor = textExtractor;
         this.objectStorageService = objectStorageService;
+        this.self = self;
     }
 
     @Transactional
@@ -60,10 +66,7 @@ public class KnowledgeBaseService {
         document = documentService.save(document);
 
         if (textContent != null && !textContent.isBlank()) {
-            processSummary(document);
-            processEntities(document);
-            processTags(document);
-            processIndexing(document);
+            self.getObject().processDocumentAsync(document.getId());
         }
 
         return document;
@@ -84,12 +87,32 @@ public class KnowledgeBaseService {
         document = documentService.save(document);
         objectStorageService.upload(objectKey, file);
 
+        self.getObject().processDocumentAsync(document.getId());
+
+        return document;
+    }
+
+    // Runs the GenAI pipeline off the request thread so uploads return as soon as the
+    // file is stored. Reloads the document by id because the persistence context that
+    // created it does not carry over to this thread, and the row may already be gone.
+    @Async
+    @Transactional
+    public void processDocumentAsync(UUID documentId) {
+        Document document;
+        try {
+            document = documentService.findById(documentId);
+        } catch (Exception e) {
+            log.warn("Skipping async GenAI processing for missing document {}: {}", documentId, e.getMessage());
+            return;
+        }
+        String textContent = document.getRawTextContent();
+        if (textContent == null || textContent.isBlank()) {
+            return;
+        }
         processSummary(document);
         processEntities(document);
         processTags(document);
         processIndexing(document);
-
-        return document;
     }
 
     private void processSummary(Document document) {
