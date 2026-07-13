@@ -19,6 +19,8 @@ import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Collection;
@@ -67,7 +69,7 @@ public class KnowledgeBaseService {
         document = documentService.save(document);
 
         if (textContent != null && !textContent.isBlank()) {
-            self.getObject().processDocumentAsync(document.getId());
+            scheduleAsyncProcessing(document.getId());
         }
 
         return document;
@@ -88,9 +90,25 @@ public class KnowledgeBaseService {
         document = documentService.save(document);
         objectStorageService.upload(objectKey, file);
 
-        self.getObject().processDocumentAsync(document.getId());
+        scheduleAsyncProcessing(document.getId());
 
         return document;
+    }
+
+    // Only dispatch the async pipeline once the surrounding transaction has committed;
+    // otherwise processDocumentAsync's own transaction could run first and fail to find
+    // the not-yet-visible row. With no active transaction (e.g. tests) dispatch directly.
+    private void scheduleAsyncProcessing(UUID documentId) {
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    self.getObject().processDocumentAsync(documentId);
+                }
+            });
+        } else {
+            self.getObject().processDocumentAsync(documentId);
+        }
     }
 
     // Runs the GenAI pipeline off the request thread so uploads return as soon as the
