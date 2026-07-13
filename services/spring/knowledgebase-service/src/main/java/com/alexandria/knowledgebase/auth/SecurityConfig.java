@@ -12,9 +12,11 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.web.SecurityFilterChain;
 
-@Configuration
+// final (+ proxyBeanMethods=false so Spring won't try to CGLIB-subclass it) closes the
+// finalizer-attack window SpotBugs flags via CT_CONSTRUCTOR_THROW on the constructor.
+@Configuration(proxyBeanMethods = false)
 @EnableWebSecurity
-public class SecurityConfig {
+public final class SecurityConfig {
 
     private final JwtAuthenticationConverter jwtAuthConverter;
     private final ErrorResponseAuthenticationEntryPoint authenticationEntryPoint;
