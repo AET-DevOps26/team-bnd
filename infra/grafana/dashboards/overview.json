@@ -224,6 +224,35 @@
 			],
 			"title": "Traefik web entrypoint requests by status code",
 			"type": "timeseries"
+		},
+		{
+			"datasource": { "type": "prometheus", "uid": "prometheus" },
+			"fieldConfig": { "defaults": { "custom": { "align": "auto", "filterable": false } }, "overrides": [] },
+			"gridPos": { "h": 6, "w": 24, "x": 0, "y": 29 },
+			"id": 7,
+			"options": { "cellHeight": "sm", "footer": { "countRows": false, "fields": "", "reducer": ["sum"], "show": false }, "showHeader": true },
+			"pluginVersion": "11.6.7",
+			"targets": [
+				{
+					"datasource": { "type": "prometheus", "uid": "prometheus" },
+					"expr": "application_version",
+					"format": "table",
+					"instant": true,
+					"refId": "A"
+				}
+			],
+			"title": "Running service versions",
+			"transformations": [
+				{
+					"id": "organize",
+					"options": {
+						"excludeByName": { "Time": true, "Value": true, "__name__": true, "instance": true, "service": true, "application": true },
+						"indexByName": { "job": 0, "version": 1 },
+						"renameByName": { "job": "Service", "version": "Version" }
+					}
+				}
+			],
+			"type": "table"
 		}
 	],
 	"preload": false,

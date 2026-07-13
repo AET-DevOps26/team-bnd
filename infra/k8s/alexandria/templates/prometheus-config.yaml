@@ -52,6 +52,10 @@ data:
         static_configs:
           - targets: ["{{ .Release.Name }}-seaweedfs-volume.{{ .Release.Namespace }}:9327"]
 
+      - job_name: weaviate
+        static_configs:
+          - targets: ["{{ include "alexandria.fullname" . }}-weaviate.{{ .Release.Namespace }}:2112"]
+
   alert.rules.yml: |
     groups:
       - name: alexandria

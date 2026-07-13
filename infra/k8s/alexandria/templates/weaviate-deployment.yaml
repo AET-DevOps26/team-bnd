@@ -48,6 +48,9 @@ spec:
             - name: grpc
               containerPort: 50051
               protocol: TCP
+            - name: metrics
+              containerPort: 2112
+              protocol: TCP
           env:
             # ENABLE_MODULES is empty because embeddings come from the genai
             # service, not a Weaviate-side vectorizer. Anonymous
@@ -65,6 +68,8 @@ spec:
               value: "true"
             - name: CLUSTER_HOSTNAME
               value: {{ include "alexandria.fullname" . }}-weaviate
+            - name: PROMETHEUS_MONITORING_ENABLED
+              value: "true"
           volumeMounts:
             - name: data
               mountPath: /var/lib/weaviate

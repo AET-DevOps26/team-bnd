@@ -65,6 +65,11 @@ def test_metrics_endpoint_records_http_requests():
     assert 'handler="/genai/health"' in body
 
 
+def test_metrics_endpoint_exposes_version_info():
+    body = client.get("/genai/metrics").text
+    assert f'application_version{{application="{SERVICE_NAME}",version="{SERVICE_VERSION}"}} 1.0' in body
+
+
 # --- summarize ---
 
 

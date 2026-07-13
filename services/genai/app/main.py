@@ -2,6 +2,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import PlainTextResponse
+from prometheus_client import Gauge
 from prometheus_fastapi_instrumentator import Instrumentator
 from pydantic import BaseModel, Field, field_validator
 
@@ -49,6 +50,13 @@ Instrumentator(should_group_untemplated=True).instrument(app).expose(
     include_in_schema=False,
     tags=["metrics"],
 )
+
+# Constant info gauge so Grafana can show which version is running, matching the
+# Spring services' application_version metric (value is always 1, version in a
+# label). The name avoids an _info suffix on purpose: Micrometer strips it on the
+# Spring side, so the two exporters would otherwise disagree on the series name.
+_application_version = Gauge("application_version", "Running application build info", ["application", "version"])
+_application_version.labels(application=SERVICE_NAME, version=SERVICE_VERSION).set(1)
 
 
 # --- request / response models ---
