@@ -280,6 +280,8 @@ services:
       - alexandria
     volumes:
       - ./infra/oidc/realm.json:/opt/keycloak/data/import/realm.json:ro
+      # Persisted realm survives restarts, so edits to realm.json are not
+      # re-imported until this volume is removed (docker compose down -v).
       - keycloak_data:/opt/keycloak/data
     deploy:
       resources:
