@@ -7,6 +7,9 @@ Alexandria has been deployed to namespace {{ .Release.Namespace }}.
 {{- if eq .Values.keycloak.adminPassword "admin" }}
 {{- $insecure = append $insecure "keycloak.adminPassword" }}
 {{- end }}
+{{- if eq .Values.grafana.adminPassword "admin" }}
+{{- $insecure = append $insecure "grafana.adminPassword" }}
+{{- end }}
 {{- if eq .Values.keycloak.database.password "postgres-password" }}
 {{- $insecure = append $insecure "keycloak.database.password" }}
 {{- end }}
@@ -23,9 +26,20 @@ Alexandria has been deployed to namespace {{ .Release.Namespace }}.
 {{- end }}
 
  To set secure passwords, create a values-secrets.yaml file:
-   cp infra/k8s/alexandria/values-secrets.yaml.example infra/k8s/alexandria/values-secrets.yaml
+    cp infra/k8s/alexandria/values-secrets.yaml.example infra/k8s/alexandria/values-secrets.yaml
 
- Then deploy with:
-   helm upgrade {{ .Release.Name }} infra/k8s/alexandria --dependency-update -f infra/k8s/alexandria/values-secrets.yaml
+ Because stateful services (Postgres, Keycloak, Grafana) persist credentials
+ in their PVCs, a plain upgrade will NOT apply password changes. Instead,
+ uninstall, clear the PVCs, then reinstall.
+
+ WARNING: Deleting PVCs will permanently destroy all data (databases, storage,
+ dashboards). Back up anything you need before proceeding.
+
+    helm uninstall {{ .Release.Name }} -n {{ .Release.Namespace }}
+    kubectl delete pvc --all -n {{ .Release.Namespace }}
+    helm install {{ .Release.Name }} infra/k8s/alexandria \
+      --dependency-update \
+      --namespace {{ .Release.Namespace }} \
+      -f infra/k8s/alexandria/values-secrets.yaml
 ===========================================================================
 {{- end }}
