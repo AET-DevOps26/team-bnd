@@ -1,5 +1,6 @@
 package com.alexandria.qa.integration;
 
+import com.alexandria.common.internal.HmacRequestSigningInterceptor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
@@ -15,11 +16,11 @@ public class KnowledgeBaseClient {
 
     private final RestClient restClient;
 
-    public KnowledgeBaseClient(@Value("${knowledgebase.base-url:http://knowledgebase-service:8080}") String baseUrl) {
+    public KnowledgeBaseClient(@Value("${knowledgebase.base-url:http://knowledgebase-service:8080}") String baseUrl, HmacRequestSigningInterceptor internalSigner) {
         HttpClient httpClient = HttpClient.newBuilder().version(HttpClient.Version.HTTP_1_1).connectTimeout(Duration.ofSeconds(5)).build();
         JdkClientHttpRequestFactory factory = new JdkClientHttpRequestFactory(httpClient);
         factory.setReadTimeout(Duration.ofSeconds(30));
-        this.restClient = RestClient.builder().requestFactory(factory).baseUrl(baseUrl).build();
+        this.restClient = RestClient.builder().requestFactory(factory).baseUrl(baseUrl).requestInterceptor(internalSigner).build();
     }
 
     public List<String> listDocumentKeys(String userSubject) {

@@ -1,5 +1,6 @@
 package com.alexandria.user.integration;
 
+import com.alexandria.common.internal.HmacRequestSigningInterceptor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
@@ -13,11 +14,11 @@ public class QAClient {
 
     private final RestClient restClient;
 
-    public QAClient(@Value("${qa.base-url:http://qa-service:8080}") String baseUrl) {
+    public QAClient(@Value("${qa.base-url:http://qa-service:8080}") String baseUrl, HmacRequestSigningInterceptor internalSigner) {
         HttpClient httpClient = HttpClient.newBuilder().version(HttpClient.Version.HTTP_1_1).connectTimeout(Duration.ofSeconds(5)).build();
         JdkClientHttpRequestFactory factory = new JdkClientHttpRequestFactory(httpClient);
         factory.setReadTimeout(Duration.ofSeconds(30));
-        this.restClient = RestClient.builder().requestFactory(factory).baseUrl(baseUrl).build();
+        this.restClient = RestClient.builder().requestFactory(factory).baseUrl(baseUrl).requestInterceptor(internalSigner).build();
     }
 
     public void deleteUserData(String oidcSubject) {

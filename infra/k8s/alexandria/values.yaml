@@ -25,6 +25,10 @@ spring:
     userIdClaim: "sub"
     usernameClaim: "preferred_username"
     rolesClaim: "roles"
+  internal:
+    # HMAC secret for /internal/** service-to-service auth.
+    # Override via values-secrets.yaml for real deployments.
+    sharedSecret: "override-me-with-a-strong-shared-secret"
 
 # Resource limits are sized to stay under the stud cluster ResourceQuota
 # `default-h2d5c` (3250m CPU / 5144Mi memory in the alexandria namespace).
