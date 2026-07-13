@@ -373,6 +373,7 @@ services:
       ENABLE_MODULES: ""
       DISABLE_TELEMETRY: "true"
       CLUSTER_HOSTNAME: "node1"
+      PROMETHEUS_MONITORING_ENABLED: "true"
     restart: unless-stopped
     networks:
       - alexandria

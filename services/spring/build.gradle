@@ -22,7 +22,7 @@ subprojects {
 	apply plugin: 'com.github.spotbugs'
 
 	group = 'com.alexandria'
-	version = '2.0.0'
+	version = '5.0.0'
 
 	spotbugs {
 		toolVersion = '4.10.3'
@@ -93,6 +93,13 @@ subprojects {
 
 	tasks.named('test') {
 		useJUnitPlatform()
+	}
+}
+
+// For the version tag.
+configure(subprojects.findAll { it.name.endsWith('-service') }) {
+	springBoot {
+		buildInfo()
 	}
 }
 
