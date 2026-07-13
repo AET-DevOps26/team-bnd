@@ -80,7 +80,7 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.25"
+          cpus: "2.0"
           memory: 384M
     labels:
       - "traefik.enable=true"
@@ -98,7 +98,7 @@ services:
       postgres-db:
         condition: service_healthy
       keycloak:
-        condition: service_healthy
+        condition: service_started
 
   knowledgebase-service:
     image: ghcr.io/aet-devops26/team-bnd/knowledgebase-service:latest
@@ -135,7 +135,7 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.50"
+          cpus: "2.0"
           memory: 512M
     labels:
       - "traefik.enable=true"
@@ -155,9 +155,7 @@ services:
       postgres-db:
         condition: service_healthy
       keycloak:
-        condition: service_healthy
-      genai:
-        condition: service_healthy
+        condition: service_started
 
   qa-service:
     image: ghcr.io/aet-devops26/team-bnd/qa-service:latest
@@ -190,7 +188,7 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.25"
+          cpus: "2.0"
           memory: 384M
     labels:
       - "traefik.enable=true"
@@ -208,9 +206,7 @@ services:
       postgres-db:
         condition: service_healthy
       keycloak:
-        condition: service_healthy
-      genai:
-        condition: service_healthy
+        condition: service_started
 
   genai:
     image: ghcr.io/aet-devops26/team-bnd/genai:latest
@@ -260,7 +256,7 @@ services:
       interval: 30s
       timeout: 3s
       retries: 3
-      start_period: 5s
+      start_period: 30s
     depends_on:
       s3-storage:
         condition: service_healthy
@@ -276,6 +272,10 @@ services:
       KC_BOOTSTRAP_ADMIN_USERNAME: ${KC_BOOTSTRAP_ADMIN_USERNAME:-admin}
       KC_BOOTSTRAP_ADMIN_PASSWORD: ${KC_BOOTSTRAP_ADMIN_PASSWORD:-localkcpassword}
       KC_HEALTH_ENABLED: "true"
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres-db:${POSTGRES_PORT:-5432}/keycloak
+      KC_DB_USERNAME: ${POSTGRES_USER:-admin}
+      KC_DB_PASSWORD: ${POSTGRES_PASSWORD:-localpgpassword}
       KC_HTTP_PORT: 8180
       KC_HOSTNAME: http://localhost/auth
       KC_PROXY_HEADERS: xforwarded
@@ -287,11 +287,16 @@ services:
     networks:
       - alexandria
     volumes:
+      # The realm persists in the keycloak postgres db, so edits to realm.json are
+      # not re-imported until the postgres data is wiped (docker compose down -v).
       - ./infra/oidc/realm.json:/opt/keycloak/data/import/realm.json:ro
+    depends_on:
+      postgres-db:
+        condition: service_healthy
     deploy:
       resources:
         limits:
-          cpus: "0.50"
+          cpus: "2.0"
           memory: 512M
     labels:
       - "traefik.enable=true"
@@ -323,6 +328,7 @@ services:
       - alexandria
     volumes:
       - pgdata:/var/lib/postgresql/data
+      - ./infra/postgres/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-admin} -d ${POSTGRES_DB:-alexandria} -p ${POSTGRES_PORT:-5432}"]
       interval: 10s
@@ -478,9 +484,9 @@ services:
     healthcheck:
       test: ["CMD", "traefik", "healthcheck", "--ping"]
       interval: 30s
-      timeout: 3s
+      timeout: 10s
       retries: 3
-      start_period: 5s
+      start_period: 20s
 
   prometheus:
     image: prom/prometheus:v3.12.0
@@ -563,6 +569,15 @@ services:
     profiles:
       - e2e
     command: '/bin/sh -c "npx -y playwright@1.61.1 run-server --port 3000 --host 0.0.0.0"'
+    depends_on:
+      client:
+        condition: service_healthy
+      traefik:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      genai:
+        condition: service_healthy
 
 networks:
   alexandria:
