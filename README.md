@@ -15,6 +15,19 @@ Alexandria consists of three main subsystems orchestrated via Docker Compose and
 - **Server**: Three Spring Boot microservices (user-service, knowledgebase-service, qa-service) exposing REST APIs, backed by PostgreSQL with a schema per service.
 - **GenAI**: A Python/FastAPI service using LangChain to extract entities and summarize uploaded documents.
 
+## Test coverage
+
+Every service uploads its coverage to [Codecov](https://app.codecov.io/gh/AET-DevOps26/team-bnd) under its own flag, so each badge tracks that service on its own.
+
+| Service               | Coverage                                                                                                                                                                                                        |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| user-service          | [![user-service coverage](https://codecov.io/gh/AET-DevOps26/team-bnd/graph/badge.svg?flag=user-service)](https://app.codecov.io/gh/AET-DevOps26/team-bnd?flags%5B0%5D=user-service)                            |
+| knowledgebase-service | [![knowledgebase-service coverage](https://codecov.io/gh/AET-DevOps26/team-bnd/graph/badge.svg?flag=knowledgebase-service)](https://app.codecov.io/gh/AET-DevOps26/team-bnd?flags%5B0%5D=knowledgebase-service) |
+| qa-service            | [![qa-service coverage](https://codecov.io/gh/AET-DevOps26/team-bnd/graph/badge.svg?flag=qa-service)](https://app.codecov.io/gh/AET-DevOps26/team-bnd?flags%5B0%5D=qa-service)                                  |
+| genai                 | [![genai coverage](https://codecov.io/gh/AET-DevOps26/team-bnd/graph/badge.svg?flag=genai)](https://app.codecov.io/gh/AET-DevOps26/team-bnd?flags%5B0%5D=genai)                                                 |
+
+The client is exercised by the Playwright e2e tests rather than a unit suite, so it doesn't have a coverage badge yet; one will be added once it has unit tests to measure.
+
 ## Setup
 
 ### Traefik Reverse Proxy

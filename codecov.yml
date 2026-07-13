@@ -1,0 +1,32 @@
+coverage:
+  status:
+    project:
+      default:
+        informational: true
+    patch:
+      default:
+        informational: true
+
+flag_management:
+  default_rules:
+    carryforward: true
+  individual_flags:
+    - name: user-service
+      paths:
+        - services/spring/user-service
+    - name: knowledgebase-service
+      paths:
+        - services/spring/knowledgebase-service
+    - name: qa-service
+      paths:
+        - services/spring/qa-service
+    - name: common
+      paths:
+        - services/spring/common
+    - name: genai
+      paths:
+        - services/genai
+
+comment:
+  layout: "reach, flags, files"
+  require_changes: true
