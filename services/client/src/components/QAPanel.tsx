@@ -3,6 +3,7 @@ import ReactMarkdown from "react-markdown";
 import $api from "../api/client";
 import type { components } from "../api/schema";
 import { useQueryClient } from "@tanstack/react-query";
+import { formatDateTime } from "../utils/format";
 
 type QAInteraction = components["schemas"]["QAInteraction"];
 type Document = components["schemas"]["Document"];
@@ -12,15 +13,19 @@ interface Props {
   onSelectDocument: (documentId: string) => void;
 }
 
-function formatDate(isoString?: string): string {
-  if (!isoString) return "";
-  return new Date(isoString).toLocaleString(undefined, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+/**
+ * Maps a fetch error to a user-facing message. Extracting the error code and
+ * branching is the same for every query; only the wording differs per action,
+ * so callers pass the three strings they want to show.
+ */
+function errorMessage(
+  err: unknown,
+  messages: { notAuthenticated: string; forbidden: string; fallback: string },
+): string {
+  const code = err instanceof Error ? err.message : String(err);
+  if (code === "NOT_AUTHENTICATED") return messages.notAuthenticated;
+  if (code === "FORBIDDEN") return messages.forbidden;
+  return messages.fallback;
 }
 
 /**
@@ -56,11 +61,16 @@ export default function QAPanel({ documents, onSelectDocument }: Props) {
     error: historyError,
   } = $api.useQuery("get", "/api/v1/qa/history");
 
-  // Seed interactions from history once on mount
+  // Seed interactions from history once on mount. Merge instead of overwrite so
+  // an answer that was asked while history was still loading isn't dropped when
+  // the history request finally resolves.
   useEffect(() => {
     if (historyData && !historyLoaded.current) {
       historyLoaded.current = true;
-      setInteractions(historyData);
+      setInteractions((prev) => {
+        const seen = new Set(prev.map((i) => i.id));
+        return [...prev, ...historyData.filter((i) => !seen.has(i.id))];
+      });
     }
   }, [historyData]);
 
@@ -82,10 +92,9 @@ export default function QAPanel({ documents, onSelectDocument }: Props) {
     },
   );
 
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  function submitQuestion() {
     const trimmed = question.trim();
-    if (!trimmed || isPending) return;
+    if (!trimmed || isPending || historyLoading) return;
 
     resetAskError();
     askQuestion(
@@ -99,23 +108,25 @@ export default function QAPanel({ documents, onSelectDocument }: Props) {
     );
   }
 
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    submitQuestion();
+  }
+
   function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
     if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
       e.preventDefault();
-      handleSubmit(e as unknown as React.FormEvent);
+      submitQuestion();
     }
   }
 
-  const askErrorMessage = (() => {
-    if (!askError) return null;
-    const err: unknown = askError;
-    const msg = err instanceof Error ? err.message : String(err);
-    if (msg === "NOT_AUTHENTICATED")
-      return "Authentication error. Retrying login...";
-    if (msg === "FORBIDDEN")
-      return "You do not have permission to ask questions.";
-    return "Failed to get an answer. Please try again.";
-  })();
+  const askErrorMessage = askError
+    ? errorMessage(askError, {
+        notAuthenticated: "Authentication error. Retrying login...",
+        forbidden: "You do not have permission to ask questions.",
+        fallback: "Failed to get an answer. Please try again.",
+      })
+    : null;
 
   return (
     <section className="qa-panel">
@@ -152,14 +163,11 @@ export default function QAPanel({ documents, onSelectDocument }: Props) {
 
         {historyError && !historyLoading && interactions.length === 0 && (
           <p className="qa-status qa-status--error">
-            {(() => {
-              const err: unknown = historyError;
-              const msg = err instanceof Error ? err.message : String(err);
-              if (msg === "NOT_AUTHENTICATED") return "Not authenticated.";
-              if (msg === "FORBIDDEN")
-                return "You do not have permission to view Q&A history.";
-              return "Failed to load Q&A history.";
-            })()}
+            {errorMessage(historyError, {
+              notAuthenticated: "Not authenticated.",
+              forbidden: "You do not have permission to view Q&A history.",
+              fallback: "Failed to load Q&A history.",
+            })}
           </p>
         )}
 
@@ -167,8 +175,8 @@ export default function QAPanel({ documents, onSelectDocument }: Props) {
           <p className="qa-empty">No questions yet. Ask something above.</p>
         )}
 
-        {interactions.map((interaction) => (
-          <article key={interaction.id} className="qa-interaction">
+        {interactions.map((interaction, index) => (
+          <article key={interaction.id ?? index} className="qa-interaction">
             <p className="qa-question">{interaction.question}</p>
 
             <div className="qa-answer">
@@ -182,16 +190,17 @@ export default function QAPanel({ documents, onSelectDocument }: Props) {
                   <ul className="qa-source-list">
                     {interaction.sourceObjectKeys.map((key) => {
                       const doc = findDocumentByKey(documents, key);
+                      const docId = doc?.id;
                       return (
                         <li key={key} className="qa-source-item">
-                          {doc ? (
+                          {docId ? (
                             <button
                               type="button"
                               className="qa-source-link"
-                              onClick={() => onSelectDocument(doc.id!)}
+                              onClick={() => onSelectDocument(docId)}
                               title={key}
                             >
-                              {doc.fileName ?? sourceKeyToName(key)}
+                              {doc?.fileName ?? sourceKeyToName(key)}
                             </button>
                           ) : (
                             <span
@@ -211,7 +220,7 @@ export default function QAPanel({ documents, onSelectDocument }: Props) {
             {(interaction.timestamp || interaction.modelUsed) && (
               <p className="qa-meta">
                 {interaction.timestamp && (
-                  <span>{formatDate(interaction.timestamp)}</span>
+                  <span>{formatDateTime(interaction.timestamp)}</span>
                 )}
                 {interaction.timestamp && interaction.modelUsed && (
                   <span className="qa-meta-sep"> · </span>
@@ -238,7 +247,6 @@ export default function QAPanel({ documents, onSelectDocument }: Props) {
                   {
                     onSuccess() {
                       setInteractions([]);
-                      historyLoaded.current = false;
                     },
                   },
                 );

@@ -1,6 +1,7 @@
 import React from "react";
 import UploadDocument from "./UploadDocument";
 import type { components } from "../api/schema";
+import { formatDate } from "../utils/format";
 
 type Document = components["schemas"]["Document"];
 
@@ -10,15 +11,6 @@ interface Props {
   documents: Document[] | undefined;
   isLoading: boolean;
   error: unknown;
-}
-
-function formatDate(isoString?: string): string {
-  if (!isoString) return "";
-  return new Date(isoString).toLocaleDateString(undefined, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
 }
 
 export default function DocumentTree({

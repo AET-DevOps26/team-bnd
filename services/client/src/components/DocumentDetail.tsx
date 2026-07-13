@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import $api from "../api/client";
+import { formatDateTime } from "../utils/format";
 
 interface Props {
   documentId: string | null;
@@ -12,17 +13,6 @@ const ENTITY_TYPE_LABELS: Record<string, string> = {
   TOPIC: "Topic",
   ORGANIZATION: "Organization",
 };
-
-function formatDate(isoString?: string): string {
-  if (!isoString) return "—";
-  return new Date(isoString).toLocaleString(undefined, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
 
 function formatBytes(bytes?: number): string {
   if (bytes == null) return "—";
@@ -139,7 +129,7 @@ export default function DocumentDetail({ documentId }: Props) {
           <dt>Size</dt>
           <dd>{formatBytes(document.fileSize)}</dd>
           <dt>Uploaded</dt>
-          <dd>{formatDate(document.createdAt)}</dd>
+          <dd>{formatDateTime(document.createdAt, "—")}</dd>
         </dl>
       </header>
 
