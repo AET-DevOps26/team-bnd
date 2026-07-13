@@ -107,6 +107,14 @@ When a service's autoscaling is enabled the HPA owns the replica count, so the s
 kubectl -n alexandria get hpa
 ```
 
+### Rationale on Static Scrape Config
+
+We run our own Prometheus and Grafana as plain deployments and feed Prometheus a static scrape config from a ConfigMap (`templates/prometheus-config.yaml`), rather than using the Prometheus operator with ServiceMonitor/PodMonitor and PrometheusRule CRDs.
+
+The operator isn't installed on the stud cluster and the CRDs aren't available, thus ServiceMonitors would need us to bring up and manage the whole operator stack. For a fixed, small set of services that only changes when we add a service, a hand-written scrape config is simpler, needs no extra cluster components, and keeps the k8s setup close to the docker-compose one.
+
+The scrape targets differ slightly from the compose setup on purpose: compose runs an all-in-one SeaweedFS container and Traefik, while the chart splits SeaweedFS into `seaweedfs-s3` and `seaweedfs-volume` (different metrics port) and fronts traffic with the ingress instead of Traefik. The alert rules are kept in sync with `infra/prometheus/alert.rules.yml`.
+
 # Kubernetes Troubleshooting
 
 ### Spring or Keycloak fail postgres password authentication after a reinstall
