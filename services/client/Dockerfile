@@ -1,14 +1,16 @@
+# syntax=docker/dockerfile:1
+
 # Multi-stage Dockerfile for building and serving the Vite app
-FROM node:24-alpine AS build
+FROM node:24-alpine@sha256:a0b9bf06e4e6193cf7a0f58816cc935ff8c2a908f81e6f1a95432d679c54fbfd AS build
 WORKDIR /app
 COPY package.json ./
 COPY package-lock.json* ./
-RUN npm ci --silent || npm install --no-audit --no-fund --silent
+RUN npm ci
 COPY . .
 RUN npm run build
 
 
-FROM nginxinc/nginx-unprivileged:stable-alpine
+FROM nginxinc/nginx-unprivileged:stable-alpine@sha256:b3f2436575bd5be7386518084d842dac414ab4962712afa31e99e0942a56e3b2
 COPY --from=build /app/dist /usr/share/nginx/html
 EXPOSE 8080
 
