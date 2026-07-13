@@ -5,7 +5,8 @@ import re
 from langchain_core.prompts import ChatPromptTemplate
 from pydantic import BaseModel, Field
 
-from app.llm import get_llm, get_model_name
+from app.llm import get_llm, get_model_name, get_provider, model_name_from_result, require_parsed
+from app.model_calls import run_model_call
 
 # Keep the number of tags per document small so the knowledge base stays
 # browsable instead of drowning in one-off labels.
@@ -71,8 +72,8 @@ def generate_tags(content: str, known_tags: list[str] | None = None) -> tuple[li
         (tags, model_name) where tags is a bounded, de-duplicated list of lowercase labels.
     """
     llm = get_llm()
-    structured_llm = llm.with_structured_output(_TaggingResult)
-    chain = _PROMPT | structured_llm
+    fallback = get_model_name()
+    structured_llm = llm.with_structured_output(_TaggingResult, include_raw=True)
     reuse = ""
     if known_tags:
         # Lowercase + allowlist also blocks prompt injection: knownTags are
@@ -83,5 +84,12 @@ def generate_tags(content: str, known_tags: list[str] | None = None) -> tuple[li
         sample = ", ".join(safe_tags[:50])
         if sample:
             reuse = f"These tags already exist in the knowledge base: {sample}. Prefer reusing one of them when it fits the document."
-    result: _TaggingResult = chain.invoke({"content": content, "reuse_instructions": reuse})  # ty:ignore[invalid-assignment]
-    return _normalize(result.tags), get_model_name()
+    result, model = run_model_call(
+        lambda: (_PROMPT | structured_llm).invoke({"content": content, "reuse_instructions": reuse}),
+        operation="chat",
+        provider=get_provider(),
+        fallback_model=fallback,
+        model_resolver=lambda r: model_name_from_result(r, fallback),
+    )
+    parsed: _TaggingResult = require_parsed(result)  # ty:ignore[invalid-assignment]
+    return _normalize(parsed.tags), model

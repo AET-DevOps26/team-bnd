@@ -5,7 +5,8 @@ from typing import Literal
 from langchain_core.prompts import ChatPromptTemplate
 from pydantic import BaseModel, Field
 
-from app.llm import get_llm, get_model_name
+from app.llm import get_llm, get_model_name, get_provider, model_name_from_result, require_parsed
+from app.model_calls import run_model_call
 
 # Cap applied when the caller doesn't ask for a specific number. Long documents
 # otherwise yield a sprawling list that's noisy to render and scan in the
@@ -63,8 +64,15 @@ def extract_entities(content: str, max_entities: int = DEFAULT_MAX_ENTITIES) -> 
         (entities, model_name) where entities is a list of dicts with name, type, confidence.
     """
     llm = get_llm()
-    structured_llm = llm.with_structured_output(_ExtractionResult)
-    chain = _PROMPT | structured_llm
-    result: _ExtractionResult = chain.invoke({"content": content, "max_entities": max_entities})  # ty:ignore[invalid-assignment]
-    entities = [e.model_dump() for e in _select_top_entities(result.entities, max_entities)]
-    return entities, get_model_name()
+    fallback = get_model_name()
+    structured_llm = llm.with_structured_output(_ExtractionResult, include_raw=True)
+    result, model = run_model_call(
+        lambda: (_PROMPT | structured_llm).invoke({"content": content, "max_entities": max_entities}),
+        operation="chat",
+        provider=get_provider(),
+        fallback_model=fallback,
+        model_resolver=lambda r: model_name_from_result(r, fallback),
+    )
+    parsed: _ExtractionResult = require_parsed(result)  # ty:ignore[invalid-assignment]
+    entities = [e.model_dump() for e in _select_top_entities(parsed.entities, max_entities)]
+    return entities, model

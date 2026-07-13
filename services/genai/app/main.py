@@ -7,7 +7,10 @@ from prometheus_fastapi_instrumentator import Instrumentator
 from pydantic import BaseModel, Field, field_validator
 
 from app.embeddings import chunk_text, embed_chunks, get_embedding_model_name
+from app.errors import customize_openapi, register_error_handlers
 from app.extract import DEFAULT_MAX_ENTITIES, extract_entities
+from app.limits import bound_document
+from app.metrics import record_truncation
 from app.qa import answer_question
 from app.search import search_documents
 from app.storage import ObjectNotFoundError, UnsupportedFileError, fetch_text
@@ -51,6 +54,11 @@ Instrumentator(should_group_untemplated=True).instrument(app).expose(
     tags=["metrics"],
 )
 
+# Render errors as the shared {code, message, fieldErrors} shape, in responses
+# and in the generated spec.
+register_error_handlers(app)
+customize_openapi(app)
+
 # Constant info gauge so Grafana can show which version is running, matching the
 # Spring services' application_version metric (value is always 1, version in a
 # label). The name avoids an _info suffix on purpose: Micrometer strips it on the
@@ -69,6 +77,7 @@ class GenAiSummarizeRequest(BaseModel):
 class GenAiSummarizeResponse(BaseModel):
     summary: str
     modelUsed: str
+    truncated: bool = False
 
 
 class GenAiExtractedEntity(BaseModel):
@@ -85,6 +94,7 @@ class GenAiExtractRequest(BaseModel):
 class GenAiExtractResponse(BaseModel):
     entities: list[GenAiExtractedEntity]
     modelUsed: str
+    truncated: bool = False
 
 
 class GenAiTagRequest(BaseModel):
@@ -95,6 +105,7 @@ class GenAiTagRequest(BaseModel):
 class GenAiTagResponse(BaseModel):
     tags: list[str]
     modelUsed: str
+    truncated: bool = False
 
 
 def _reject_blank(value: str) -> str:
@@ -181,6 +192,14 @@ _DOCUMENT_ERROR_RESPONSES = {
 }
 
 
+def _load_bounded_document(object_key: str, endpoint: str) -> tuple[str, bool]:
+    """Fetch a document and cap it to the model input limit for single-prompt endpoints."""
+    text, truncated = bound_document(_load_document(object_key))
+    if truncated:
+        record_truncation(endpoint)
+    return text, truncated
+
+
 # --- endpoints ---
 
 
@@ -203,28 +222,29 @@ def hello() -> str:
 @app.post("/genai/summarize", tags=["ai"], response_model=GenAiSummarizeResponse, responses=_DOCUMENT_ERROR_RESPONSES, openapi_extra={"security": []})
 def summarize_document(request: GenAiSummarizeRequest) -> GenAiSummarizeResponse:
     """Summarize the document stored under the given object key."""
-    content = _load_document(request.objectKey)
+    content, truncated = _load_bounded_document(request.objectKey, "summarize")
     summary, model = summarize(content)
-    return GenAiSummarizeResponse(summary=summary, modelUsed=model)
+    return GenAiSummarizeResponse(summary=summary, modelUsed=model, truncated=truncated)
 
 
 @app.post("/genai/extract", tags=["ai"], response_model=GenAiExtractResponse, responses=_DOCUMENT_ERROR_RESPONSES, openapi_extra={"security": []})
 def extract(request: GenAiExtractRequest) -> GenAiExtractResponse:
     """Extract named entities from the document stored under the given object key."""
-    content = _load_document(request.objectKey)
+    content, truncated = _load_bounded_document(request.objectKey, "extract")
     entities, model = extract_entities(content, request.maxEntities)
     return GenAiExtractResponse(
         entities=[GenAiExtractedEntity(**e) for e in entities],
         modelUsed=model,
+        truncated=truncated,
     )
 
 
 @app.post("/genai/tag", tags=["ai"], response_model=GenAiTagResponse, responses=_DOCUMENT_ERROR_RESPONSES, openapi_extra={"security": []})
 def tag(request: GenAiTagRequest) -> GenAiTagResponse:
     """Assign content-based topical tags to the document stored under the given object key."""
-    content = _load_document(request.objectKey)
+    content, truncated = _load_bounded_document(request.objectKey, "tag")
     tags, model = generate_tags(content, request.knownTags)
-    return GenAiTagResponse(tags=tags, modelUsed=model)
+    return GenAiTagResponse(tags=tags, modelUsed=model, truncated=truncated)
 
 
 @app.post("/genai/ask", tags=["ai"], response_model=GenAiAskResponse, openapi_extra={"security": []})

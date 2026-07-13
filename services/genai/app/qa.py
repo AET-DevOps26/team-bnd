@@ -18,7 +18,8 @@ from pydantic import BaseModel, Field
 
 from app.embeddings import embed_query
 from app.env import int_env
-from app.llm import get_llm, get_model_name
+from app.llm import get_llm, get_model_name, get_provider, model_name_from_result, require_parsed
+from app.model_calls import run_model_call
 from app.vectorstore import search
 
 _DEFAULT_TOP_K = 5
@@ -152,8 +153,14 @@ def answer_question(question: str, object_keys: list[str]) -> AnswerResult:
 
     sources = _group_sources(retrieved)
     context = "\n\n---\n\n".join(f"Source {i}:\n{source.text}" for i, source in enumerate(sources, start=1))
-    structured_llm = get_llm().with_structured_output(_CitedAnswer)
-    chain = _PROMPT | structured_llm
-    result: _CitedAnswer = chain.invoke({"context": context, "question": question})  # ty:ignore[invalid-assignment]
+    structured_llm = get_llm().with_structured_output(_CitedAnswer, include_raw=True)
+    result, model = run_model_call(
+        lambda: (_PROMPT | structured_llm).invoke({"context": context, "question": question}),
+        operation="chat",
+        provider=get_provider(),
+        fallback_model=model,
+        model_resolver=lambda r: model_name_from_result(r, model),
+    )
+    parsed: _CitedAnswer = require_parsed(result)  # ty:ignore[invalid-assignment]
 
-    return AnswerResult(result.answer.strip(), _build_citations(result.source_ids, sources), model)
+    return AnswerResult(parsed.answer.strip(), _build_citations(parsed.source_ids, sources), model)
