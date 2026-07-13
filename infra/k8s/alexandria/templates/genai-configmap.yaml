@@ -6,6 +6,20 @@ metadata:
     {{- include "alexandria.labels" . | nindent 4 }}
     app: genai
 data:
+  GENAI_LOG_LEVEL: {{ .Values.genai.logLevel | quote }}
+  LLM_PROVIDER: {{ .Values.genai.llmProvider | quote }}
+  LLM_BASE_URL: {{ .Values.genai.llmBaseUrl | quote }}
+  LLM_MODEL: {{ .Values.genai.llmModel | quote }}
+  LLM_TIMEOUT_SECONDS: {{ .Values.genai.llmTimeoutSeconds | quote }}
+  LLM_MAX_RETRIES: {{ .Values.genai.llmMaxRetries | quote }}
+  MAX_DOCUMENT_CHARS: {{ .Values.genai.maxDocumentChars | quote }}
+  EMBEDDING_PROVIDER: {{ .Values.genai.embeddingProvider | quote }}
+  EMBEDDING_MODEL: {{ .Values.genai.embeddingModel | quote }}
+  EMBEDDING_TIMEOUT_SECONDS: {{ .Values.genai.embeddingTimeoutSeconds | quote }}
+  EMBEDDING_MAX_RETRIES: {{ .Values.genai.embeddingMaxRetries | quote }}
+  CHUNK_SIZE: {{ .Values.genai.chunkSize | quote }}
+  CHUNK_OVERLAP: {{ .Values.genai.chunkOverlap | quote }}
+  RAG_TOP_K: {{ .Values.genai.ragTopK | quote }}
   S3_ENDPOINT: {{ .Values.s3.endpoint | default (include "alexandria.s3Endpoint" .) | quote }}
   S3_REGION: {{ .Values.s3.region | quote }}
   S3_BUCKET: {{ .Values.s3.bucket | quote }}
