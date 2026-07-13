@@ -67,6 +67,7 @@ client:
       memory: 128Mi
 
 genai:
+  llmApiKey: ""
   baseUrl: "http://alexandria-genai:8000"
   resources:
     requests:
