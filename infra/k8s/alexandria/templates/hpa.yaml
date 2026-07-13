@@ -1,0 +1,34 @@
+{{- $services := list
+  (dict "name" "user-service" "cfg" .Values.userService.autoscaling)
+  (dict "name" "knowledgebase-service" "cfg" .Values.knowledgebaseService.autoscaling)
+  (dict "name" "qa-service" "cfg" .Values.qaService.autoscaling)
+  (dict "name" "client" "cfg" .Values.client.autoscaling)
+  (dict "name" "genai" "cfg" .Values.genai.autoscaling)
+}}
+{{- range $services }}
+{{- if .cfg.enabled }}
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "alexandria.fullname" $ }}-{{ .name }}
+  namespace: {{ $.Release.Namespace }}
+  labels:
+    {{- include "alexandria.labels" $ | nindent 4 }}
+    app: {{ .name }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "alexandria.fullname" $ }}-{{ .name }}
+  minReplicas: {{ .cfg.minReplicas }}
+  maxReplicas: {{ .cfg.maxReplicas }}
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ .cfg.targetCPUUtilizationPercentage }}
+{{- end }}
+{{- end }}

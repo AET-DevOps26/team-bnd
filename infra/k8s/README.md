@@ -88,6 +88,25 @@ kubectl -n alexandria get svc
 kubectl -n alexandria get ingress
 ```
 
+## Autoscaling
+
+The stateless services (user-service, knowledgebase-service, qa-service, client, genai) can scale on CPU via a HorizontalPodAutoscaler. It's off by default so a install stays inside the small stud cluster resource quota. To enable it per service:
+
+```bash
+helm upgrade alexandria infra/k8s/alexandria \
+  --namespace alexandria \
+  -f infra/k8s/alexandria/values-secrets.yaml \
+  --set userService.autoscaling.enabled=true \
+  --set knowledgebaseService.autoscaling.enabled=true \
+  --set qaService.autoscaling.enabled=true
+```
+
+When a service's autoscaling is enabled the HPA owns the replica count, so the static `replicaCount` is dropped from that deployment. Min/Max and the CPU target are defined under each `autoscaling` block in `values.yaml`. The maxReplicas defaults are deliberately low to keep the summed CPU and memory requests under the namespace resource quota. This needs the metrics server to be running in the cluster. Check scaling with:
+
+```bash
+kubectl -n alexandria get hpa
+```
+
 # Kubernetes Troubleshooting
 
 ### Spring or Keycloak fail postgres password authentication after a reinstall

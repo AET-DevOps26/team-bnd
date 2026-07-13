@@ -30,6 +30,7 @@ spring:
 # `default-h2d5c` (3250m CPU / 5144Mi memory in the alexandria namespace).
 # Prometheus + Grafana live in alexandria-monitoring with its own 750m/1000Mi
 # quota, sized independently below.
+# Autoscaling is off by default.
 userService:
   resources:
     requests:
@@ -38,6 +39,11 @@ userService:
     limits:
       cpu: 200m
       memory: 384Mi
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 3
+    targetCPUUtilizationPercentage: 75
 
 knowledgebaseService:
   resources:
@@ -47,6 +53,11 @@ knowledgebaseService:
     limits:
       cpu: 300m
       memory: 512Mi
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 3
+    targetCPUUtilizationPercentage: 75
 
 qaService:
   resources:
@@ -56,6 +67,11 @@ qaService:
     limits:
       cpu: 200m
       memory: 384Mi
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 3
+    targetCPUUtilizationPercentage: 75
 
 client:
   resources:
@@ -65,6 +81,11 @@ client:
     limits:
       cpu: 100m
       memory: 128Mi
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 2
+    targetCPUUtilizationPercentage: 80
 
 genai:
   baseUrl: "http://alexandria-genai:8000"
@@ -75,6 +96,11 @@ genai:
     limits:
       cpu: 500m
       memory: 512Mi
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 2
+    targetCPUUtilizationPercentage: 75
 
 weaviate:
   url: ""

@@ -8,7 +8,9 @@ metadata:
     app: user-service
     app.kubernetes.io/component: backend
 spec:
+  {{- if not .Values.userService.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}
+  {{- end }}
   selector:
     matchLabels:
       {{- include "alexandria.selectorLabels" . | nindent 6 }}

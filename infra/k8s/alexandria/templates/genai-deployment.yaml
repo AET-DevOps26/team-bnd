@@ -7,7 +7,9 @@ metadata:
     app: genai
     app.kubernetes.io/component: ai-service
 spec:
+  {{- if not .Values.genai.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}
+  {{- end }}
   selector:
     matchLabels:
       {{- include "alexandria.selectorLabels" . | nindent 6 }}
