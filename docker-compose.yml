@@ -267,7 +267,10 @@ services:
       KC_BOOTSTRAP_ADMIN_USERNAME: ${KC_BOOTSTRAP_ADMIN_USERNAME:-admin}
       KC_BOOTSTRAP_ADMIN_PASSWORD: ${KC_BOOTSTRAP_ADMIN_PASSWORD:-localkcpassword}
       KC_HEALTH_ENABLED: "true"
-      KC_DB: dev-file
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres-db:${POSTGRES_PORT:-5432}/keycloak
+      KC_DB_USERNAME: ${POSTGRES_USER:-admin}
+      KC_DB_PASSWORD: ${POSTGRES_PASSWORD:-localpgpassword}
       KC_HTTP_PORT: 8180
       KC_HOSTNAME: http://localhost/auth
       KC_PROXY_HEADERS: xforwarded
@@ -279,10 +282,12 @@ services:
     networks:
       - alexandria
     volumes:
+      # The realm persists in the keycloak postgres db, so edits to realm.json are
+      # not re-imported until the postgres data is wiped (docker compose down -v).
       - ./infra/oidc/realm.json:/opt/keycloak/data/import/realm.json:ro
-      # Persisted realm survives restarts, so edits to realm.json are not
-      # re-imported until this volume is removed (docker compose down -v).
-      - keycloak_data:/opt/keycloak/data
+    depends_on:
+      postgres-db:
+        condition: service_healthy
     deploy:
       resources:
         limits:
@@ -318,6 +323,7 @@ services:
       - alexandria
     volumes:
       - pgdata:/var/lib/postgresql/data
+      - ./infra/postgres/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-admin} -d ${POSTGRES_DB:-alexandria} -p ${POSTGRES_PORT:-5432}"]
       interval: 10s
@@ -577,4 +583,3 @@ volumes:
   prometheus_data:
   grafana_data:
   weaviate_data:
-  keycloak_data:
