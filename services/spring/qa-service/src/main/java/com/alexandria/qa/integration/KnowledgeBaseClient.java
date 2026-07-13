@@ -10,6 +10,7 @@ import org.springframework.web.client.RestClient;
 import java.net.http.HttpClient;
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 
 @Component
 public class KnowledgeBaseClient {
@@ -26,5 +27,17 @@ public class KnowledgeBaseClient {
     public List<String> listDocumentKeys(String userSubject) {
         return restClient.get().uri("/internal/knowledgebase/users/{subject}/document-keys", userSubject).retrieve().body(new ParameterizedTypeReference<List<String>>() {
         });
+    }
+
+    public List<DocumentReference> resolveDocuments(String userSubject, List<String> objectKeys) {
+        if (objectKeys == null || objectKeys.isEmpty()) {
+            return List.of();
+        }
+        List<DocumentReference> resolved = restClient.post().uri("/internal/knowledgebase/users/{subject}/documents/resolve", userSubject).body(Map.of("objectKeys", objectKeys)).retrieve().body(new ParameterizedTypeReference<List<DocumentReference>>() {
+        });
+        return resolved == null ? List.of() : resolved;
+    }
+
+    public record DocumentReference(String objectKey, String documentId, String fileName) {
     }
 }

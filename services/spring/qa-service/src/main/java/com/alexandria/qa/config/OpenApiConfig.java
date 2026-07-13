@@ -19,7 +19,7 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @OpenAPIDefinition(
         info = @Info(
-                title = "Alexandria QA Service API", version = "5.0.0", description = "Question answering over a user's documents. Fetches document keys from knowledgebase-service and delegates answer generation to the GenAI service.", license = @License(name = "MIT", identifier = "MIT")
+                title = "Alexandria QA Service API", version = "6.0.0", description = "Question answering over a user's documents. Fetches document keys from knowledgebase-service and delegates answer generation to the GenAI service.", license = @License(name = "MIT", identifier = "MIT")
         ), servers = @Server(url = "/", description = "Current server")
 )
 @SecurityScheme(

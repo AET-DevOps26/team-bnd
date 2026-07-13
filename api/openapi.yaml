@@ -7,7 +7,7 @@ info:
   license:
     name: MIT
     identifier: MIT
-  version: 5.0.0
+  version: 6.0.0
 servers:
   - url: /
     description: Current server
@@ -19,7 +19,7 @@ tags:
     description: Document management and AI-powered knowledge operations
     x-displayName: KnowledgeBase Service
   - name: KnowledgeBase Service (Internal)
-    description: Service-to-service endpoints, reachable only inside the cluster network
+    description: Service-to-service endpoints authenticated by an HMAC signature
     x-displayName: KnowledgeBase Service (Internal)
   - name: QA Service
     description: Question answering over the user's knowledge base
@@ -137,6 +137,34 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
       security:
         - bearerAuth: []
+  /internal/knowledgebase/users/{subject}/documents/resolve:
+    post:
+      tags:
+        - KnowledgeBase Service (Internal)
+      summary: Resolve object keys to document ids and file names (internal)
+      operationId: kbInternalResolveDocuments
+      parameters:
+        - name: subject
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResolveDocumentsRequest'
+        required: true
+      responses:
+        '200':
+          description: Documents resolved
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DocumentReferenceResponse'
+      security: []
   /api/v1/knowledgebase/documents/{id}/tags:
     post:
       tags:
@@ -806,8 +834,26 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/HTTPValidationError'
+                $ref: '#/components/schemas/ErrorResponse'
           description: Validation Error
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Internal error
+        '502':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: AI provider error
+        '504':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: AI provider timeout
       security: []
       summary: Ask
       tags:
@@ -832,15 +878,41 @@ paths:
                 $ref: '#/components/schemas/GenAiExtractResponse'
           description: Successful Response
         '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
           description: Object not found
         '415':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
           description: Object is not a supported file type
         '422':
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/HTTPValidationError'
+                $ref: '#/components/schemas/ErrorResponse'
           description: Validation Error
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Internal error
+        '502':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: AI provider error
+        '504':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: AI provider timeout
       security: []
       summary: Extract
       tags:
@@ -904,15 +976,41 @@ paths:
                 $ref: '#/components/schemas/GenAiIndexResponse'
           description: Successful Response
         '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
           description: Object not found
         '415':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
           description: Object is not a supported file type
         '422':
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/HTTPValidationError'
+                $ref: '#/components/schemas/ErrorResponse'
           description: Validation Error
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Internal error
+        '502':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: AI provider error
+        '504':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: AI provider timeout
       security: []
       summary: Index
       tags:
@@ -949,8 +1047,26 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/HTTPValidationError'
+                $ref: '#/components/schemas/ErrorResponse'
           description: Validation Error
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Internal error
+        '502':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: AI provider error
+        '504':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: AI provider timeout
       security: []
       summary: Delete Index
       tags:
@@ -986,8 +1102,26 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/HTTPValidationError'
+                $ref: '#/components/schemas/ErrorResponse'
           description: Validation Error
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Internal error
+        '502':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: AI provider error
+        '504':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: AI provider timeout
       security: []
       summary: Search
       tags:
@@ -1010,15 +1144,41 @@ paths:
                 $ref: '#/components/schemas/GenAiSummarizeResponse'
           description: Successful Response
         '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
           description: Object not found
         '415':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
           description: Object is not a supported file type
         '422':
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/HTTPValidationError'
+                $ref: '#/components/schemas/ErrorResponse'
           description: Validation Error
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Internal error
+        '502':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: AI provider error
+        '504':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: AI provider timeout
       security: []
       summary: Summarize Document
       tags:
@@ -1043,15 +1203,41 @@ paths:
                 $ref: '#/components/schemas/GenAiTagResponse'
           description: Successful Response
         '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
           description: Object not found
         '415':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
           description: Object is not a supported file type
         '422':
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/HTTPValidationError'
+                $ref: '#/components/schemas/ErrorResponse'
           description: Validation Error
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Internal error
+        '502':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: AI provider error
+        '504':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: AI provider timeout
       security: []
       summary: Tag
       tags:
@@ -1095,17 +1281,33 @@ components:
       properties:
         code:
           type: string
-        message:
-          type: string
         fieldErrors:
-          type: array
           items:
             $ref: '#/components/schemas/FieldError'
+          type: array
+        message:
+          type: string
     FieldError:
       properties:
         field:
           type: string
         message:
+          type: string
+    ResolveDocumentsRequest:
+      type: object
+      properties:
+        objectKeys:
+          type: array
+          items:
+            type: string
+    DocumentReferenceResponse:
+      type: object
+      properties:
+        objectKey:
+          type: string
+        documentId:
+          type: string
+        fileName:
           type: string
     AddTagRequest:
       type: object
@@ -1344,14 +1546,28 @@ components:
           type: string
         answer:
           type: string
-        sourceObjectKeys:
+        citations:
           type: array
           items:
-            type: string
+            $ref: '#/components/schemas/QaCitation'
         timestamp:
           type: string
           format: date-time
         modelUsed:
+          type: string
+    QaCitation:
+      type: object
+      properties:
+        marker:
+          type: integer
+          format: int32
+        objectKey:
+          type: string
+        documentId:
+          type: string
+        fileName:
+          type: string
+        snippet:
           type: string
     GenAiAskRequest:
       properties:
@@ -1373,19 +1589,36 @@ components:
         answer:
           title: Answer
           type: string
+        citations:
+          items:
+            $ref: '#/components/schemas/GenAiCitation'
+          title: Citations
+          type: array
         modelUsed:
           title: Modelused
           type: string
-        sourceObjectKeys:
-          items:
-            type: string
-          title: Sourceobjectkeys
-          type: array
       required:
         - answer
-        - sourceObjectKeys
+        - citations
         - modelUsed
       title: GenAiAskResponse
+      type: object
+    GenAiCitation:
+      properties:
+        marker:
+          title: Marker
+          type: integer
+        objectKey:
+          title: Objectkey
+          type: string
+        snippet:
+          title: Snippet
+          type: string
+      required:
+        - marker
+        - objectKey
+        - snippet
+      title: GenAiCitation
       type: object
     GenAiDeleteIndexResponse:
       properties:
@@ -1402,6 +1635,12 @@ components:
       type: object
     GenAiExtractRequest:
       properties:
+        maxEntities:
+          default: 20
+          maximum: 100
+          minimum: 1
+          title: Maxentities
+          type: integer
         objectKey:
           title: Objectkey
           type: string
@@ -1419,6 +1658,10 @@ components:
         modelUsed:
           title: Modelused
           type: string
+        truncated:
+          default: false
+          title: Truncated
+          type: boolean
       required:
         - entities
         - modelUsed
@@ -1542,6 +1785,10 @@ components:
         summary:
           title: Summary
           type: string
+        truncated:
+          default: false
+          title: Truncated
+          type: boolean
       required:
         - summary
         - modelUsed
@@ -1572,45 +1819,14 @@ components:
             type: string
           title: Tags
           type: array
+        truncated:
+          default: false
+          title: Truncated
+          type: boolean
       required:
         - tags
         - modelUsed
       title: GenAiTagResponse
-      type: object
-    HTTPValidationError:
-      properties:
-        detail:
-          items:
-            $ref: '#/components/schemas/ValidationError'
-          title: Detail
-          type: array
-      title: HTTPValidationError
-      type: object
-    ValidationError:
-      properties:
-        ctx:
-          title: Context
-          type: object
-        input:
-          title: Input
-        loc:
-          items:
-            anyOf:
-              - type: string
-              - type: integer
-          title: Location
-          type: array
-        msg:
-          title: Message
-          type: string
-        type:
-          title: Error Type
-          type: string
-      required:
-        - loc
-        - msg
-        - type
-      title: ValidationError
       type: object
   securitySchemes:
     bearerAuth:

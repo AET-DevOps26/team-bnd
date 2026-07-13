@@ -3,6 +3,7 @@ package com.alexandria.qa;
 import jakarta.persistence.*;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -22,10 +23,10 @@ public class QAInteraction {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String answer;
 
-    @ElementCollection
-    @CollectionTable(name = "qa_source_documents", joinColumns = @JoinColumn(name = "qa_id"))
-    @Column(name = "document_id")
-    private List<String> sourceObjectKeys;
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "qa_citations", joinColumns = @JoinColumn(name = "qa_id"))
+    @OrderColumn(name = "position")
+    private List<QaCitation> citations = new ArrayList<>();
 
     @Column(nullable = false)
     private Instant timestamp;
@@ -36,11 +37,11 @@ public class QAInteraction {
     public QAInteraction() {
     }
 
-    public QAInteraction(String userSubject, String question, String answer, List<String> sourceObjectKeys, String modelUsed) {
+    public QAInteraction(String userSubject, String question, String answer, List<QaCitation> citations, String modelUsed) {
         this.userSubject = userSubject;
         this.question = question;
         this.answer = answer;
-        this.sourceObjectKeys = sourceObjectKeys;
+        this.citations = citations == null ? new ArrayList<>() : new ArrayList<>(citations);
         this.modelUsed = modelUsed;
         this.timestamp = Instant.now();
     }
@@ -73,12 +74,12 @@ public class QAInteraction {
         this.answer = answer;
     }
 
-    public List<String> getSourceObjectKeys() {
-        return sourceObjectKeys;
+    public List<QaCitation> getCitations() {
+        return citations;
     }
 
-    public void setSourceObjectKeys(List<String> sourceObjectKeys) {
-        this.sourceObjectKeys = sourceObjectKeys;
+    public void setCitations(List<QaCitation> citations) {
+        this.citations = citations == null ? new ArrayList<>() : new ArrayList<>(citations);
     }
 
     public Instant getTimestamp() {

@@ -78,6 +78,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/internal/knowledgebase/users/{subject}/documents/resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Resolve object keys to document ids and file names (internal) */
+        post: operations["kbInternalResolveDocuments"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/knowledgebase/documents/{id}/tags": {
         parameters: {
             query?: never;
@@ -704,6 +721,14 @@ export interface components {
             field?: string;
             message?: string;
         };
+        ResolveDocumentsRequest: {
+            objectKeys?: string[];
+        };
+        DocumentReferenceResponse: {
+            objectKey?: string;
+            documentId?: string;
+            fileName?: string;
+        };
         AddTagRequest: {
             label?: string;
         };
@@ -828,10 +853,18 @@ export interface components {
             userSubject?: string;
             question?: string;
             answer?: string;
-            sourceObjectKeys?: string[];
+            citations?: components["schemas"]["QaCitation"][];
             /** Format: date-time */
             timestamp?: string;
             modelUsed?: string;
+        };
+        QaCitation: {
+            /** Format: int32 */
+            marker?: number;
+            objectKey?: string;
+            documentId?: string;
+            fileName?: string;
+            snippet?: string;
         };
         /** GenAiAskRequest */
         GenAiAskRequest: {
@@ -1113,6 +1146,32 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    kbInternalResolveDocuments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                subject: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResolveDocumentsRequest"];
+            };
+        };
+        responses: {
+            /** @description Documents resolved */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentReferenceResponse"][];
                 };
             };
         };

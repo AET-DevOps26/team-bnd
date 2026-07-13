@@ -3,7 +3,7 @@ package com.alexandria.qa.integration;
 import com.alexandria.genai.client.api.AiApi;
 import com.alexandria.genai.client.invoker.ApiClient;
 import com.alexandria.genai.client.model.GenAiAskRequest;
-import com.alexandria.genai.client.model.GenAiCitation;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
@@ -18,6 +18,7 @@ public class GenAiClient {
 
     private final AiApi genaiClient;
 
+    @Autowired
     public GenAiClient(@Value("${genai.base-url:http://localhost:8000}") String baseUrl) {
         HttpClient httpClient = HttpClient.newBuilder().version(HttpClient.Version.HTTP_1_1).connectTimeout(Duration.ofSeconds(5)).build();
         JdkClientHttpRequestFactory factory = new JdkClientHttpRequestFactory(httpClient);
@@ -27,12 +28,19 @@ public class GenAiClient {
         this.genaiClient = new AiApi(apiClient);
     }
 
-    public AskResponse ask(String question, List<String> objectKeys) {
-        var r = genaiClient.askGenaiAskPost(new GenAiAskRequest().question(question).objectKeys(objectKeys));
-        List<String> sourceObjectKeys = r.getCitations().stream().map(GenAiCitation::getObjectKey).toList();
-        return new AskResponse(r.getAnswer(), sourceObjectKeys, r.getModelUsed());
+    GenAiClient(AiApi genaiClient) {
+        this.genaiClient = genaiClient;
     }
 
-    public record AskResponse(String answer, List<String> sourceObjectKeys, String modelUsed) {
+    public AskResponse ask(String question, List<String> objectKeys) {
+        var r = genaiClient.askGenaiAskPost(new GenAiAskRequest().question(question).objectKeys(objectKeys));
+        List<Citation> citations = r.getCitations().stream().map(c -> new Citation(c.getMarker(), c.getObjectKey(), c.getSnippet())).toList();
+        return new AskResponse(r.getAnswer(), citations, r.getModelUsed());
+    }
+
+    public record AskResponse(String answer, List<Citation> citations, String modelUsed) {
+    }
+
+    public record Citation(Integer marker, String objectKey, String snippet) {
     }
 }
