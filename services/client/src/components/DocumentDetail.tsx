@@ -39,7 +39,7 @@ export default function DocumentDetail({ documentId }: Props) {
   } = $api.useQuery(
     "get",
     "/api/v1/knowledgebase/documents/{id}",
-    { params: { path: { id: documentId! } } },
+    { params: { path: { id: documentId ?? "" } } },
     { enabled: !!documentId },
   );
   const fileType = (document?.fileType ?? "").split(";")[0];
@@ -56,7 +56,7 @@ export default function DocumentDetail({ documentId }: Props) {
     "get",
     "/api/v1/knowledgebase/documents/{id}/download",
     {
-      params: { path: { id: documentId! } },
+      params: { path: { id: documentId ?? "" } },
       parseAs: "blob",
     },
     { enabled: !!documentId && isPdf },
@@ -70,7 +70,7 @@ export default function DocumentDetail({ documentId }: Props) {
     "get",
     "/api/v1/knowledgebase/documents/{id}/download",
     {
-      params: { path: { id: documentId! } },
+      params: { path: { id: documentId ?? "" } },
       parseAs: "text",
     },
     { enabled: !!documentId && (isMarkdown || isPlainText) },

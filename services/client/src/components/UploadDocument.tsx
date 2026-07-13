@@ -26,7 +26,9 @@ export default function UploadDocument({ onUploaded }: Props) {
       const { data, error } = await fetchClient.POST(
         "/api/v1/knowledgebase/documents/upload",
         {
-          body: { file } as any,
+          // The generated type models the binary file field as string, but the
+          // actual payload is the File, built by hand into FormData below.
+          body: { file: file as unknown as string },
           bodySerializer: () => formData,
         },
       );
@@ -45,12 +47,13 @@ export default function UploadDocument({ onUploaded }: Props) {
       if (data?.id && onUploaded) {
         onUploaded(data.id);
       }
-    } catch (e: any) {
+    } catch (e: unknown) {
+      const code = e instanceof Error ? e.message : "";
       setState("error");
       setErrorMessage(
-        e?.message === "NOT_AUTHENTICATED"
+        code === "NOT_AUTHENTICATED"
           ? "Authentication error. Retrying login..."
-          : e?.message === "FORBIDDEN"
+          : code === "FORBIDDEN"
             ? "You do not have permission to upload documents."
             : "Upload failed. Please try again.",
       );

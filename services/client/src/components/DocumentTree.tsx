@@ -57,16 +57,17 @@ export default function DocumentTree({ selectedId, onSelect }: Props) {
       {!isLoading && !error && documents && documents.length > 0 && (
         <ul className="tree-list">
           {documents.map((doc) => {
-            if (!doc.id) return null;
+            const id = doc.id;
+            if (!id) return null;
             return (
               <li
-                key={doc.id}
-                className={`tree-item${selectedId === doc.id ? " tree-item--active" : ""}`}
-                onClick={() => onSelect(doc.id!)}
+                key={id}
+                className={`tree-item${selectedId === id ? " tree-item--active" : ""}`}
+                onClick={() => onSelect(id)}
                 role="button"
                 tabIndex={0}
-                onKeyDown={(e) => e.key === "Enter" && onSelect(doc.id!)}
-                aria-current={selectedId === doc.id ? "true" : undefined}
+                onKeyDown={(e) => e.key === "Enter" && onSelect(id)}
+                aria-current={selectedId === id ? "true" : undefined}
               >
                 <span className="tree-item__name">{doc.fileName}</span>
                 <span className="tree-item__date">

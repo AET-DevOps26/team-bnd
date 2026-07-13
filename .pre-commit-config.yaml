@@ -79,11 +79,17 @@ repos:
         language: system
         files: "\\.java$"
         pass_filenames: false
+      - id: spring-spotbugs
+        name: Spring - SpotBugs
+        entry: bash -c 'services/spring/gradlew -p services/spring spotbugsMain'
+        language: system
+        files: '^services/spring/.*\.java$'
+        pass_filenames: false
       - id: redocly-lint
         name: OpenAPI - Lint
         entry: redocly lint api/openapi.yaml
         language: node
-        additional_dependencies: ["@redocly/cli@2.30.3"]
+        additional_dependencies: ["@redocly/cli@2.38.0"]
         files: '^api/openapi\.yaml$'
         pass_filenames: false
       - id: client-generate-api
@@ -92,5 +98,17 @@ repos:
         language: node
         additional_dependencies: ["openapi-typescript@7.13.0"]
         files: '^api/openapi\.yaml$'
+        pass_filenames: false
+      - id: client-typecheck
+        name: Client - Type Check
+        entry: bash -c 'cd services/client && npm run typecheck'
+        language: system
+        files: '^services/client/.*\.(ts|tsx)$|^services/client/tsconfig\.json$'
+        pass_filenames: false
+      - id: client-lint
+        name: Client - Lint
+        entry: bash -c 'cd services/client && npm run lint'
+        language: system
+        files: '^services/client/.*\.(ts|tsx)$|^services/client/eslint\.config\.mjs$'
         pass_filenames: false
 exclude: "infra/.*/(templates|charts)"

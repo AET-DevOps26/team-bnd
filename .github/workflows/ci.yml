@@ -121,7 +121,7 @@ jobs:
           node-version: "24"
 
       - name: Run Redocly Lint
-        run: npx --yes @redocly/cli@latest lint api/openapi.yaml
+        run: npx --yes @redocly/cli@2.38.0 lint api/openapi.yaml
 
   # ---------------------------------------------------------------------
   # Dockerfile linting. Catches non-pinned base images, root user, etc.
@@ -273,10 +273,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # The Spring backend consists of three Gradle sub-modules.
-        # The matrix builds each one independently so failures point at the right
-        # microservice.
+        # The Spring server consists of three microservices plus the shared
+        # `common` library. The matrix builds each one independently so failures
+        # point at the right module; `common` is included so its tests and
+        # SpotBugs analysis run in CI too.
         service:
+          - name: common
+            title: Common
+            gradle_module: common
           - name: user-service
             title: User Service
             gradle_module: user-service
@@ -324,6 +328,17 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
+      # SpotBugs runs as part of `build` (via `check`) and fails it on new
+      # findings. Keep the reports so a red build can be triaged without a rerun.
+      - name: Upload SpotBugs Reports
+        if: always() && env.RUN_JOB == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: spotbugs-reports-${{ matrix.service.name }}
+          path: services/spring/${{ matrix.service.gradle_module }}/build/reports/spotbugs/**
+          if-no-files-found: ignore
+          retention-days: 7
+
       - name: Upload JAR
         if: always() && env.RUN_JOB == 'true'
         uses: actions/upload-artifact@v7
@@ -358,6 +373,14 @@ jobs:
       - name: Install Dependencies
         working-directory: services/client
         run: npm ci
+
+      - name: Type Check
+        working-directory: services/client
+        run: npm run typecheck
+
+      - name: Lint
+        working-directory: services/client
+        run: npm run lint
 
       - name: Build
         working-directory: services/client
@@ -407,6 +430,66 @@ jobs:
       - name: Run Tests
         working-directory: services/genai
         run: uv run pytest
+
+  # ---------------------------------------------------------------------
+  # Contract drift guard: regenerate every service's OpenAPI spec from the
+  # actual implementation, re-merge, and fail if the committed api/*.yaml is
+  # out of date. This is the CI mirror of the OpenAPI pre-commit hooks and
+  # enforces "specs match implementation" from the microservice guidelines.
+  # ---------------------------------------------------------------------
+  verify-openapi:
+    name: Verify OpenAPI Matches Services
+    needs: changes
+    if: needs.changes.outputs.spring == 'true' || needs.changes.outputs.genai == 'true' || needs.changes.outputs.api == 'true' || github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Setup Java
+        uses: actions/setup-java@v5.4.0
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+
+      - name: Setup Gradle (with Build Cache)
+        uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6.2.0
+        with:
+          cache-read-only: ${{ github.event_name == 'pull_request' }}
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
+        with:
+          enable-cache: true
+          cache-dependency-glob: services/genai/uv.lock
+
+      - name: Setup Python
+        working-directory: services/genai
+        run: uv python install
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+
+      - name: Regenerate Spring Specs
+        run: ./api/generate-spring-openapi.sh
+
+      - name: Regenerate GenAI Spec
+        run: ./api/generate-genai-openapi.sh
+
+      - name: Merge Specs
+        run: ./api/merge-openapi.sh
+
+      - name: Fail on Spec Drift
+        run: |
+          if ! git diff --exit-code -- 'api/*.yaml'; then
+            echo "::error::Committed OpenAPI spec is out of date. Regenerate it with the api/generate-*-openapi.sh and api/merge-openapi.sh scripts (or let the pre-commit hooks do it) and commit the result."
+            exit 1
+          fi
 
   # ---------------------------------------------------------------------
   # Build docker images for changed services. Only push on main.
@@ -672,6 +755,7 @@ jobs:
       - build-spring
       - build-client
       - build-genai
+      - verify-openapi
       - build-image
       - compose-smoke
       - e2e

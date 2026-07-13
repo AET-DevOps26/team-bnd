@@ -72,7 +72,8 @@ public abstract class BaseExceptionHandler {
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<ErrorResponse> handleTypeMismatch(MethodArgumentTypeMismatchException e) {
-        String expected = e.getRequiredType() != null ? e.getRequiredType().getSimpleName() : "expected type";
+        Class<?> requiredType = e.getRequiredType();
+        String expected = requiredType != null ? requiredType.getSimpleName() : "expected type";
         String message = "Parameter '" + e.getName() + "' must be a valid " + expected;
         log.debug("Type mismatch on parameter '{}': {}", sanitize(e.getName()), sanitize(String.valueOf(e.getValue())));
         return ResponseEntity.badRequest().body(new ErrorResponse("TYPE_MISMATCH", message));
