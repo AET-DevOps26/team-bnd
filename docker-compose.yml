@@ -267,6 +267,7 @@ services:
       KC_BOOTSTRAP_ADMIN_USERNAME: ${KC_BOOTSTRAP_ADMIN_USERNAME:-admin}
       KC_BOOTSTRAP_ADMIN_PASSWORD: ${KC_BOOTSTRAP_ADMIN_PASSWORD:-localkcpassword}
       KC_HEALTH_ENABLED: "true"
+      KC_DB: dev-file
       KC_HTTP_PORT: 8180
       KC_HOSTNAME: http://localhost/auth
       KC_PROXY_HEADERS: xforwarded
@@ -279,6 +280,7 @@ services:
       - alexandria
     volumes:
       - ./infra/oidc/realm.json:/opt/keycloak/data/import/realm.json:ro
+      - keycloak_data:/opt/keycloak/data
     deploy:
       resources:
         limits:
@@ -553,6 +555,15 @@ services:
     profiles:
       - e2e
     command: '/bin/sh -c "npx -y playwright@1.61.1 run-server --port 3000 --host 0.0.0.0"'
+    depends_on:
+      client:
+        condition: service_healthy
+      traefik:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      genai:
+        condition: service_healthy
 
 networks:
   alexandria:
@@ -564,3 +575,4 @@ volumes:
   prometheus_data:
   grafana_data:
   weaviate_data:
+  keycloak_data:
