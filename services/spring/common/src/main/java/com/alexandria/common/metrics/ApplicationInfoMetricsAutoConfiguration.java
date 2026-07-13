@@ -15,7 +15,7 @@ public class ApplicationInfoMetricsAutoConfiguration {
     public MeterBinder applicationInfoMetric(Environment environment, ObjectProvider<BuildProperties> buildProperties) {
         String application = environment.getProperty("spring.application.name", "unknown");
         BuildProperties build = buildProperties.getIfAvailable();
-        String version = build != null ? build.getVersion() : "unknown";
+        String version = build != null && build.getVersion() != null ? build.getVersion() : "unknown";
         return registry -> Gauge.builder("application_version", () -> 1).description("Running application build info; the value is always 1, the version is carried as a label").tag("application", application).tag("version", version).register(registry);
     }
 }
