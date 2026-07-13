@@ -1,9 +1,11 @@
 """Integration-style tests for the FastAPI endpoints."""
 
+import os
 from unittest.mock import patch
 
 from fastapi.testclient import TestClient
 
+from app.errors import ProviderError, ProviderTimeoutError
 from app.extract import DEFAULT_MAX_ENTITIES
 from app.main import SERVICE_NAME, SERVICE_VERSION, app
 from app.storage import ObjectNotFoundError, UnsupportedFileError
@@ -496,3 +498,149 @@ def test_delete_index_is_idempotent_for_unindexed_document():
 
     assert response.status_code == 200
     assert response.json()["chunksDeleted"] == 0
+
+
+# --- error schema (shared {code, message, fieldErrors}) ---
+
+
+def _assert_shared_error_shape(body: dict):
+    assert set(body) == {"code", "message", "fieldErrors"}
+    assert isinstance(body["code"], str)
+    assert isinstance(body["message"], str)
+    assert isinstance(body["fieldErrors"], list)
+
+
+def test_document_error_uses_shared_schema():
+    with patch("app.main.fetch_text", side_effect=ObjectNotFoundError("missing")):
+        response = client.post("/genai/summarize", json={"objectKey": "missing"})
+
+    assert response.status_code == 404
+    body = response.json()
+    _assert_shared_error_shape(body)
+    assert body["code"] == "not_found"
+    assert body["fieldErrors"] == []
+
+
+def test_unsupported_file_error_uses_shared_schema():
+    with patch("app.main.fetch_text", side_effect=UnsupportedFileError("not text")):
+        response = client.post("/genai/summarize", json={"objectKey": "image.png"})
+
+    assert response.status_code == 415
+    assert response.json()["code"] == "unsupported_media_type"
+
+
+def test_validation_error_uses_shared_schema_with_field_errors():
+    response = client.post("/genai/summarize", json={})
+
+    assert response.status_code == 422
+    body = response.json()
+    _assert_shared_error_shape(body)
+    assert body["code"] == "validation_error"
+    assert any(fe["field"] == "objectKey" for fe in body["fieldErrors"])
+
+
+def test_validation_error_keeps_field_named_like_a_location_marker():
+    # loc is ("body", "query"); only the leading "body" marker should be dropped.
+    response = client.post("/genai/search", json={"query": "  ", "objectKeys": ["k1"]})
+
+    assert response.status_code == 422
+    assert any(fe["field"] == "query" for fe in response.json()["fieldErrors"])
+
+
+def test_summarize_maps_provider_failure_to_502():
+    with (
+        patch("app.main.fetch_text", return_value="document body"),
+        patch("app.main.summarize", side_effect=ProviderError()),
+    ):
+        response = client.post("/genai/summarize", json={"objectKey": "k"})
+
+    assert response.status_code == 502
+    body = response.json()
+    _assert_shared_error_shape(body)
+    assert body["code"] == "provider_error"
+
+
+def test_summarize_maps_provider_timeout_to_504():
+    with (
+        patch("app.main.fetch_text", return_value="document body"),
+        patch("app.main.summarize", side_effect=ProviderTimeoutError()),
+    ):
+        response = client.post("/genai/summarize", json={"objectKey": "k"})
+
+    assert response.status_code == 504
+    assert response.json()["code"] == "provider_timeout"
+
+
+def test_unhandled_error_becomes_structured_500():
+    lenient = TestClient(app, raise_server_exceptions=False)
+    with (
+        patch("app.main.fetch_text", return_value="document body"),
+        patch("app.main.summarize", side_effect=RuntimeError("boom")),
+    ):
+        response = lenient.post("/genai/summarize", json={"objectKey": "k"})
+
+    assert response.status_code == 500
+    body = response.json()
+    _assert_shared_error_shape(body)
+    assert body["code"] == "internal_error"
+
+
+# --- document bounding (truncated flag) ---
+
+
+def test_summarize_reports_not_truncated_for_small_document():
+    with (
+        patch("app.main.fetch_text", return_value="a short document"),
+        patch("app.main.summarize", return_value=("summary", "model")),
+    ):
+        response = client.post("/genai/summarize", json={"objectKey": "k"})
+
+    assert response.status_code == 200
+    assert response.json()["truncated"] is False
+
+
+def test_summarize_truncates_oversized_document_and_flags_it():
+    captured = {}
+
+    def fake_summarize(content):
+        captured["length"] = len(content)
+        return ("summary", "model")
+
+    with (
+        patch.dict(os.environ, {"MAX_DOCUMENT_CHARS": "50"}),
+        patch("app.main.fetch_text", return_value="word " * 100),
+        patch("app.main.summarize", side_effect=fake_summarize),
+    ):
+        response = client.post("/genai/summarize", json={"objectKey": "k"})
+
+    assert response.status_code == 200
+    assert response.json()["truncated"] is True
+    assert captured["length"] <= 50
+
+
+def test_extract_and_tag_expose_truncated_flag():
+    with (
+        patch("app.main.fetch_text", return_value="short"),
+        patch("app.main.extract_entities", return_value=([], "model")),
+        patch("app.main.generate_tags", return_value=([], "model")),
+    ):
+        extract_response = client.post("/genai/extract", json={"objectKey": "k"})
+        tag_response = client.post("/genai/tag", json={"objectKey": "k"})
+
+    assert extract_response.json()["truncated"] is False
+    assert tag_response.json()["truncated"] is False
+
+
+# --- OpenAPI error schema ---
+
+
+def test_openapi_uses_shared_error_response_schema():
+    schema = client.get("/genai/openapi.json").json()
+    components = schema["components"]["schemas"]
+
+    assert "ErrorResponse" in components
+    assert "FieldError" in components
+    assert "HTTPValidationError" not in components
+    # summarize should advertise the provider-error contract
+    summarize_responses = schema["paths"]["/genai/summarize"]["post"]["responses"]
+    assert summarize_responses["502"]["content"]["application/json"]["schema"]["$ref"] == "#/components/schemas/ErrorResponse"

@@ -32,7 +32,8 @@ from dataclasses import dataclass
 from langchain_core.embeddings import Embeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
-from app.env import int_env
+from app.env import float_env, int_env
+from app.model_calls import run_model_call
 
 _LOGOS_BASE_URL = "https://logos.aet.cit.tum.de/v1"
 _OPENAI_BASE_URL = "https://api.openai.com/v1"
@@ -43,6 +44,15 @@ _DEFAULT_OLLAMA_MODEL = "nomic-embed-text"
 
 _DEFAULT_CHUNK_SIZE = 1000
 _DEFAULT_CHUNK_OVERLAP = 200
+
+# Quicker than chat but hit the same gateway, so same timeout/retry guardrails.
+_DEFAULT_TIMEOUT_SECONDS = 30.0
+_DEFAULT_MAX_RETRIES = 2
+
+
+def get_embedding_provider() -> str:
+    """Return the configured embedding provider ("logos", "openai", or "ollama")."""
+    return os.getenv("EMBEDDING_PROVIDER", "logos").lower()
 
 
 @dataclass(frozen=True)
@@ -99,6 +109,8 @@ def get_embeddings() -> Embeddings:
             api_key=api_key,
             model=model,
             check_embedding_ctx_length=False,
+            timeout=float_env("EMBEDDING_TIMEOUT_SECONDS", _DEFAULT_TIMEOUT_SECONDS, minimum=0.0),
+            max_retries=int_env("EMBEDDING_MAX_RETRIES", _DEFAULT_MAX_RETRIES, minimum=0),
         )
 
     if provider == "ollama":
@@ -127,9 +139,21 @@ def embed_chunks(chunks: list[Chunk]) -> list[list[float]]:
     """Embed a list of chunks, returning one vector per chunk in the same order."""
     if not chunks:
         return []
-    return get_embeddings().embed_documents([chunk.text for chunk in chunks])
+    vectors, _ = run_model_call(
+        lambda: get_embeddings().embed_documents([chunk.text for chunk in chunks]),
+        operation="embedding",
+        provider=get_embedding_provider(),
+        fallback_model=get_embedding_model_name(),
+    )
+    return vectors
 
 
 def embed_query(text: str) -> list[float]:
     """Embed a single query string into one vector."""
-    return get_embeddings().embed_query(text)
+    vector, _ = run_model_call(
+        lambda: get_embeddings().embed_query(text),
+        operation="embedding",
+        provider=get_embedding_provider(),
+        fallback_model=get_embedding_model_name(),
+    )
+    return vector

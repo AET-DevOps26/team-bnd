@@ -20,3 +20,20 @@ def int_env(name: str, default: int, *, minimum: int) -> int:
     if value < minimum:
         raise RuntimeError(f"{name} must be >= {minimum}, got {value}")
     return value
+
+
+def float_env(name: str, default: float, *, minimum: float) -> float:
+    """Read a float environment variable, failing loudly on bad input.
+
+    Same contract as ``int_env`` but for values like timeouts.
+    """
+    raw = os.getenv(name)
+    if not raw:
+        return default
+    try:
+        value = float(raw)
+    except ValueError as exc:
+        raise RuntimeError(f"{name} must be a number, got {raw!r}") from exc
+    if value < minimum:
+        raise RuntimeError(f"{name} must be >= {minimum}, got {value}")
+    return value

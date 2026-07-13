@@ -148,6 +148,227 @@
 			],
 			"title": "Python process CPU usage",
 			"type": "timeseries"
+		},
+		{
+			"datasource": {
+				"type": "prometheus",
+				"uid": "prometheus"
+			},
+			"fieldConfig": {
+				"defaults": {
+					"color": {
+						"mode": "palette-classic"
+					},
+					"custom": {
+						"axisLabel": "req/s",
+						"drawStyle": "line",
+						"fillOpacity": 10,
+						"lineWidth": 1,
+						"showPoints": "never"
+					},
+					"unit": "reqps"
+				},
+				"overrides": []
+			},
+			"gridPos": {
+				"h": 8,
+				"w": 12,
+				"x": 0,
+				"y": 24
+			},
+			"id": 6,
+			"options": {
+				"legend": {
+					"displayMode": "list",
+					"placement": "bottom",
+					"showLegend": true
+				},
+				"tooltip": {
+					"mode": "multi",
+					"sort": "desc"
+				}
+			},
+			"targets": [
+				{
+					"datasource": {
+						"type": "prometheus",
+						"uid": "prometheus"
+					},
+					"expr": "sum(rate(genai_model_requests_total{job=\"genai\"}[5m])) by (provider, model)",
+					"legendFormat": "{{provider}} / {{model}}",
+					"refId": "A"
+				}
+			],
+			"title": "Model calls by model and provider",
+			"type": "timeseries"
+		},
+		{
+			"datasource": {
+				"type": "prometheus",
+				"uid": "prometheus"
+			},
+			"fieldConfig": {
+				"defaults": {
+					"color": {
+						"mode": "palette-classic"
+					},
+					"custom": {
+						"axisLabel": "req/s",
+						"drawStyle": "line",
+						"fillOpacity": 10,
+						"lineWidth": 1,
+						"showPoints": "never"
+					},
+					"unit": "reqps"
+				},
+				"overrides": []
+			},
+			"gridPos": {
+				"h": 8,
+				"w": 12,
+				"x": 12,
+				"y": 24
+			},
+			"id": 7,
+			"options": {
+				"legend": {
+					"displayMode": "list",
+					"placement": "bottom",
+					"showLegend": true
+				},
+				"tooltip": {
+					"mode": "multi",
+					"sort": "desc"
+				}
+			},
+			"targets": [
+				{
+					"datasource": {
+						"type": "prometheus",
+						"uid": "prometheus"
+					},
+					"expr": "sum(rate(genai_model_requests_total{job=\"genai\"}[5m])) by (status)",
+					"legendFormat": "{{status}}",
+					"refId": "A"
+				}
+			],
+			"title": "Model call outcomes",
+			"type": "timeseries"
+		},
+		{
+			"datasource": {
+				"type": "prometheus",
+				"uid": "prometheus"
+			},
+			"fieldConfig": {
+				"defaults": {
+					"color": {
+						"mode": "palette-classic"
+					},
+					"custom": {
+						"axisLabel": "seconds",
+						"drawStyle": "line",
+						"fillOpacity": 0,
+						"lineWidth": 1,
+						"showPoints": "never"
+					},
+					"unit": "s"
+				},
+				"overrides": []
+			},
+			"gridPos": {
+				"h": 8,
+				"w": 24,
+				"x": 0,
+				"y": 32
+			},
+			"id": 8,
+			"options": {
+				"legend": {
+					"displayMode": "list",
+					"placement": "bottom",
+					"showLegend": true
+				},
+				"tooltip": {
+					"mode": "multi",
+					"sort": "desc"
+				}
+			},
+			"targets": [
+				{
+					"datasource": {
+						"type": "prometheus",
+						"uid": "prometheus"
+					},
+					"expr": "histogram_quantile(0.50, sum(rate(genai_model_request_duration_seconds_bucket{job=\"genai\"}[5m])) by (le, operation))",
+					"legendFormat": "p50 {{operation}}",
+					"refId": "A"
+				},
+				{
+					"datasource": {
+						"type": "prometheus",
+						"uid": "prometheus"
+					},
+					"expr": "histogram_quantile(0.95, sum(rate(genai_model_request_duration_seconds_bucket{job=\"genai\"}[5m])) by (le, operation))",
+					"legendFormat": "p95 {{operation}}",
+					"refId": "B"
+				}
+			],
+			"title": "Model call latency by operation",
+			"type": "timeseries"
+		},
+		{
+			"datasource": {
+				"type": "prometheus",
+				"uid": "prometheus"
+			},
+			"fieldConfig": {
+				"defaults": {
+					"color": {
+						"mode": "palette-classic"
+					},
+					"custom": {
+						"axisLabel": "events/s",
+						"drawStyle": "line",
+						"fillOpacity": 10,
+						"lineWidth": 1,
+						"showPoints": "never"
+					},
+					"unit": "reqps"
+				},
+				"overrides": []
+			},
+			"gridPos": {
+				"h": 8,
+				"w": 12,
+				"x": 0,
+				"y": 40
+			},
+			"id": 9,
+			"options": {
+				"legend": {
+					"displayMode": "list",
+					"placement": "bottom",
+					"showLegend": true
+				},
+				"tooltip": {
+					"mode": "multi",
+					"sort": "desc"
+				}
+			},
+			"targets": [
+				{
+					"datasource": {
+						"type": "prometheus",
+						"uid": "prometheus"
+					},
+					"expr": "sum(rate(genai_document_truncated_total{job=\"genai\"}[5m])) by (endpoint)",
+					"legendFormat": "{{endpoint}}",
+					"refId": "A"
+				}
+			],
+			"title": "Document truncations by endpoint",
+			"type": "timeseries"
 		}
 	],
 	"preload": false,
