@@ -22,13 +22,13 @@ body {
 }
 
 .app-header {
-    padding: 1rem 1.5rem 0.75rem;
+    padding: 0.75rem 1.5rem;
     border-bottom: 1px solid $color-border;
     background: $color-bg-white;
     flex-shrink: 0;
 
     h1 {
-        margin: 0 0 0.25rem;
+        margin: 0;
         color: $color-primary;
         font-size: 1.4rem;
     }
@@ -43,8 +43,61 @@ body {
 .app-header-top {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
+    gap: 1.5rem;
+}
+
+.app-header-nav {
+    display: flex;
+    gap: 0.25rem;
+    flex: 1;
+}
+
+.app-tab {
+    display: grid;
+    padding: 0.3rem 0.75rem;
+    font-family: $font-family;
+    font-size: 0.875rem;
+    color: $color-text-secondary;
+    background: none;
+    border: none;
+    cursor: pointer;
+    transition: color 0.12s;
+
+    // Both spans sit in the same grid cell so the button is always as wide
+    // as its bold label — preventing layout shift when switching tabs.
+    &__label,
+    &__sizer {
+        grid-area: 1 / 1;
+    }
+
+    &__label {
+        font-weight: 400;
+    }
+
+    // Hidden bold copy that reserves the bold width at all times
+    &__sizer {
+        font-weight: 700;
+        visibility: hidden;
+        user-select: none;
+        pointer-events: none;
+    }
+
+    &:hover:not(.app-tab--active) {
+        color: $color-text-dark;
+    }
+
+    &--active {
+        color: $color-text-dark;
+
+        .app-tab__label {
+            font-weight: 700;
+        }
+    }
+}
+
+.app-tab-content {
+    flex: 1;
+    overflow-y: auto;
 }
 
 .app-body {
@@ -54,6 +107,8 @@ body {
 }
 
 .app-main {
+    display: flex;
+    flex-direction: column;
     flex: 1;
-    overflow-y: auto;
+    overflow: hidden;
 }

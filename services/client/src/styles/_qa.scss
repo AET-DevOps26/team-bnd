@@ -1,0 +1,310 @@
+@use "variables" as *;
+
+// ── Panel shell ──────────────────────────────────────────────
+
+.qa-panel {
+    display: flex;
+    flex-direction: column;
+    padding: 1.5rem 2rem;
+    height: 100%;
+    box-sizing: border-box;
+}
+
+// ── Question form ────────────────────────────────────────────
+
+.qa-form {
+    flex-shrink: 0;
+    margin-bottom: 1.25rem;
+}
+
+.qa-form-label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: $color-text-muted;
+}
+
+.qa-input-row {
+    display: flex;
+    gap: 0.5rem;
+    align-items: flex-start;
+}
+
+.qa-input {
+    flex: 1;
+    resize: vertical;
+    padding: 0.6rem 0.75rem;
+    font-family: $font-family;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    color: $color-text-dark;
+    background: $color-bg-white;
+    border: 1px solid $color-border-input;
+    border-radius: 6px;
+    transition: border-color 0.15s;
+
+    &:focus {
+        outline: none;
+        border-color: $color-primary;
+        box-shadow: 0 0 0 2px rgba($color-primary, 0.15);
+    }
+
+    &:disabled {
+        background: $color-bg-subtle;
+        color: $color-text-muted;
+        cursor: not-allowed;
+    }
+
+    &::placeholder {
+        color: $color-text-light;
+    }
+}
+
+.qa-submit {
+    flex-shrink: 0;
+    padding: 0.55rem 1.1rem;
+    font-family: $font-family;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: $color-bg-white;
+    background: $color-primary;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.15s;
+    white-space: nowrap;
+
+    &:hover:not(:disabled) {
+        background: $color-primary-dark;
+    }
+
+    &:disabled {
+        background: $color-text-light;
+        cursor: not-allowed;
+    }
+}
+
+.qa-input-hint {
+    margin: 0.3rem 0 0;
+    font-size: 0.75rem;
+    color: $color-text-faint;
+}
+
+// ── Error / status messages ──────────────────────────────────
+
+.qa-error {
+    margin: 0 0 1rem;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.85rem;
+    color: $color-error;
+    background: lighten($color-error, 48%);
+    border: 1px solid lighten($color-error, 38%);
+    border-radius: 6px;
+}
+
+.qa-status {
+    margin: 0;
+    font-size: 0.9rem;
+    color: $color-text-muted;
+
+    &--error {
+        color: $color-error;
+    }
+}
+
+.qa-empty {
+    margin: 0;
+    font-size: 0.9rem;
+    color: $color-text-muted;
+    font-style: italic;
+}
+
+// ── History list ─────────────────────────────────────────────
+
+.qa-history {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+// ── Individual interaction ───────────────────────────────────
+
+.qa-interaction {
+    padding: 1rem 1.25rem;
+    background: $color-bg-white;
+    border: 1px solid $color-border-subtle;
+    border-radius: 8px;
+}
+
+.qa-question {
+    margin: 0 0 0.75rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: $color-text-dark;
+
+    &::before {
+        content: "Q: ";
+        color: $color-primary;
+    }
+}
+
+.qa-answer {
+    margin-bottom: 0.75rem;
+    font-size: 0.9rem;
+    line-height: 1.6;
+    color: $color-text-dark;
+
+    // Prose resets — mirrors .markdown-body conventions
+    p {
+        margin: 0 0 0.6em;
+
+        &:last-child {
+            margin-bottom: 0;
+        }
+    }
+
+    ul,
+    ol {
+        margin: 0 0 0.6em;
+        padding-left: 1.4em;
+    }
+
+    li {
+        margin-bottom: 0.15em;
+    }
+
+    code {
+        font-family: monospace;
+        font-size: 0.85em;
+        background: $color-bg-neutral;
+        padding: 0.1em 0.3em;
+        border-radius: 3px;
+    }
+
+    pre {
+        background: $color-bg-neutral;
+        border: 1px solid $color-border-light;
+        border-radius: 4px;
+        padding: 0.6rem 0.9rem;
+        overflow-x: auto;
+        margin: 0 0 0.6em;
+
+        code {
+            background: none;
+            padding: 0;
+        }
+    }
+
+    strong {
+        font-weight: 600;
+    }
+}
+
+// ── Source references ────────────────────────────────────────
+
+.qa-sources {
+    margin-bottom: 0.75rem;
+
+    h4 {
+        margin: 0 0 0.4rem;
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: $color-text-muted;
+    }
+}
+
+.qa-source-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.qa-source-item {
+    display: inline-flex;
+}
+
+.qa-source-link {
+    display: inline-block;
+    padding: 0.18rem 0.6rem;
+    font-family: $font-family;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: $color-primary;
+    background: $color-bg-tag-user;
+    border: 1px solid rgba($color-primary, 0.25);
+    border-radius: 999px;
+    cursor: pointer;
+    text-decoration: none;
+    transition:
+        background 0.12s,
+        border-color 0.12s;
+
+    &:hover:not(.qa-source-link--unresolved) {
+        background: $color-bg-hover;
+        border-color: rgba($color-primary, 0.5);
+    }
+
+    &--unresolved {
+        color: $color-text-muted;
+        background: $color-bg-neutral;
+        border-color: $color-border-subtle;
+        cursor: default;
+    }
+}
+
+// ── Interaction meta ─────────────────────────────────────────
+
+.qa-meta {
+    margin: 0;
+    font-size: 0.75rem;
+    color: $color-text-light;
+}
+
+.qa-meta-sep {
+    color: $color-text-faint;
+}
+
+// ── Clear history ────────────────────────────────────────────
+
+.qa-clear {
+    display: flex;
+    justify-content: center;
+    padding-top: 0.5rem;
+}
+
+.qa-clear-button {
+    padding: 0.3rem 0.75rem;
+    font-family: $font-family;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: $color-text-secondary;
+    background: none;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    cursor: pointer;
+    transition:
+        background 0.12s,
+        border-color 0.12s,
+        color 0.12s;
+
+    &:hover:not(:disabled) {
+        color: $color-text-dark;
+        background: $color-bg-neutral;
+        border-color: $color-border;
+    }
+
+    &:disabled {
+        color: $color-text-light;
+        cursor: not-allowed;
+    }
+}
