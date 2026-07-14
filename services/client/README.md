@@ -72,3 +72,4 @@ Notes
 - The dev Dockerfile starts Vite with --host 0.0.0.0 so the dev server is reachable from the host when running in a container.
 - The production image is based on `nginxinc/nginx-unprivileged` and serves the built files on port 8080 inside the container (Traefik in docker-compose routes to it via the internal network, no host port published by default).
 - When starting the development server, `--build --renew-anon-volumes` has to be specified.
+- The TypeScript types of `useQuery` calls (via `openapi-react-query`) are verified by the pre-commit hook, which runs `tsc --noEmit` before every commit.

@@ -66,6 +66,14 @@
         border-left-color: $color-primary;
     }
 
+    &__link {
+        display: flex;
+        flex-direction: column;
+        gap: 0.15rem;
+        text-decoration: none;
+        color: inherit;
+    }
+
     &__name {
         font-size: 0.9rem;
         font-weight: 500;

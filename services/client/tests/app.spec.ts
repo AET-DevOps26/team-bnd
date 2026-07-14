@@ -19,7 +19,7 @@ test.describe("Alexandria client", () => {
       },
       { key: storageKey, value: JSON.stringify(oidcUser) },
     );
-    await page.goto("/");
+    await page.goto("/ask");
   });
 
   test.describe("Page metadata", () => {
@@ -267,7 +267,7 @@ test.describe("Alexandria client", () => {
         },
       );
 
-      await page.goto("/");
+      await page.goto("/ask");
 
       // No documents yet — tree list should be absent or status shown
       await expect(page.locator(".tree-item")).toHaveCount(0, {
@@ -327,6 +327,7 @@ test.describe("Alexandria client", () => {
     test("shows a placeholder when no document is selected", async ({
       page,
     }) => {
+      await page.goto("/documents");
       const main = page.locator("main.app-main");
       await expect(main).toBeVisible();
       await expect(main).toContainText(
@@ -381,7 +382,7 @@ test.describe("Alexandria client", () => {
           }),
       );
 
-      await page.goto("/");
+      await page.goto("/ask");
 
       // The document item should appear in the tree
       const docItem = page.locator(".tree-item").first();
@@ -441,7 +442,7 @@ test.describe("Alexandria client", () => {
           }),
       );
 
-      await page.goto("/");
+      await page.goto("/ask");
 
       const docItem = page.locator(".tree-item").first();
       await expect(docItem).toBeVisible({ timeout: 5000 });
@@ -470,7 +471,7 @@ test.describe("Alexandria client", () => {
     });
 
     test("Ask tab is active by default on load", async ({ page }) => {
-      await page.goto("/");
+      await page.goto("/ask");
 
       // Scope to the header nav to avoid matching the .qa-submit "Ask" button
       const askTab = page
@@ -485,7 +486,7 @@ test.describe("Alexandria client", () => {
     });
 
     test("Q&A panel renders input and submit button", async ({ page }) => {
-      await page.goto("/");
+      await page.goto("/ask");
 
       const input = page.locator(".qa-input");
       await expect(input).toBeVisible();
@@ -496,7 +497,7 @@ test.describe("Alexandria client", () => {
     });
 
     test("shows empty state when there is no history", async ({ page }) => {
-      await page.goto("/");
+      await page.goto("/ask");
 
       const empty = page.locator(".qa-empty");
       await expect(empty).toBeVisible({ timeout: 5000 });
@@ -521,7 +522,7 @@ test.describe("Alexandria client", () => {
         }),
       );
 
-      await page.goto("/");
+      await page.goto("/ask");
 
       await page.locator(".qa-input").fill("What is the main topic?");
       await page.locator(".qa-submit").click();
@@ -552,7 +553,7 @@ test.describe("Alexandria client", () => {
         });
       });
 
-      await page.goto("/");
+      await page.goto("/ask");
       await page.locator(".qa-input").fill("Slow question?");
       await page.locator(".qa-submit").click();
 
@@ -577,7 +578,7 @@ test.describe("Alexandria client", () => {
         }),
       );
 
-      await page.goto("/");
+      await page.goto("/ask");
       await page.locator(".qa-input").fill("When was it published?");
       await page.locator(".qa-submit").click();
 
@@ -635,7 +636,7 @@ test.describe("Alexandria client", () => {
         }),
       );
 
-      await page.goto("/");
+      await page.goto("/ask");
       await page.locator(".qa-input").fill("What does the report say?");
       await page.locator(".qa-submit").click();
 
@@ -678,7 +679,7 @@ test.describe("Alexandria client", () => {
         }),
       );
 
-      await page.goto("/");
+      await page.goto("/ask");
       await page.locator(".qa-input").fill("What is this?");
       await page.locator(".qa-submit").click();
 
@@ -687,7 +688,7 @@ test.describe("Alexandria client", () => {
       await expect(sourceLink).toHaveText("mystery.pdf");
     });
 
-    test("clicking a resolved source switches to Documents tab and selects the document", async ({
+    test("clicking a resolved source navigates to the document detail route", async ({
       page,
     }) => {
       const docId = "00000000-0000-0000-0000-000000000011";
@@ -754,7 +755,7 @@ test.describe("Alexandria client", () => {
         }),
       );
 
-      await page.goto("/");
+      await page.goto("/ask");
       await page.locator(".qa-input").fill("What is in the guide?");
       await page.locator(".qa-submit").click();
 
@@ -762,8 +763,10 @@ test.describe("Alexandria client", () => {
       await expect(sourceLink).toBeVisible({ timeout: 5000 });
       await sourceLink.click();
 
-      // Documents tab should now be active
-      const documentsTab = page.getByRole("button", { name: "Documents" });
+      // Documents tab link should now be active
+      const documentsTab = page
+        .locator(".app-header-nav .app-tab")
+        .filter({ hasText: "Documents" });
       await expect(documentsTab).toHaveClass(/app-tab--active/, {
         timeout: 3000,
       });
@@ -796,7 +799,7 @@ test.describe("Alexandria client", () => {
         }),
       );
 
-      await page.goto("/");
+      await page.goto("/ask");
 
       const interaction = page.locator(".qa-interaction").first();
       await expect(interaction).toBeVisible({ timeout: 5000 });
@@ -813,7 +816,7 @@ test.describe("Alexandria client", () => {
         route.fulfill({ status: 500, body: "Internal Server Error" }),
       );
 
-      await page.goto("/");
+      await page.goto("/ask");
       await page.locator(".qa-input").fill("This will fail.");
       await page.locator(".qa-submit").click();
 
@@ -833,7 +836,7 @@ test.describe("Alexandria client", () => {
         route.fulfill({ status: 401, body: "Unauthorized" }),
       );
 
-      await page.goto("/");
+      await page.goto("/ask");
       await page.locator(".qa-input").fill("Auth check question.");
       await page.locator(".qa-submit").click();
 
@@ -842,10 +845,8 @@ test.describe("Alexandria client", () => {
       await expect(error).toHaveText("Authentication error. Retrying login...");
     });
 
-    test("Documents tab button switches back to document view", async ({
-      page,
-    }) => {
-      await page.goto("/");
+    test("Documents tab link switches to document view", async ({ page }) => {
+      await page.goto("/ask");
 
       // Scope to the header nav to avoid matching the .qa-submit "Ask" button
       const askTab = page
@@ -907,7 +908,7 @@ test.describe("Alexandria client", () => {
         }
       });
 
-      await page.goto("/");
+      await page.goto("/ask");
 
       // Both interactions should be visible
       await expect(page.locator(".qa-interaction")).toHaveCount(2, {
