@@ -40,7 +40,7 @@ function sourceKeyToName(key: string): string {
 
 /**
  * Finds the document in the list whose objectKey matches the given source key.
- * The objectKey stored on the Document entity is the S3 key used in sourceObjectKeys.
+ * The objectKey stored on the Document entity is the S3 key carried on each citation.
  */
 function findDocumentByKey(
   documents: Document[],
@@ -183,39 +183,48 @@ export default function QAPanel({ documents, onSelectDocument }: Props) {
               <ReactMarkdown>{interaction.answer ?? ""}</ReactMarkdown>
             </div>
 
-            {interaction.sourceObjectKeys &&
-              interaction.sourceObjectKeys.length > 0 && (
-                <section className="qa-sources">
-                  <h4>Sources</h4>
-                  <ul className="qa-source-list">
-                    {interaction.sourceObjectKeys.map((key) => {
-                      const doc = findDocumentByKey(documents, key);
-                      const docId = doc?.id;
-                      return (
-                        <li key={key} className="qa-source-item">
-                          {docId ? (
-                            <button
-                              type="button"
-                              className="qa-source-link"
-                              onClick={() => onSelectDocument(docId)}
-                              title={key}
-                            >
-                              {doc?.fileName ?? sourceKeyToName(key)}
-                            </button>
-                          ) : (
-                            <span
-                              className="qa-source-link qa-source-link--unresolved"
-                              title={key}
-                            >
-                              {sourceKeyToName(key)}
-                            </span>
-                          )}
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </section>
-              )}
+            {interaction.citations && interaction.citations.length > 0 && (
+              <section className="qa-sources">
+                <h4>Sources</h4>
+                <ul className="qa-source-list">
+                  {interaction.citations.map((citation, citationIndex) => {
+                    const key = citation.objectKey;
+                    const doc = key
+                      ? findDocumentByKey(documents, key)
+                      : undefined;
+                    const docId = citation.documentId ?? doc?.id;
+                    const name =
+                      citation.fileName ??
+                      doc?.fileName ??
+                      (key ? sourceKeyToName(key) : "Unknown source");
+                    return (
+                      <li
+                        key={citation.marker ?? key ?? citationIndex}
+                        className="qa-source-item"
+                      >
+                        {docId ? (
+                          <button
+                            type="button"
+                            className="qa-source-link"
+                            onClick={() => onSelectDocument(docId)}
+                            title={citation.snippet ?? key}
+                          >
+                            {name}
+                          </button>
+                        ) : (
+                          <span
+                            className="qa-source-link qa-source-link--unresolved"
+                            title={citation.snippet ?? key}
+                          >
+                            {name}
+                          </span>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              </section>
+            )}
 
             {(interaction.timestamp || interaction.modelUsed) && (
               <p className="qa-meta">

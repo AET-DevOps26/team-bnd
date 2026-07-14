@@ -7,7 +7,7 @@ info:
   license:
     name: MIT
     identifier: MIT
-  version: 5.0.0
+  version: 6.0.0
 servers:
   - url: /
     description: Current server
@@ -19,7 +19,7 @@ tags:
     description: Document management and AI-powered knowledge operations
     x-displayName: KnowledgeBase Service
   - name: KnowledgeBase Service (Internal)
-    description: Service-to-service endpoints, reachable only inside the cluster network
+    description: Service-to-service endpoints authenticated by an HMAC signature
     x-displayName: KnowledgeBase Service (Internal)
   - name: QA Service
     description: Question answering over the user's knowledge base
@@ -137,6 +137,34 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
       security:
         - bearerAuth: []
+  /internal/knowledgebase/users/{subject}/documents/resolve:
+    post:
+      tags:
+        - KnowledgeBase Service (Internal)
+      summary: Resolve object keys to document ids and file names (internal)
+      operationId: kbInternalResolveDocuments
+      parameters:
+        - name: subject
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResolveDocumentsRequest'
+        required: true
+      responses:
+        '200':
+          description: Documents resolved
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DocumentReferenceResponse'
+      security: []
   /api/v1/knowledgebase/documents/{id}/tags:
     post:
       tags:
@@ -1265,6 +1293,22 @@ components:
           type: string
         message:
           type: string
+    ResolveDocumentsRequest:
+      type: object
+      properties:
+        objectKeys:
+          type: array
+          items:
+            type: string
+    DocumentReferenceResponse:
+      type: object
+      properties:
+        objectKey:
+          type: string
+        documentId:
+          type: string
+        fileName:
+          type: string
     AddTagRequest:
       type: object
       properties:
@@ -1502,14 +1546,28 @@ components:
           type: string
         answer:
           type: string
-        sourceObjectKeys:
+        citations:
           type: array
           items:
-            type: string
+            $ref: '#/components/schemas/QaCitation'
         timestamp:
           type: string
           format: date-time
         modelUsed:
+          type: string
+    QaCitation:
+      type: object
+      properties:
+        marker:
+          type: integer
+          format: int32
+        objectKey:
+          type: string
+        documentId:
+          type: string
+        fileName:
+          type: string
+        snippet:
           type: string
     GenAiAskRequest:
       properties:

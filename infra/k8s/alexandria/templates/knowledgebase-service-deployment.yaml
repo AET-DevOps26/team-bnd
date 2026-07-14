@@ -79,6 +79,11 @@ spec:
                 secretKeyRef:
                   name: {{ include "alexandria.fullname" . }}-spring-secrets
                   key: s3-secret-key
+            - name: INTERNAL_SHARED_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "alexandria.fullname" . }}-spring-secrets
+                  key: internal-shared-secret
           volumeMounts:
             - name: tmp
               mountPath: /tmp

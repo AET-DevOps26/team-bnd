@@ -11,7 +11,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.List;
 import java.util.Optional;
@@ -51,6 +55,9 @@ class KnowledgeBaseServiceTest {
     @Mock
     private ObjectStorageService objectStorageService;
 
+    @Mock
+    private ObjectProvider<KnowledgeBaseService> self;
+
     private KnowledgeBaseService knowledgeBaseService;
 
     private static final String OWNER = "oidc|123";
@@ -58,13 +65,29 @@ class KnowledgeBaseServiceTest {
     @BeforeEach
     void setup() {
         knowledgeBaseService = new KnowledgeBaseService(
-                documentService, summaryRepository, extractedEntityRepository, tagRepository, searchQueryRepository, genAiClient, textExtractor, objectStorageService
+                documentService, summaryRepository, extractedEntityRepository, tagRepository, searchQueryRepository, genAiClient, textExtractor, objectStorageService, self
         );
+        // The async pipeline is entered via the self-proxy and reloads the document by id.
+        // Route the proxy back to the instance and let findById return the last saved doc,
+        // so the pipeline runs inline on the same object the create/upload tests assert on.
+        lenient().when(self.getObject()).thenReturn(knowledgeBaseService);
+        lenient().when(documentService.findById(any(UUID.class))).thenAnswer(inv -> lastSavedDocument);
+    }
+
+    private Document lastSavedDocument;
+
+    private Document recordSaved(org.mockito.invocation.InvocationOnMock inv) {
+        Document saved = inv.getArgument(0);
+        if (saved.getId() == null) {
+            ReflectionTestUtils.setField(saved, "id", UUID.randomUUID());
+        }
+        lastSavedDocument = saved;
+        return saved;
     }
 
     @Test
     void unit_kb_createDocumentPersistsAndCallsGenAiForText() {
-        when(documentService.save(any(Document.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(documentService.save(any(Document.class))).thenAnswer(this::recordSaved);
         when(genAiClient.summarize(anyString())).thenReturn(new GenAiClient.SummarizeResponse("summary", "model"));
         when(genAiClient.extract(anyString())).thenReturn(new GenAiClient.ExtractResponse(List.of(), "model"));
         when(genAiClient.index(anyString())).thenReturn(new GenAiClient.IndexResponse("/uploads/a.pdf", 3, "embed-model"));
@@ -80,7 +103,7 @@ class KnowledgeBaseServiceTest {
 
     @Test
     void unit_kb_createDocumentSkipsGenAiWhenNoText() {
-        when(documentService.save(any(Document.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(documentService.save(any(Document.class))).thenAnswer(this::recordSaved);
 
         knowledgeBaseService.createDocument(OWNER, "a.pdf", "/uploads/a.pdf", "application/pdf", 100L, "");
 
@@ -89,7 +112,7 @@ class KnowledgeBaseServiceTest {
 
     @Test
     void unit_kb_createDocumentSurvivesGenAiIndexFailure() {
-        when(documentService.save(any(Document.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(documentService.save(any(Document.class))).thenAnswer(this::recordSaved);
         when(genAiClient.summarize(anyString())).thenReturn(new GenAiClient.SummarizeResponse("summary", "model"));
         when(genAiClient.extract(anyString())).thenReturn(new GenAiClient.ExtractResponse(List.of(), "model"));
         when(genAiClient.index(anyString())).thenThrow(new RuntimeException("genai down"));
@@ -105,7 +128,7 @@ class KnowledgeBaseServiceTest {
     void unit_kb_uploadDocumentCallsIndexAlongsideSummarizeAndExtract() {
         MockMultipartFile file = new MockMultipartFile(
                 "file", "a.pdf", "application/pdf", "hello world".getBytes());
-        when(documentService.save(any(Document.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(documentService.save(any(Document.class))).thenAnswer(this::recordSaved);
         when(textExtractor.extract(file)).thenReturn("hello world");
         when(genAiClient.summarize(anyString())).thenReturn(new GenAiClient.SummarizeResponse("summary", "model"));
         when(genAiClient.extract(anyString())).thenReturn(new GenAiClient.ExtractResponse(List.of(), "model"));
@@ -123,7 +146,7 @@ class KnowledgeBaseServiceTest {
     void unit_kb_uploadDocumentSurvivesGenAiIndexFailure() {
         MockMultipartFile file = new MockMultipartFile(
                 "file", "a.pdf", "application/pdf", "hello world".getBytes());
-        when(documentService.save(any(Document.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(documentService.save(any(Document.class))).thenAnswer(this::recordSaved);
         when(textExtractor.extract(file)).thenReturn("hello world");
         when(genAiClient.summarize(anyString())).thenReturn(new GenAiClient.SummarizeResponse("summary", "model"));
         when(genAiClient.extract(anyString())).thenReturn(new GenAiClient.ExtractResponse(List.of(), "model"));
@@ -200,7 +223,7 @@ class KnowledgeBaseServiceTest {
 
     @Test
     void unit_kb_createDocumentPersistsAutoTagsFromGenAi() {
-        when(documentService.save(any(Document.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(documentService.save(any(Document.class))).thenAnswer(this::recordSaved);
         when(genAiClient.summarize(anyString())).thenReturn(new GenAiClient.SummarizeResponse("summary", "model"));
         when(genAiClient.extract(anyString())).thenReturn(new GenAiClient.ExtractResponse(List.of(), "model"));
         when(genAiClient.index(anyString())).thenReturn(new GenAiClient.IndexResponse("/uploads/a.pdf", 1, "embed-model"));
@@ -219,7 +242,7 @@ class KnowledgeBaseServiceTest {
     @Test
     void unit_kb_createDocumentReusesExistingTagLabel() {
         Tag existing = new Tag("finance", TagSource.USER);
-        when(documentService.save(any(Document.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(documentService.save(any(Document.class))).thenAnswer(this::recordSaved);
         when(genAiClient.summarize(anyString())).thenReturn(new GenAiClient.SummarizeResponse("summary", "model"));
         when(genAiClient.extract(anyString())).thenReturn(new GenAiClient.ExtractResponse(List.of(), "model"));
         when(genAiClient.index(anyString())).thenReturn(new GenAiClient.IndexResponse("/uploads/a.pdf", 1, "embed-model"));
@@ -235,7 +258,7 @@ class KnowledgeBaseServiceTest {
 
     @Test
     void unit_kb_createDocumentPassesKnownTagsFromOwner() {
-        when(documentService.save(any(Document.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(documentService.save(any(Document.class))).thenAnswer(this::recordSaved);
         when(genAiClient.summarize(anyString())).thenReturn(new GenAiClient.SummarizeResponse("summary", "model"));
         when(genAiClient.extract(anyString())).thenReturn(new GenAiClient.ExtractResponse(List.of(), "model"));
         when(genAiClient.index(anyString())).thenReturn(new GenAiClient.IndexResponse("/uploads/a.pdf", 1, "embed-model"));
@@ -249,7 +272,7 @@ class KnowledgeBaseServiceTest {
 
     @Test
     void unit_kb_createDocumentSurvivesGenAiTagFailure() {
-        when(documentService.save(any(Document.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(documentService.save(any(Document.class))).thenAnswer(this::recordSaved);
         when(genAiClient.summarize(anyString())).thenReturn(new GenAiClient.SummarizeResponse("summary", "model"));
         when(genAiClient.extract(anyString())).thenReturn(new GenAiClient.ExtractResponse(List.of(), "model"));
         when(genAiClient.index(anyString())).thenReturn(new GenAiClient.IndexResponse("/uploads/a.pdf", 1, "embed-model"));
@@ -271,7 +294,7 @@ class KnowledgeBaseServiceTest {
         doc.addTag(userTag);
         doc.addTag(oldAuto);
         when(documentService.findByIdAndOwner(docId, OWNER)).thenReturn(doc);
-        when(documentService.save(any(Document.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(documentService.save(any(Document.class))).thenAnswer(this::recordSaved);
         when(genAiClient.tag(anyString(), anyList())).thenReturn(new GenAiClient.TagResponse(List.of("fresh"), "model"));
         when(tagRepository.findByLabel("fresh")).thenReturn(Optional.empty());
         when(tagRepository.save(any(Tag.class))).thenAnswer(inv -> inv.getArgument(0));
@@ -395,5 +418,28 @@ class KnowledgeBaseServiceTest {
         verify(genAiClient).deleteIndex("/uploads/a.pdf");
         verify(documentService).deleteAllByOwner(OWNER);
         verify(searchQueryRepository).deleteByUserSubject(OWNER);
+    }
+
+    @Test
+    void unit_kb_createDocumentDefersAsyncProcessingUntilAfterCommit() {
+        KnowledgeBaseService selfProxy = mock(KnowledgeBaseService.class);
+        when(self.getObject()).thenReturn(selfProxy);
+        when(documentService.save(any(Document.class))).thenAnswer(this::recordSaved);
+
+        TransactionSynchronizationManager.initSynchronization();
+        try {
+            Document result = knowledgeBaseService.createDocument(
+                    OWNER, "a.pdf", "/uploads/a.pdf", "application/pdf", 100L, "hello world");
+
+            // While the transaction is open the async pipeline must not run yet.
+            verify(selfProxy, never()).processDocumentAsync(any(UUID.class));
+
+            for (TransactionSynchronization sync : TransactionSynchronizationManager.getSynchronizations()) {
+                sync.afterCommit();
+            }
+            verify(selfProxy).processDocumentAsync(result.getId());
+        } finally {
+            TransactionSynchronizationManager.clearSynchronization();
+        }
     }
 }
