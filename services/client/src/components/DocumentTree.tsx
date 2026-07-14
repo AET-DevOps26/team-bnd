@@ -50,9 +50,8 @@ export default function DocumentTree({ documents, isLoading, error }: Props) {
               <li
                 key={id}
                 className={`tree-item${selectedId === id ? " tree-item--active" : ""}`}
-                aria-current={selectedId === id ? "true" : undefined}
               >
-                <Link to={`/documents/${id}`} className="tree-item__link">
+                <Link to={`/documents/${id}`} className="tree-item__link" aria-current={selectedId === id ? "true" : undefined}>
                   <span className="tree-item__name">{doc.fileName}</span>
                   <span className="tree-item__date">
                     {formatDate(doc.createdAt)}
