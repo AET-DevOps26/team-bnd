@@ -9,6 +9,9 @@ structured 502/504 rather than an unhandled 500.
 import time
 from collections.abc import Callable
 
+from opentelemetry import trace
+from opentelemetry.trace import Status, StatusCode
+
 from app.errors import ProviderError, ProviderTimeoutError
 from app.metrics import record_model_call
 
@@ -46,18 +49,34 @@ def run_model_call[T](
 
     Returns ``(result, model_name)``. Raises ProviderTimeoutError on a timeout,
     ProviderError on any other failure.
+
+    Wraps the call in a span so a trace shows the model call as its own step
+    under the request; the span is a no-op unless tracing is enabled.
     """
-    start = time.perf_counter()
-    try:
-        result = call()
-    except Exception as exc:
+    tracer = trace.get_tracer(__name__)
+    with tracer.start_as_current_span(f"genai.{operation}") as span:
+        # gen_ai.* keys follow OpenTelemetry's GenAI semantic conventions.
+        span.set_attribute("gen_ai.operation.name", operation)
+        span.set_attribute("gen_ai.system", provider)
+        span.set_attribute("gen_ai.request.model", fallback_model)
+
+        start = time.perf_counter()
+        try:
+            result = call()
+        except Exception as exc:
+            duration = time.perf_counter() - start
+            status = "timeout" if _is_timeout(exc) else "error"
+            span.set_attribute("genai.outcome", status)
+            span.record_exception(exc)
+            span.set_status(Status(StatusCode.ERROR))
+            record_model_call(operation, provider, fallback_model, status, duration)
+            if status == "timeout":
+                raise ProviderTimeoutError() from exc
+            raise ProviderError() from exc
+
         duration = time.perf_counter() - start
-        if _is_timeout(exc):
-            record_model_call(operation, provider, fallback_model, "timeout", duration)
-            raise ProviderTimeoutError() from exc
-        record_model_call(operation, provider, fallback_model, "error", duration)
-        raise ProviderError() from exc
-    duration = time.perf_counter() - start
-    model = model_resolver(result) if model_resolver else fallback_model
-    record_model_call(operation, provider, model, "ok", duration)
-    return result, model
+        model = model_resolver(result) if model_resolver else fallback_model
+        span.set_attribute("gen_ai.response.model", model)
+        span.set_attribute("genai.outcome", "ok")
+        record_model_call(operation, provider, model, "ok", duration)
+        return result, model
