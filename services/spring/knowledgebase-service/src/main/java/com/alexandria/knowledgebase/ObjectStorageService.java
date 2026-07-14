@@ -1,5 +1,7 @@
 package com.alexandria.knowledgebase;
 
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
@@ -9,6 +11,7 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.*;
 
 import java.io.IOException;
+import java.util.function.Supplier;
 
 // Based on https://www.baeldung.com/java-aws-s3 and
 // https://dev.to/sachithmayantha/seamless-file-storage-integrating-aws-s3-with-spring-boot-3045
@@ -19,9 +22,25 @@ public class ObjectStorageService {
     String bucket;
 
     private final S3Client s3Client;
+    private final MeterRegistry meterRegistry;
 
-    public ObjectStorageService(S3Client s3Client) {
+    public ObjectStorageService(S3Client s3Client, MeterRegistry meterRegistry) {
         this.s3Client = s3Client;
+        this.meterRegistry = meterRegistry;
+    }
+
+    private <T> T tracked(String operation, Supplier<T> call) {
+        Timer.Sample sample = Timer.start(meterRegistry);
+        String outcome = "success";
+        try {
+            return call.get();
+        } catch (RuntimeException e) {
+            outcome = "error";
+            throw e;
+        } finally {
+            sample.stop(meterRegistry.timer("s3.operation.duration", "operation", operation, "outcome", outcome));
+            meterRegistry.counter("s3.operations", "operation", operation, "outcome", outcome).increment();
+        }
     }
 
     public boolean bucketExists(String bucket) {
@@ -46,13 +65,16 @@ public class ObjectStorageService {
     }
 
     public void upload(String bucket, String key, MultipartFile file) {
-        try {
-            PutObjectRequest putRequest = PutObjectRequest.builder().bucket(bucket).key(key).build();
-            RequestBody requestBody = RequestBody.fromBytes(file.getBytes());
-            s3Client.putObject(putRequest, requestBody);
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to upload file.", e);
-        }
+        tracked("upload", () -> {
+            try {
+                PutObjectRequest putRequest = PutObjectRequest.builder().bucket(bucket).key(key).build();
+                RequestBody requestBody = RequestBody.fromBytes(file.getBytes());
+                s3Client.putObject(putRequest, requestBody);
+                return null;
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to upload file.", e);
+            }
+        });
     }
 
     public void upload(String key, MultipartFile file) {
@@ -60,8 +82,10 @@ public class ObjectStorageService {
     }
 
     public byte[] download(String bucket, String key) {
-        GetObjectRequest getRequest = GetObjectRequest.builder().bucket(bucket).key(key).build();
-        return s3Client.getObject(getRequest, ResponseTransformer.toBytes()).asByteArray();
+        return tracked("download", () -> {
+            GetObjectRequest getRequest = GetObjectRequest.builder().bucket(bucket).key(key).build();
+            return s3Client.getObject(getRequest, ResponseTransformer.toBytes()).asByteArray();
+        });
     }
 
     public byte[] download(String key) {
@@ -69,8 +93,11 @@ public class ObjectStorageService {
     }
 
     public void delete(String bucket, String key) {
-        DeleteObjectRequest deleteRequest = DeleteObjectRequest.builder().bucket(bucket).key(key).build();
-        s3Client.deleteObject(deleteRequest);
+        tracked("delete", () -> {
+            DeleteObjectRequest deleteRequest = DeleteObjectRequest.builder().bucket(bucket).key(key).build();
+            s3Client.deleteObject(deleteRequest);
+            return null;
+        });
     }
 
     public void delete(String key) {

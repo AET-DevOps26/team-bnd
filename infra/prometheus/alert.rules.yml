@@ -57,6 +57,22 @@ groups:
           summary: "GenAI {{ $labels.operation }} failure rate above 10%"
           description: "More than 10% of GenAI {{ $labels.operation }} calls have failed (provider error or timeout) over the last 5 minutes."
 
+      # More than 10% of a Spring service's calls to the GenAI service are failing
+      # over the last 5 minutes. This is the caller's view (summarize / extract / tag /
+      # index / search / ask), complementing the GenAi* alerts scoped to the model itself.
+      - alert: SpringGenAiClientErrors
+        expr: |
+          sum by (job) (rate(genai_client_calls_total{outcome="error"}[5m]))
+            /
+          sum by (job) (rate(genai_client_calls_total[5m]))
+            > 0.10
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "{{ $labels.job }} GenAI call failure rate above 10%"
+          description: "More than 10% of {{ $labels.job }} calls to the GenAI service have failed over the last 5 minutes."
+
       # Object storage volume has less than 10% free space, so uploads will start failing soon.
       - alert: S3StorageLowDiskSpace
         expr: |

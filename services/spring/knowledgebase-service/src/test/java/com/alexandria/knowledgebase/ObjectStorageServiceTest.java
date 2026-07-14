@@ -1,5 +1,7 @@
 package com.alexandria.knowledgebase;
 
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -29,11 +31,12 @@ class ObjectStorageServiceTest {
     @Mock
     private S3Client s3Client;
 
+    private final MeterRegistry registry = new SimpleMeterRegistry();
     private ObjectStorageService service;
 
     @BeforeEach
     void setup() {
-        service = new ObjectStorageService(s3Client);
+        service = new ObjectStorageService(s3Client, registry);
         ReflectionTestUtils.setField(service, "bucket", "default-bucket");
     }
 
@@ -107,5 +110,21 @@ class ObjectStorageServiceTest {
     void unit_kb_deleteUsesDefaultBucket() {
         service.delete("key");
         verify(s3Client).deleteObject(any(DeleteObjectRequest.class));
+    }
+
+    @Test
+    void unit_kb_recordsUploadSuccessAndErrorMetrics() {
+        MultipartFile file = new MockMultipartFile("f", "a.pdf", "application/pdf", "hi".getBytes());
+        service.upload("key", file);
+        assertThat(registry.get("s3.operations").tags("operation", "upload", "outcome", "success").counter().count()).isEqualTo(1.0);
+
+        MultipartFile broken = new MockMultipartFile("f", "a.pdf", "application/pdf", new byte[0]) {
+            @Override
+            public byte[] getBytes() throws IOException {
+                throw new IOException("boom");
+            }
+        };
+        assertThatThrownBy(() -> service.upload("bucket", "key", broken)).isInstanceOf(RuntimeException.class);
+        assertThat(registry.get("s3.operations").tags("operation", "upload", "outcome", "error").counter().count()).isEqualTo(1.0);
     }
 }
