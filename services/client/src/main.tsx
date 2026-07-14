@@ -23,13 +23,8 @@ const queryClient = new QueryClient({
 
 const authConfig = {
   ...oidcConfig,
-  onSigninCallback: (user: unknown) => {
-    // After login, restore the deep-link path saved in the OIDC state, or
-    // fall back to /ask.
-    const returnTo =
-      (user as { state?: { returnTo?: string } } | null)?.state?.returnTo ??
-      "/ask";
-    window.history.replaceState({}, document.title, returnTo);
+  onSigninCallback: () => {
+    window.history.replaceState({}, document.title, window.location.pathname);
     queryClient.invalidateQueries();
   },
   onSignoutCallback: () => {

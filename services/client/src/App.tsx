@@ -1,5 +1,5 @@
-import React from "react";
-import { Routes, Route, useLocation } from "react-router";
+import React, { useEffect } from "react";
+import { Routes, Route } from "react-router";
 import { useAuth } from "react-oidc-context";
 import LoginPage from "./components/LoginPage";
 import MainView from "./components/MainView";
@@ -8,12 +8,16 @@ import QAPanel from "./components/QAPanel";
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const auth = useAuth();
-  const location = useLocation();
-  if (auth.isLoading) return null;
-  if (!auth.isAuthenticated) {
-    void auth.signinRedirect({ state: { returnTo: location.pathname } });
-    return null;
-  }
+
+  useEffect(() => {
+    if (!auth.isLoading && !auth.isAuthenticated) {
+      auth.signinRedirect({
+        redirect_uri: window.location.href,
+      });
+    }
+  }, [auth, auth.isLoading, auth.isAuthenticated]);
+
+  if (auth.isLoading || !auth.isAuthenticated) return null;
   return <>{children}</>;
 }
 
