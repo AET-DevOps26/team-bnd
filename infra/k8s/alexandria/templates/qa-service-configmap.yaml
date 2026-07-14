@@ -17,5 +17,6 @@ data:
   OIDC_USER_ID_CLAIM: {{ .Values.spring.oidc.userIdClaim | quote }}
   OIDC_USERNAME_CLAIM: {{ .Values.spring.oidc.usernameClaim | quote }}
   OIDC_ROLES_CLAIM: {{ .Values.spring.oidc.rolesClaim | quote }}
+  INTERNAL_CLOCK_SKEW_SECONDS: {{ .Values.spring.internal.clockSkewSeconds | quote }}
   GENAI_BASE_URL: {{ .Values.genai.baseUrl | quote }}
   KNOWLEDGEBASE_BASE_URL: "http://{{ include "alexandria.fullname" . }}-knowledgebase-service:8080"

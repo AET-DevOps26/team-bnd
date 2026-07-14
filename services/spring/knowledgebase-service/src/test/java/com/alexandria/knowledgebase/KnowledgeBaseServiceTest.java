@@ -14,6 +14,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.List;
 import java.util.Optional;
@@ -416,5 +418,28 @@ class KnowledgeBaseServiceTest {
         verify(genAiClient).deleteIndex("/uploads/a.pdf");
         verify(documentService).deleteAllByOwner(OWNER);
         verify(searchQueryRepository).deleteByUserSubject(OWNER);
+    }
+
+    @Test
+    void unit_kb_createDocumentDefersAsyncProcessingUntilAfterCommit() {
+        KnowledgeBaseService selfProxy = mock(KnowledgeBaseService.class);
+        when(self.getObject()).thenReturn(selfProxy);
+        when(documentService.save(any(Document.class))).thenAnswer(this::recordSaved);
+
+        TransactionSynchronizationManager.initSynchronization();
+        try {
+            Document result = knowledgeBaseService.createDocument(
+                    OWNER, "a.pdf", "/uploads/a.pdf", "application/pdf", 100L, "hello world");
+
+            // While the transaction is open the async pipeline must not run yet.
+            verify(selfProxy, never()).processDocumentAsync(any(UUID.class));
+
+            for (TransactionSynchronization sync : TransactionSynchronizationManager.getSynchronizations()) {
+                sync.afterCommit();
+            }
+            verify(selfProxy).processDocumentAsync(result.getId());
+        } finally {
+            TransactionSynchronizationManager.clearSynchronization();
+        }
     }
 }

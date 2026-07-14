@@ -83,6 +83,19 @@ class QAServiceTest {
     }
 
     @Test
+    void unit_qa_askDropsCitationsWithoutObjectKey() {
+        String subject = "oidc|123";
+        when(knowledgeBaseClient.listDocumentKeys(subject)).thenReturn(List.of());
+        when(genAiClient.ask(anyString(), any())).thenReturn(new GenAiClient.AskResponse("a", List.of(new GenAiClient.Citation(1, null, "snip")), "m"));
+        when(repository.save(any(QAInteraction.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        QAInteraction result = qaService.ask(subject, "q?");
+
+        assertThat(result.getCitations()).isEmpty();
+        verify(knowledgeBaseClient, never()).resolveDocuments(anyString(), any());
+    }
+
+    @Test
     void unit_qa_askDoesNotResolveWhenNoCitations() {
         String subject = "oidc|123";
         when(knowledgeBaseClient.listDocumentKeys(subject)).thenReturn(List.of());

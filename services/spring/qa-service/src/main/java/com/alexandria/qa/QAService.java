@@ -42,10 +42,15 @@ public class QAService {
         if (citations == null || citations.isEmpty()) {
             return List.of();
         }
-        List<String> keys = citations.stream().map(GenAiClient.Citation::objectKey).distinct().toList();
+        // drop citations without an object key
+        List<GenAiClient.Citation> keyed = citations.stream().filter(c -> c.objectKey() != null && !c.objectKey().isBlank()).toList();
+        if (keyed.isEmpty()) {
+            return List.of();
+        }
+        List<String> keys = keyed.stream().map(GenAiClient.Citation::objectKey).distinct().toList();
         Map<String, DocumentReference> byKey = knowledgeBaseClient.resolveDocuments(userSubject, keys).stream().collect(Collectors.toMap(DocumentReference::objectKey, Function.identity(), (a, b) -> a));
 
-        return citations.stream().map(c -> {
+        return keyed.stream().map(c -> {
             DocumentReference ref = byKey.get(c.objectKey());
             String documentId = ref == null ? null : ref.documentId();
             String fileName = ref == null ? null : ref.fileName();
