@@ -66,6 +66,13 @@ spec:
               mountPath: /tmp
           resources:
             {{- toYaml .Values.genai.resources | nindent 12 }}
+          startupProbe:
+            httpGet:
+              path: /genai/health
+              port: http
+            periodSeconds: 5
+            timeoutSeconds: 5
+            failureThreshold: 12
           livenessProbe:
             httpGet:
               path: /genai/health
