@@ -42,6 +42,17 @@ def test_score_is_similarity_derived_from_distance():
     assert results[0]["score"] == 0.75
 
 
+def test_score_is_zero_when_distance_is_missing():
+    with (
+        patch("app.search.embed_query", return_value=[0.0]),
+        patch("app.search.search_grouped", return_value=[_hit("doc-1", 0, "x", None)]),
+        patch("app.search.get_embedding_model_name", return_value="m"),
+    ):
+        results, _ = search_documents("q", ["doc-1"], limit=5)
+
+    assert results[0]["score"] == 0.0
+
+
 def test_score_clamps_to_zero_for_very_distant_chunks():
     with (
         patch("app.search.embed_query", return_value=[0.0]),

@@ -148,6 +148,11 @@ def test_get_embedding_model_name_per_provider():
         assert get_embedding_model_name() == "custom-embed"
 
 
+def test_get_embedding_model_name_unknown_provider_returns_unknown():
+    with patch.dict(os.environ, {"EMBEDDING_PROVIDER": "bogus"}):
+        assert get_embedding_model_name() == "unknown"
+
+
 # --- embedding with a mocked client ---
 
 
