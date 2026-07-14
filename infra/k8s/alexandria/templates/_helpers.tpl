@@ -52,3 +52,15 @@ http://{{ .Release.Name }}-seaweedfs-s3:{{ .Values.seaweedfs.s3.port }}
 {{- define "alexandria.monitoringNamespace" -}}
 {{- default (printf "%s-monitoring" .Release.Namespace) .Values.monitoring.namespace }}
 {{- end }}
+
+{{- define "alexandria.ingressControllerPeer" -}}
+-
+  {{- with .namespaceSelector }}
+  namespaceSelector:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with .podSelector }}
+  podSelector:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+{{- end -}}

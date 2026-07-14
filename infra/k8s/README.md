@@ -107,17 +107,17 @@ When a service's autoscaling is enabled the HPA owns the replica count, so the s
 kubectl -n alexandria get hpa
 ```
 
-### Rationale on Static Scrape Config
+## Rationale on Static Scrape Config
 
 We run our own Prometheus and Grafana as plain deployments and feed Prometheus a static scrape config from a ConfigMap (`templates/prometheus-config.yaml`), rather than using the Prometheus operator with ServiceMonitor/PodMonitor and PrometheusRule CRDs.
 
-The operator isn't installed on the stud cluster and the CRDs aren't available, thus ServiceMonitors would need us to bring up and manage the whole operator stack. For a fixed, small set of services that only changes when we add a service, a hand-written scrape config is simpler, needs no extra cluster components, and keeps the k8s setup close to the docker-compose one.
+The `monitoring.coreos.com` CRDs exist on the stud cluster, but that operator and its Prometheus are cluster-owned. We don't control its scrape scope, alerting, or Grafana and shouldn't rely on shared infrastructure for our project's monitoring. Running our own Prometheus + Grafana with a self-contained static scrape config keeps monitoring fully owned by the chart, needs no coordination with the cluster operator, and mirrors the docker-compose setup. For a fixed, small set of services that only changes when we add a service, a hand-written scrape config is also simpler than wiring ServiceMonitors into our own operator install.
 
 The scrape targets differ slightly from the compose setup on purpose: compose runs an all-in-one SeaweedFS container and Traefik, while the chart splits SeaweedFS into `seaweedfs-s3` and `seaweedfs-volume` (different metrics port) and fronts traffic with the ingress instead of Traefik. The alert rules are kept in sync with `infra/prometheus/alert.rules.yml`.
 
 ## NetworkPolicies
 
-The chart ships default-deny-ingress together with explicit allow policies (`templates/networkpolicies.yaml`) so each service only accepts traffic from the components that actually call it. The Spring services and client accept from the ingress, knowledgebase/qa from the other Spring services, GenAI from knowledgebase/qa, Weaviate only from GenAI, SeaweedFS S3 from GenAI/knowledgebase, Postgres from the Spring services and Keycloak. The SeaweedFS master/volume/filer/s3 pods are also allowed to talk to each other, since the subchart ships no policies of its own. Every pod allows traffic from the monitoring namespace, so Prometheus can still scrape. Outgoing traffic (egress) is not limited.
+The chart ships default-deny-ingress together with explicit allow policies (`templates/networkpolicies.yaml`) so each service only accepts traffic from the components that actually call it. Client, GenAi, Spring microservices and Keycloak accept traffic from the ingress (see `allowFromAnywhere` below), knowledgebase/qa from the other Spring services, GenAI from knowledgebase/qa, Weaviate only from GenAI, SeaweedFS S3 from GenAI/knowledgebase, Postgres from the Spring services and Keycloak. The SeaweedFS master/volume/filer/s3 pods are also allowed to talk to each other, since the subchart ships no policies of its own. Every pod allows traffic from the monitoring namespace, so Prometheus can still scrape. Outgoing traffic (egress) is not limited.
 
 The implemented NetworkPolicies are off by default for two reasons:
 1. They only actually enforce on a CNI that implements NetworkPolicy
@@ -131,6 +131,26 @@ helm upgrade alexandria infra/k8s/alexandria \
   -f infra/k8s/alexandria/values-secrets.yaml \
   --set networkPolicy.enabled=true
 ```
+
+### Ingress controller allow-rule (`allowFromAnywhere`)
+
+Client, GenAi, Spring microservices and Keycloak's `/auth` are reached through the cluster's ingress controller. To scope an allow-rule to that controller a NetworkPolicy needs the controller's namespace or pod labels, but on the shared stud cluster the controller runs in a namespace we have no permissions to inspect, and guessing the namespace wrong silently 504s all external traffic. Confirmed empirically: enabling a namespace/label-scoped rule with a guessed selector took the site down with a gateway timeout.
+
+Because those services are already publicly reachable through the ingress anyway, the default `networkPolicy.ingressController.allowFromAnywhere: true` makes their ingress allow-rule accept traffic from any source instead of trying to name the controller. This does not widen their real exposure: it only affects the front-door services that the ingress already exposes. The internal tier (Postgres, Weaviate, GenAI, SeaweedFS, and the Spring `/internal` endpoints) stays locked down by default-deny and its own scoped, in-namespace allow-rules regardless of this flag.
+
+If one knows the controller's namespace or pod labels, it should be scoped tightly instead by putting the following in a values file (example for a stock ingress-nginx):
+
+```yaml
+networkPolicy:
+  enabled: true
+  ingressController:
+    allowFromAnywhere: false
+    namespaceSelector:
+      matchLabels:
+        kubernetes.io/metadata.name: ingress-nginx
+```
+
+With `allowFromAnywhere: false` the render fails fast if both selectors are left empty, so the default-deny can't be silently defeated.
 
 # Kubernetes Troubleshooting
 

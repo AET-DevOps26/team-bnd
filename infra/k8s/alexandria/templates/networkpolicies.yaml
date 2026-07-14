@@ -2,6 +2,9 @@
 {{- $ns := .Release.Namespace }}
 {{- $monitoringNs := include "alexandria.monitoringNamespace" . }}
 {{- $ic := .Values.networkPolicy.ingressController }}
+{{- if and (not $ic.allowFromAnywhere) (empty $ic.namespaceSelector) (empty $ic.podSelector) }}
+{{- fail "networkPolicy.enabled=true with ingressController.allowFromAnywhere=false requires ingressController.namespaceSelector and/or podSelector to be set; leaving both empty selects every pod in the cluster and silently defeats the default-deny. Either set allowFromAnywhere=true, or set the selectors to match your ingress controller (e.g. namespaceSelector.matchLabels.kubernetes.io/metadata.name: ingress-nginx)." }}
+{{- end }}
 ---
 # Default-deny: nothing in the namespace accepts ingress unless a policy below
 # explicitly allows it.
@@ -52,11 +55,14 @@ spec:
         operator: In
         values: ["client", "user-service", "knowledgebase-service", "qa-service", "genai"]
   ingress:
+    {{- if $ic.allowFromAnywhere }}
+    # Controller identity is unknown on the shared cluster, so allow all sources
+    # to the already-public web tier. Internal services stay locked down below.
+    - {}
+    {{- else }}
     - from:
-        - namespaceSelector:
-            {{- toYaml $ic.namespaceSelector | nindent 12 }}
-          podSelector:
-            {{- toYaml $ic.podSelector | nindent 12 }}
+        {{- include "alexandria.ingressControllerPeer" $ic | nindent 8 }}
+    {{- end }}
 ---
 # user-service and qa-service call knowledgebase-service /internal endpoints
 apiVersion: networking.k8s.io/v1
@@ -253,11 +259,18 @@ spec:
               - key: app
                 operator: In
                 values: ["user-service", "knowledgebase-service", "qa-service", "client"]
-        - namespaceSelector:
-            {{- toYaml $ic.namespaceSelector | nindent 12 }}
-          podSelector:
-            {{- toYaml $ic.podSelector | nindent 12 }}
+        {{- if not $ic.allowFromAnywhere }}
+        {{- include "alexandria.ingressControllerPeer" $ic | nindent 8 }}
+        {{- end }}
       ports:
         - protocol: TCP
           port: 8080
+    {{- if $ic.allowFromAnywhere }}
+    # Keycloak's /auth is reached by external users through the ingress; the
+    # controller can't be selected here, so allow the public auth port from
+    # any source (it is already exposed via the ingress).
+    - ports:
+        - protocol: TCP
+          port: 8080
+    {{- end }}
 {{- end }}

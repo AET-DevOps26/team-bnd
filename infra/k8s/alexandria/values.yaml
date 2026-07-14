@@ -125,10 +125,14 @@ ingress:
   host: alexandria.stud.k8s.aet.cit.tum.de
 
 # NetworkPolicies: default-deny ingress with explicit allow rules.
-#  Off by default.
+# Off by default.
+#
+# Set allowFromAnywhere: false and fill in ingressController selectors if
+# you know your controller's namespace/pod labels and want to scope it tightly.
 networkPolicy:
   enabled: false
   ingressController:
+    allowFromAnywhere: true
     namespaceSelector: {}
     podSelector: {}
 
