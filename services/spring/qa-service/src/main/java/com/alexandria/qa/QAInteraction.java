@@ -1,6 +1,7 @@
 package com.alexandria.qa;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.BatchSize;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -23,6 +24,7 @@ public class QAInteraction {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String answer;
 
+    @BatchSize(size = 100)
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "qa_citations", joinColumns = @JoinColumn(name = "qa_id"))
     @OrderColumn(name = "position")
