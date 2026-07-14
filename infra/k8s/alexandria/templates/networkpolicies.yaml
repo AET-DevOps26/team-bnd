@@ -183,6 +183,25 @@ spec:
         - protocol: TCP
           port: {{ .Values.seaweedfs.s3.port | default 8333 }}
 ---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "alexandria.fullname" . }}-allow-seaweedfs-internal
+  namespace: {{ $ns }}
+  labels:
+    {{- include "alexandria.labels" . | nindent 4 }}
+spec:
+  policyTypes:
+    - Ingress
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: seaweedfs
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: seaweedfs
+---
 # Postgres is reached by the three Spring services and by Keycloak
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy

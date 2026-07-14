@@ -90,7 +90,7 @@ kubectl -n alexandria get ingress
 
 ## Autoscaling
 
-The stateless services (user-service, knowledgebase-service, qa-service, client, genai) can scale on CPU via a HorizontalPodAutoscaler. It's off by default so a install stays inside the small stud cluster resource quota. To enable it per service:
+The stateless services (user-service, knowledgebase-service, qa-service, client, genai) can scale on CPU via a HorizontalPodAutoscaler. It's off by default so an install stays inside the small stud cluster resource quota. To enable it per service:
 
 ```bash
 helm upgrade alexandria infra/k8s/alexandria \
@@ -117,7 +117,7 @@ The scrape targets differ slightly from the compose setup on purpose: compose ru
 
 ## NetworkPolicies
 
-The chart ships default-deny-ingress together with explicit allow policies (`templates/networkpolicies.yaml`) so each service only accepts traffic from the components that actually call it. The Spring services and client accept from the ingress, knowledgebase/qa from the other Spring services, GenAI from knowledgebase/qa, Weaviate only from GenAI, SeaweedFS S3 from GenAI/knowledgebase, Postgres from the Spring services and Keycloak. Every pod allows traffic from the monitoring namespace, so Prometheus can still scrape. Outgoing traffic (egress) is not limited.
+The chart ships default-deny-ingress together with explicit allow policies (`templates/networkpolicies.yaml`) so each service only accepts traffic from the components that actually call it. The Spring services and client accept from the ingress, knowledgebase/qa from the other Spring services, GenAI from knowledgebase/qa, Weaviate only from GenAI, SeaweedFS S3 from GenAI/knowledgebase, Postgres from the Spring services and Keycloak. The SeaweedFS master/volume/filer/s3 pods are also allowed to talk to each other, since the subchart ships no policies of its own. Every pod allows traffic from the monitoring namespace, so Prometheus can still scrape. Outgoing traffic (egress) is not limited.
 
 The implemented NetworkPolicies are off by default for two reasons:
 1. They only actually enforce on a CNI that implements NetworkPolicy
