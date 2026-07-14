@@ -1,11 +1,8 @@
 import React, { useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
+import { useParams } from "react-router";
 import $api from "../api/client";
 import { formatDateTime } from "../utils/format";
-
-interface Props {
-  documentId: string | null;
-}
 
 const ENTITY_TYPE_LABELS: Record<string, string> = {
   PERSON: "Person",
@@ -21,7 +18,8 @@ function formatBytes(bytes?: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-export default function DocumentDetail({ documentId }: Props) {
+export default function DocumentDetail() {
+  const { id: documentId = null } = useParams<{ id: string }>();
   const {
     data: document,
     isLoading,

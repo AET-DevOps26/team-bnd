@@ -1,4 +1,5 @@
 import React from "react";
+import { useNavigate, useParams } from "react-router";
 import UploadDocument from "./UploadDocument";
 import type { components } from "../api/schema";
 import { formatDate } from "../utils/format";
@@ -6,27 +7,25 @@ import { formatDate } from "../utils/format";
 type Document = components["schemas"]["Document"];
 
 interface Props {
-  selectedId: string | null;
-  onSelect: (id: string) => void;
   documents: Document[] | undefined;
   isLoading: boolean;
   error: unknown;
 }
 
-export default function DocumentTree({
-  selectedId,
-  onSelect,
-  documents,
-  isLoading,
-  error,
-}: Props) {
+export default function DocumentTree({ documents, isLoading, error }: Props) {
+  const navigate = useNavigate();
+  const { id: selectedId } = useParams<{ id: string }>();
   const errorMessage =
     error instanceof Error ? error.message : error ? String(error) : "";
+
+  function handleSelect(id: string) {
+    void navigate(`/documents/${id}`);
+  }
 
   return (
     <nav className="document-tree" aria-label="Document list">
       <h2 className="tree-heading">Documents</h2>
-      <UploadDocument onUploaded={onSelect} />
+      <UploadDocument onUploaded={handleSelect} />
       {isLoading && <p className="tree-status">Loading…</p>}
       {!!error && (
         <p
@@ -55,10 +54,10 @@ export default function DocumentTree({
               <li
                 key={id}
                 className={`tree-item${selectedId === id ? " tree-item--active" : ""}`}
-                onClick={() => onSelect(id)}
+                onClick={() => handleSelect(id)}
                 role="button"
                 tabIndex={0}
-                onKeyDown={(e) => e.key === "Enter" && onSelect(id)}
+                onKeyDown={(e) => e.key === "Enter" && handleSelect(id)}
                 aria-current={selectedId === id ? "true" : undefined}
               >
                 <span className="tree-item__name">{doc.fileName}</span>

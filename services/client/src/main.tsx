@@ -1,5 +1,6 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
+import { BrowserRouter } from "react-router";
 import { AuthProvider } from "react-oidc-context";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import App from "./App";
@@ -37,9 +38,11 @@ if (!rootElement) throw new Error("Root element not found");
 
 const root = createRoot(rootElement);
 root.render(
-  <QueryClientProvider client={queryClient}>
-    <AuthProvider {...authConfig}>
-      <App />
-    </AuthProvider>
-  </QueryClientProvider>,
+  <BrowserRouter>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider {...authConfig}>
+        <App />
+      </AuthProvider>
+    </QueryClientProvider>
+  </BrowserRouter>,
 );

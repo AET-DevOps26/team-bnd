@@ -1,59 +1,33 @@
 import React from "react";
+import { Routes, Route, Navigate } from "react-router";
 import { useAuth } from "react-oidc-context";
+import LoginPage from "./components/LoginPage";
 import MainView from "./components/MainView";
+import DocumentDetail from "./components/DocumentDetail";
+import QAPanel from "./components/QAPanel";
+
+function AuthGuard({ children }: { children: React.ReactNode }) {
+  const auth = useAuth();
+  if (auth.isLoading) return null;
+  if (!auth.isAuthenticated) return <Navigate to="/" replace />;
+  return <>{children}</>;
+}
 
 export default function App() {
-  const auth = useAuth();
-
-  if (auth.isLoading) {
-    return (
-      <div className="app">
-        <div className="login-view">
-          <p>Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (auth.error) {
-    return (
-      <div className="app">
-        <div className="login-view">
-          <h1>Alexandria</h1>
-          <p className="login-error">
-            Authentication error: {auth.error.message}
-          </p>
-          <button
-            className="login-button"
-            onClick={() => auth.signinRedirect()}
-          >
-            Try again
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  if (!auth.isAuthenticated) {
-    return (
-      <div className="app">
-        <div className="login-view">
-          <h1>Alexandria — Document Summarization</h1>
-          <p>
-            Alexandria helps users upload documents and get concise summaries,
-            extracted tags, and searchable knowledge — so reading a 40-page
-            report is no longer necessary.
-          </p>
-          <button
-            className="login-button"
-            onClick={() => auth.signinRedirect()}
-          >
-            Login
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  return <MainView />;
+  return (
+    <Routes>
+      <Route path="/" element={<LoginPage />} />
+      <Route
+        element={
+          <AuthGuard>
+            <MainView />
+          </AuthGuard>
+        }
+      >
+        <Route path="ask" element={<QAPanel />} />
+        <Route path="documents" element={<DocumentDetail />} />
+        <Route path="documents/:id" element={<DocumentDetail />} />
+      </Route>
+    </Routes>
+  );
 }

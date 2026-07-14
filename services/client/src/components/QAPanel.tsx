@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
+import { Link } from "react-router";
 import $api from "../api/client";
 import type { components } from "../api/schema";
 import { useQueryClient } from "@tanstack/react-query";
@@ -7,11 +8,6 @@ import { formatDateTime } from "../utils/format";
 
 type QAInteraction = components["schemas"]["QAInteraction"];
 type Document = components["schemas"]["Document"];
-
-interface Props {
-  documents: Document[];
-  onSelectDocument: (documentId: string) => void;
-}
 
 /**
  * Maps a fetch error to a user-facing message. Extracting the error code and
@@ -49,11 +45,16 @@ function findDocumentByKey(
   return documents.find((doc) => doc.objectKey === key);
 }
 
-export default function QAPanel({ documents, onSelectDocument }: Props) {
+export default function QAPanel() {
   const queryClient = useQueryClient();
   const [question, setQuestion] = useState("");
   const [interactions, setInteractions] = useState<QAInteraction[]>([]);
   const historyLoaded = useRef(false);
+
+  const { data: documents = [] } = $api.useQuery(
+    "get",
+    "/api/v1/knowledgebase/documents",
+  );
 
   const {
     data: historyData,
@@ -203,14 +204,13 @@ export default function QAPanel({ documents, onSelectDocument }: Props) {
                         className="qa-source-item"
                       >
                         {docId ? (
-                          <button
-                            type="button"
+                          <Link
+                            to={`/documents/${docId}`}
                             className="qa-source-link"
-                            onClick={() => onSelectDocument(docId)}
                             title={citation.snippet ?? key}
                           >
                             {name}
-                          </button>
+                          </Link>
                         ) : (
                           <span
                             className="qa-source-link qa-source-link--unresolved"
