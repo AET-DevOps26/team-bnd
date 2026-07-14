@@ -50,6 +50,8 @@ env:
   GRAFANA_ADMIN_PASSWORD: ${{ secrets.GRAFANA_ADMIN_PASSWORD }}
   # ----------- GenAI -----------
   LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+  # ----------- Internal service-to-service auth -----------
+  INTERNAL_SHARED_SECRET: ${{ secrets.INTERNAL_SHARED_SECRET }}
 
 jobs:
   # ---------------------------------------------------------------------
@@ -959,6 +961,7 @@ jobs:
             --set "seaweedfs.s3.credentials.admin.secretKey=$S3_SECRET_KEY" \
             --set "grafana.adminPassword=$GRAFANA_ADMIN_PASSWORD" \
             --set "genai.llmApiKey=$LLM_API_KEY" \
+            --set "spring.internal.sharedSecret=$INTERNAL_SHARED_SECRET" \
             --wait \
             --timeout 5m
 
