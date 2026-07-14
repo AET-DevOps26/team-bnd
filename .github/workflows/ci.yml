@@ -857,11 +857,6 @@ jobs:
 
   # ---------------------------------------------------------------------
   # Deploy to Azure VM
-  #
-  # Currently disabled: Our Azure for Students credit expired and the VM is gone.
-  # Everything below is kept intact. To re-enable, set the repo variable
-  # DEPLOY_AZURE to 'true' and make sure the AZURE_PUBLIC_IP / AZURE_USER vars
-  # and the AZURE_PRIVATE_KEY secret are set again.
   # ---------------------------------------------------------------------
   deploy:
     name: Deploy to Azure VM
