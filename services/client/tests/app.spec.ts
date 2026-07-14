@@ -928,4 +928,349 @@ test.describe("Alexandria client", () => {
       await expect(page.locator(".qa-empty")).toContainText("No questions yet");
     });
   });
+
+  test.describe("Search panel", () => {
+    test("Search tab is visible and navigates to /search", async ({ page }) => {
+      await page.goto("/ask");
+
+      const searchTab = page
+        .locator(".app-header-nav .app-tab")
+        .filter({ hasText: "Search" });
+      await expect(searchTab).toBeVisible();
+
+      await searchTab.click();
+      await expect(page).toHaveURL(/\/search/);
+
+      await expect(searchTab).toHaveClass(/app-tab--active/);
+    });
+
+    test("shows empty prompt before any query is submitted", async ({
+      page,
+    }) => {
+      await page.goto("/search");
+
+      const panel = page.locator(".search-panel");
+      await expect(panel).toBeVisible();
+
+      const empty = panel.locator(".search-empty");
+      await expect(empty).toBeVisible();
+      await expect(empty).toContainText("Enter a query");
+    });
+
+    test("search input and submit button are rendered", async ({ page }) => {
+      await page.goto("/search");
+
+      await expect(page.locator(".search-input")).toBeVisible();
+      await expect(page.locator(".search-submit")).toBeVisible();
+      await expect(page.locator(".search-submit")).toHaveText("Search");
+    });
+
+    test("semantic and keyword mode toggle buttons are rendered", async ({
+      page,
+    }) => {
+      await page.goto("/search");
+
+      const semanticBtn = page
+        .locator(".search-mode-btn")
+        .filter({ hasText: "Semantic" });
+      const keywordBtn = page
+        .locator(".search-mode-btn")
+        .filter({ hasText: "Keyword" });
+
+      await expect(semanticBtn).toBeVisible();
+      await expect(keywordBtn).toBeVisible();
+      // Semantic should be active by default
+      await expect(semanticBtn).toHaveClass(/search-mode-btn--active/);
+      await expect(keywordBtn).not.toHaveClass(/search-mode-btn--active/);
+    });
+
+    test("submitting a query updates the URL with ?q= and ?mode=", async ({
+      page,
+    }) => {
+      await page.route("/api/v1/knowledgebase/search/semantic*", (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({ results: [], fallbackUsed: false }),
+        }),
+      );
+
+      await page.goto("/search");
+      await page.locator(".search-input").fill("hello world");
+      await page.locator(".search-submit").click();
+
+      await expect(page).toHaveURL(/[?&]q=hello\+world/);
+      await expect(page).toHaveURL(/[?&]mode=semantic/);
+    });
+
+    test("navigating to /search?q=foo pre-fills the input and runs the search", async ({
+      page,
+    }) => {
+      await page.route("/api/v1/knowledgebase/search/semantic*", (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            results: [
+              {
+                document: {
+                  id: "bbbbbbbb-0000-0000-0000-000000000010",
+                  fileName: "prefilled.pdf",
+                  fileType: "application/pdf",
+                  fileSize: 1024,
+                  createdAt: "2026-07-01T00:00:00Z",
+                },
+                score: 0.9,
+                snippet: "Matching content.",
+              },
+            ],
+            fallbackUsed: false,
+          }),
+        }),
+      );
+
+      await page.goto("/search?q=foo&mode=semantic");
+
+      // Input should be pre-filled
+      await expect(page.locator(".search-input")).toHaveValue("foo");
+
+      // Results should load automatically
+      const resultList = page.locator(".search-result-list");
+      await expect(resultList).toBeVisible({ timeout: 5000 });
+      await expect(resultList).toContainText("prefilled.pdf");
+    });
+
+    test("semantic search shows results with snippet and score", async ({
+      page,
+    }) => {
+      const docId = "bbbbbbbb-0000-0000-0000-000000000001";
+
+      await page.route("/api/v1/knowledgebase/search/semantic*", (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            results: [
+              {
+                document: {
+                  id: docId,
+                  fileName: "annual-report.pdf",
+                  fileType: "application/pdf",
+                  fileSize: 204800,
+                  createdAt: "2026-07-01T00:00:00Z",
+                },
+                score: 0.87,
+                snippet:
+                  "Revenue grew by 12% compared to the previous fiscal year.",
+              },
+            ],
+            fallbackUsed: false,
+          }),
+        }),
+      );
+
+      await page.goto("/search");
+      await page.locator(".search-input").fill("revenue growth");
+      await page.locator(".search-submit").click();
+
+      const resultList = page.locator(".search-result-list");
+      await expect(resultList).toBeVisible({ timeout: 5000 });
+
+      const firstResult = resultList.locator(".search-result-item").first();
+      await expect(firstResult).toBeVisible();
+      await expect(firstResult).toContainText("annual-report.pdf");
+      await expect(firstResult).toContainText("87%");
+      await expect(firstResult).toContainText(
+        "Revenue grew by 12% compared to the previous fiscal year.",
+      );
+    });
+
+    test("semantic result title links to the document detail page", async ({
+      page,
+    }) => {
+      const docId = "bbbbbbbb-0000-0000-0000-000000000002";
+
+      await page.route("/api/v1/knowledgebase/search/semantic*", (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            results: [
+              {
+                document: {
+                  id: docId,
+                  fileName: "linked-doc.pdf",
+                  fileType: "application/pdf",
+                  fileSize: 1024,
+                  createdAt: "2026-07-01T00:00:00Z",
+                },
+                score: 0.75,
+                snippet: "Some matching text.",
+              },
+            ],
+            fallbackUsed: false,
+          }),
+        }),
+      );
+
+      await page.route(`/api/v1/knowledgebase/documents/${docId}`, (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            id: docId,
+            fileName: "linked-doc.pdf",
+            objectKey: `users/u1/documents/${docId}/linked-doc.pdf`,
+            fileType: "application/pdf",
+            fileSize: 1024,
+            createdAt: "2026-07-01T00:00:00Z",
+            tags: [],
+            extractedEntities: [],
+            summary: null,
+          }),
+        }),
+      );
+
+      await page.goto("/search");
+      await page.locator(".search-input").fill("something");
+      await page.locator(".search-submit").click();
+
+      const link = page.locator(".search-result-title").first();
+      await expect(link).toBeVisible({ timeout: 5000 });
+      await link.click();
+
+      // Should navigate to the document detail route
+      await expect(page).toHaveURL(new RegExp(`/documents/${docId}`));
+    });
+
+    test("shows fallback notice when vector search fell back to keyword", async ({
+      page,
+    }) => {
+      await page.route("/api/v1/knowledgebase/search/semantic*", (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            results: [
+              {
+                document: {
+                  id: "bbbbbbbb-0000-0000-0000-000000000003",
+                  fileName: "fallback-result.pdf",
+                  fileType: "application/pdf",
+                  fileSize: 512,
+                  createdAt: "2026-07-01T00:00:00Z",
+                },
+                score: 0.5,
+                snippet: "Keyword match.",
+              },
+            ],
+            fallbackUsed: true,
+          }),
+        }),
+      );
+
+      await page.goto("/search");
+      await page.locator(".search-input").fill("some query");
+      await page.locator(".search-submit").click();
+
+      const notice = page.locator(".search-fallback-notice");
+      await expect(notice).toBeVisible({ timeout: 5000 });
+      await expect(notice).toContainText("keyword results");
+    });
+
+    test("keyword mode calls text search endpoint and shows results", async ({
+      page,
+    }) => {
+      await page.route("/api/v1/knowledgebase/search/text*", (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            results: [
+              {
+                id: "bbbbbbbb-0000-0000-0000-000000000004",
+                fileName: "keyword-match.pdf",
+                fileType: "application/pdf",
+                fileSize: 2048,
+                createdAt: "2026-07-01T00:00:00Z",
+              },
+            ],
+          }),
+        }),
+      );
+
+      await page.goto("/search");
+
+      // Switch to keyword mode
+      const keywordBtn = page
+        .locator(".search-mode-btn")
+        .filter({ hasText: "Keyword" });
+      await keywordBtn.click();
+      await expect(keywordBtn).toHaveClass(/search-mode-btn--active/);
+
+      await page.locator(".search-input").fill("keyword");
+      await page.locator(".search-submit").click();
+
+      await expect(page).toHaveURL(/[?&]mode=text/);
+
+      const resultList = page.locator(".search-result-list");
+      await expect(resultList).toBeVisible({ timeout: 5000 });
+      await expect(resultList).toContainText("keyword-match.pdf");
+    });
+
+    test("shows empty state when search returns no results", async ({
+      page,
+    }) => {
+      await page.route("/api/v1/knowledgebase/search/semantic*", (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({ results: [], fallbackUsed: false }),
+        }),
+      );
+
+      await page.goto("/search");
+      await page.locator(".search-input").fill("nothing matches this");
+      await page.locator(".search-submit").click();
+
+      const empty = page.locator(".search-empty");
+      await expect(empty).toBeVisible({ timeout: 5000 });
+      await expect(empty).toContainText("No documents matched");
+    });
+
+    test("shows an error message when the search endpoint returns 500", async ({
+      page,
+    }) => {
+      await page.route("/api/v1/knowledgebase/search/semantic*", (route) =>
+        route.fulfill({ status: 500, body: "Internal Server Error" }),
+      );
+
+      await page.goto("/search");
+      await page.locator(".search-input").fill("error trigger");
+      await page.locator(".search-submit").click();
+
+      const error = page.locator(".search-error");
+      await expect(error).toBeVisible({ timeout: 15000 });
+      await expect(error).toContainText("Search failed");
+    });
+
+    test("shows authentication error when the search endpoint returns 401", async ({
+      page,
+    }) => {
+      await page.route("**/protocol/openid-connect/token", (route) =>
+        route.fulfill({ status: 401, body: "Unauthorized" }),
+      );
+      await page.route("/api/v1/knowledgebase/search/semantic*", (route) =>
+        route.fulfill({ status: 401, body: "Unauthorized" }),
+      );
+
+      await page.goto("/search");
+      await page.locator(".search-input").fill("auth check");
+      await page.locator(".search-submit").click();
+
+      const error = page.locator(".search-error");
+      await expect(error).toBeVisible({ timeout: 15000 });
+      await expect(error).toHaveText("Authentication error. Retrying login...");
+    });
+  });
 });

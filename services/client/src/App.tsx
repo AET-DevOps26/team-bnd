@@ -5,6 +5,7 @@ import LoginPage from "./components/LoginPage";
 import MainView from "./components/MainView";
 import DocumentDetail from "./components/DocumentDetail";
 import QAPanel from "./components/QAPanel";
+import SearchPanel from "./components/SearchPanel";
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const auth = useAuth();
@@ -33,6 +34,7 @@ export default function App() {
         }
       >
         <Route path="ask" element={<QAPanel />} />
+        <Route path="search" element={<SearchPanel />} />
         <Route path="documents" element={<DocumentDetail />} />
         <Route path="documents/:id" element={<DocumentDetail />} />
       </Route>

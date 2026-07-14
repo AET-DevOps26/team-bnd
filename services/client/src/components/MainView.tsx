@@ -29,6 +29,15 @@ export default function MainView() {
               <span className="app-tab__sizer">Ask</span>
             </NavLink>
             <NavLink
+              to="/search"
+              className={({ isActive }) =>
+                `app-tab${isActive ? " app-tab--active" : ""}`
+              }
+            >
+              <span className="app-tab__label">Search</span>
+              <span className="app-tab__sizer">Search</span>
+            </NavLink>
+            <NavLink
               to="/documents"
               className={({ isActive }) =>
                 `app-tab${isActive ? " app-tab--active" : ""}`

@@ -37,6 +37,16 @@ VITE_API_URL=https://api.example.com npm run build
 
 or via a `.env` file in this directory (see the [Vite env docs](https://vite.dev/guide/env-and-mode)).
 
+### Search
+
+The **Search** tab lets users find documents by meaning (semantic) or exact
+keyword matches (text). Semantic search ranks results by relevance and shows
+the matching text snippet from each document alongside a relevance score.
+Keyword search matches against filenames and document content. Both modes use
+the knowledgebase-service endpoints introduced in the semantic search work.
+If the vector index is unavailable, semantic mode falls back to keyword search
+and shows a notice.
+
 ## Production
 
 Build and run the production image (uses the multi-stage Dockerfile):
@@ -84,6 +94,7 @@ npm run test:e2e
 ```
 
 ## Notes
+
 - The dev Dockerfile starts Vite with --host 0.0.0.0 so the dev server is reachable from the host when running in a container.
 - The production image is based on `nginxinc/nginx-unprivileged` and serves the built files on port 8080 inside the container (Traefik in docker-compose routes to it via the internal network, no host port published by default).
 - When starting the development server, `--build --renew-anon-volumes` has to be specified.
