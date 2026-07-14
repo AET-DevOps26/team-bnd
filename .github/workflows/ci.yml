@@ -577,7 +577,7 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/${{ matrix.service.name }}
           tags: |
-            type=sha,format=short
+            type=sha,format=short,priority=1000
             type=ref,event=branch
             type=ref,event=pr
             type=raw,value=latest,enable=${{ github.ref == format('refs/heads/{0}', github.event.repository.default_branch) }}
@@ -940,9 +940,6 @@ jobs:
         # Secrets are passed through env so they don't hit shell expansion.
         env:
           IMAGE_TAG: ${{ needs.build-image.outputs.image-tag }}
-          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
-          KC_BOOTSTRAP_ADMIN_USERNAME: ${{ secrets.KC_BOOTSTRAP_ADMIN_USERNAME }}
-          KC_BOOTSTRAP_ADMIN_PASSWORD: ${{ secrets.KC_BOOTSTRAP_ADMIN_PASSWORD }}
         working-directory: infra/k8s/alexandria
         run: |
           helm upgrade --install alexandria . \
@@ -961,6 +958,7 @@ jobs:
             --set "seaweedfs.s3.credentials.admin.accessKey=$S3_ACCESS_KEY" \
             --set "seaweedfs.s3.credentials.admin.secretKey=$S3_SECRET_KEY" \
             --set "grafana.adminPassword=$GRAFANA_ADMIN_PASSWORD" \
+            --set "genai.llmApiKey=$LLM_API_KEY" \
             --wait \
             --timeout 5m
 

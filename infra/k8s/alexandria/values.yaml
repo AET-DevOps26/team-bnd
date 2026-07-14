@@ -67,6 +67,20 @@ client:
       memory: 128Mi
 
 genai:
+  llmApiKey: ""
+  llmProvider: "logos"
+  llmBaseUrl: "https://logos.aet.cit.tum.de/v1"
+  llmModel: "openai/gpt-oss-120b"
+  llmTimeoutSeconds: 60
+  llmMaxRetries: 2
+  maxDocumentChars: 120000
+  embeddingProvider: "logos"
+  embeddingModel: "Qwen/Qwen3-Embedding-8B"
+  embeddingTimeoutSeconds: 30
+  embeddingMaxRetries: 2
+  chunkSize: 1000
+  chunkOverlap: 200
+  ragTopK: 5
   baseUrl: "http://alexandria-genai:8000"
   resources:
     requests:
@@ -128,7 +142,7 @@ grafana:
   image:
     repository: grafana/grafana
     tag: 13.0.2
-  adminPassword: ""
+  adminPassword: "admin"
   persistence:
     size: 1Gi
   resources:

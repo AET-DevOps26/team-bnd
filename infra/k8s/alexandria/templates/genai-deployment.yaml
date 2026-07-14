@@ -54,6 +54,11 @@ spec:
                 secretKeyRef:
                   name: {{ include "alexandria.fullname" . }}-spring-secrets
                   key: s3-secret-key
+            - name: LLM_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "alexandria.fullname" . }}-genai-secrets
+                  key: llm-api-key
           volumeMounts:
             - name: tmp
               mountPath: /tmp
