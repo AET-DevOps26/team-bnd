@@ -23,6 +23,7 @@ dependencies = [
 [dependency-groups]
 dev = [
     "pytest~=9.1.1",
+    "pytest-cov~=7.1.0",
     "ruff~=0.15.20",
     "pyyaml~=6.0.3",
     "httpx2~=2.5.0",
@@ -47,6 +48,7 @@ select = ["E", "F", "I", "W", "UP", "B"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
+addopts = "--cov=app --cov-report=xml --cov-report=term-missing"
 markers = [
     "integration: tests that need a running Weaviate; skipped when none is reachable",
 ]
