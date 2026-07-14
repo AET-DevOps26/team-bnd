@@ -117,6 +117,8 @@ ingress:
   enabled: true
   className: nginx
   host: alexandria.stud.k8s.aet.cit.tum.de
+  # nginx client_max_body_size, keep in sync with knowledgebaseService.maxUploadSize
+  maxBodySize: "25m"
 
 # Self-hosted Prometheus and Grafana mirroring the docker-compose setup.
 # They live in their own namespace (per "Monitoring Best Practices in Kubernetes"

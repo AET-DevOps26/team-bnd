@@ -5,6 +5,9 @@ metadata:
   name: {{ include "alexandria.fullname" . }}
   annotations:
       cert-manager.io/cluster-issuer: "letsencrypt-prod"
+      # nginx uses its own size syntax (e.g. 25m), so this is kept separate from the
+      # Spring MAX_UPLOAD_SIZE. Keep both in sync.
+      nginx.ingress.kubernetes.io/proxy-body-size: {{ .Values.ingress.maxBodySize | quote }}
   labels:
     {{- include "alexandria.labels" . | nindent 4 }}
 spec:
