@@ -27,17 +27,10 @@ spring:
     rolesClaim: "roles"
 
 # Resource limits are sized to stay under the stud cluster ResourceQuota
-# `default-h2d5c` (3250m CPU / 5144Mi in the alexandria namespace). The quota
-# caps limits, not requests. CPU is the binding resource, so limits are tiered
-# by how hard each service leans on it at startup: the three Spring services and
-# keycloak are slow-booting JVMs and get the most, genai and weaviate sit in the
-# middle, client/postgres/seaweedfs get the least. seaweedfs runs as four pods
-# (master/volume/filer/s3) and is sized as one group. Memory has room to spare,
-# so the Spring services get a little extra heap headroom while keycloak and
-# postgres keep more memory than their CPU tier suggests, since starving the auth
-# server or the shared DB of memory risks OOM. Totals: CPU ~3150m, memory ~5056Mi.
-# Prometheus + Grafana run in alexandria-monitoring with its own 750m/1000Mi
-# quota, sized independently below.
+# `default-h2d5c` (3250m CPU / 5144Mi in the alexandria namespace). Prometheus +
+# Grafana run in alexandria-monitoring with its own 750m/1000Mi quota, sized
+# independently below. See the "Resource sizing" section in infra/k8s/README.md
+# for the per-service rationale.
 userService:
   resources:
     requests:

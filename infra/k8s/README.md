@@ -88,6 +88,51 @@ kubectl -n alexandria get svc
 kubectl -n alexandria get ingress
 ```
 
+## Resource sizing
+
+Every pod carries CPU and memory requests/limits (set in `values.yaml`) tuned to
+fit the stud cluster ResourceQuota `default-h2d5c`, which caps the alexandria
+namespace at 3250m CPU and 5144Mi memory. The quota caps limits, not requests,
+so the low-request/high-limit burst trick doesn't buy us anything here.
+
+CPU is the binding resource, so limits are tiered by how hard each service leans
+on it at startup:
+
+| Tier           | Services                          | CPU limit |
+| -------------- | --------------------------------- | --------- |
+| Slow-boot JVMs | user, knowledgebase, qa, keycloak | 550m      |
+| Mid            | genai, weaviate                   | 150m      |
+| Low            | client, postgres                  | 75-100m   |
+
+The three Spring services and Keycloak are slow-booting JVMs and get the most:
+throttled at ~200-300m, user-service took roughly 76s to boot, versus ~9s once
+it had real CPU. seaweedfs runs as four pods (master/volume/filer/s3) and is
+sized as one group at ~375m total rather than matched pod-for-pod. That lands
+the namespace at ~3150m CPU and ~5056Mi memory, just under the quota.
+
+Memory has room to spare, so the Spring services get a little extra heap
+headroom, while Keycloak and postgres keep more memory than their CPU tier
+suggests: starving the auth server or the shared DB of memory risks OOM for no
+real gain when memory isn't the binding quota.
+
+### Recreate strategy on the Spring deployments
+
+user-service, knowledgebase-service and qa-service use `strategy: Recreate`
+instead of the default rolling update. With a rolling update the surge pod runs
+next to the old one for a moment and doubles that service's (now much larger) CPU
+limit, which pushes the namespace past the 3250m quota and wedges the
+`helm upgrade`. Recreate kills the old pod before starting the new one.
+
+These are single-replica services, so this trades a few seconds of downtime per
+upgrade for a reliable rollout. That's fine here: the cluster is a student
+deployment with no availability SLA, and upgrades run on merge to main rather
+than under live load. If one of these services ever needs zero-downtime
+upgrades, raise the quota (or lower the CPU limits) and switch back to a rolling
+update with a capped `maxSurge`.
+
+genai keeps a rolling update but adds a `startupProbe` (12 x 5s, up to 60s of
+grace) so liveness and readiness don't trip while it boots (~10s).
+
 # Kubernetes Troubleshooting
 
 ### Spring or Keycloak fail postgres password authentication after a reinstall
