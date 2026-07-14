@@ -67,6 +67,27 @@ The service also exposes the shared `application_version` gauge (same as the Spr
 
 The `model` label comes from the same provider response as `modelUsed`. The Grafana GenAI dashboard (`infra/grafana/dashboards/genai.json`) charts model call rate by model/provider, call outcomes, per-operation model latency, and truncations. The `GenAiSlowModelCalls` and `GenAiModelErrors` alerts (`infra/prometheus/alert.rules.yml`) fire per operation, so a slow or failing chat model isn't masked by fast embedding calls.
 
+## Tracing
+
+Metrics tell you _that_ `/genai/ask` is slow; a trace tells you _where_ the time went, the query embedding or the chat call. The service can export OpenTelemetry traces so each request shows up as a span tree: the FastAPI request span with the model and embedding calls nested underneath.
+
+Tracing is opt-in and off by default. It only activates when `OTEL_EXPORTER_OTLP_ENDPOINT` is set; otherwise the spans run on OpenTelemetry's no-op tracer and nothing is exported. The `docker-compose.tracing.yml` overlay wires it to a local Jaeger:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.tracing.yml up
+```
+
+Then open http://localhost/jaeger/, pick the `alexandria-genai` service, and exercise an AI endpoint (summarize, ask, search). The `/genai/health` and `/genai/metrics` endpoints are excluded so the constant probe and scrape traffic doesn't bury the real work.
+
+Instrumentation lives in `app/tracing.py` (setup and FastAPI instrumentation) and `app/model_calls.py` (one span per model/embedding call). The model spans carry OpenTelemetry GenAI attributes: `gen_ai.operation.name` (`chat`/`embedding`), `gen_ai.system` (the provider), `gen_ai.request.model`, `gen_ai.response.model`, plus a `genai.outcome` (`ok`/`error`/`timeout`) that mirrors the metric status label; failures also record the exception and set the span status to error.
+
+We deliberately stopped at request and model-call spans rather than pulling in a LangChain callback integration, which doesn't support langchain 1.x yet. The single `run_model_call` chokepoint already wraps every provider call, so that is where the span lives.
+
+| Variable                      | Default            | Description                                                  |
+| ----------------------------- | ------------------ | ------------------------------------------------------------ |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | _(unset)_          | OTLP HTTP collector base URL. When unset, tracing stays off. |
+| `OTEL_SERVICE_NAME`           | `alexandria-genai` | Service name shown in the trace UI.                          |
+
 ## LLM configuration
 
 The service is configured entirely via environment variables. Copy `.env.example` to `.env` and fill in your key.
