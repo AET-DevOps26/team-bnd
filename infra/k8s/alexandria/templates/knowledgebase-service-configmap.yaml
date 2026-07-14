@@ -17,6 +17,7 @@ data:
   OIDC_USER_ID_CLAIM: {{ .Values.spring.oidc.userIdClaim | quote }}
   OIDC_USERNAME_CLAIM: {{ .Values.spring.oidc.usernameClaim | quote }}
   OIDC_ROLES_CLAIM: {{ .Values.spring.oidc.rolesClaim | quote }}
+  INTERNAL_CLOCK_SKEW_SECONDS: {{ .Values.spring.internal.clockSkewSeconds | quote }}
   GENAI_BASE_URL: {{ .Values.genai.baseUrl | quote }}
   S3_ENDPOINT: {{ .Values.s3.endpoint | default (include "alexandria.s3Endpoint" .) | quote }}
   S3_REGION: {{ .Values.s3.region | quote }}

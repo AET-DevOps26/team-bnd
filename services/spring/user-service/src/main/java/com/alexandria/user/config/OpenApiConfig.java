@@ -19,7 +19,7 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @OpenAPIDefinition(
         info = @Info(
-                title = "Alexandria User Service API", version = "5.0.0", description = "User account management. Owns the users table; exposes internal fan-out endpoints consumed by knowledgebase-service and qa-service.", license = @License(name = "MIT", identifier = "MIT")
+                title = "Alexandria User Service API", version = "6.0.0", description = "User account management. Owns the users table; exposes internal fan-out endpoints consumed by knowledgebase-service and qa-service.", license = @License(name = "MIT", identifier = "MIT")
         ), servers = @Server(url = "/", description = "Current server")
 )
 @SecurityScheme(

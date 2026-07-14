@@ -23,7 +23,7 @@ subprojects {
 	apply plugin: 'jacoco'
 
 	group = 'com.alexandria'
-	version = '5.0.0'
+	version = '6.0.0'
 
 	jacoco {
 		toolVersion = '0.8.15'

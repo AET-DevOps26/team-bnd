@@ -74,6 +74,8 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-localpgpassword}
       KNOWLEDGEBASE_BASE_URL: "http://knowledgebase-service:8080"
       QA_BASE_URL: "http://qa-service:8080"
+      INTERNAL_SHARED_SECRET: ${INTERNAL_SHARED_SECRET:-local-dev-hmac-secret-not-for-prod}
+      INTERNAL_CLOCK_SKEW_SECONDS: ${INTERNAL_CLOCK_SKEW_SECONDS:-300}
     restart: unless-stopped
     networks:
       - alexandria
@@ -129,6 +131,8 @@ services:
       S3_ACCESS_KEY: ${S3_ACCESS_KEY:-admin}
       S3_SECRET_KEY: ${S3_SECRET_KEY:-locals3password}
       S3_BUCKET: ${S3_BUCKET:-alexandria-storage}
+      INTERNAL_SHARED_SECRET: ${INTERNAL_SHARED_SECRET:-local-dev-hmac-secret-not-for-prod}
+      INTERNAL_CLOCK_SKEW_SECONDS: ${INTERNAL_CLOCK_SKEW_SECONDS:-300}
     restart: unless-stopped
     networks:
       - alexandria
@@ -182,6 +186,8 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-admin}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-localpgpassword}
       KNOWLEDGEBASE_BASE_URL: "http://knowledgebase-service:8080"
+      INTERNAL_SHARED_SECRET: ${INTERNAL_SHARED_SECRET:-local-dev-hmac-secret-not-for-prod}
+      INTERNAL_CLOCK_SKEW_SECONDS: ${INTERNAL_CLOCK_SKEW_SECONDS:-300}
     restart: unless-stopped
     networks:
       - alexandria
