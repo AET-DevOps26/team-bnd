@@ -27,8 +27,16 @@ spring:
     rolesClaim: "roles"
 
 # Resource limits are sized to stay under the stud cluster ResourceQuota
-# `default-h2d5c` (3250m CPU / 5144Mi memory in the alexandria namespace).
-# Prometheus + Grafana live in alexandria-monitoring with its own 750m/1000Mi
+# `default-h2d5c` (3250m CPU / 5144Mi in the alexandria namespace). The quota
+# caps limits, not requests. CPU is the binding resource, so limits are tiered
+# by how hard each service leans on it at startup: the three Spring services and
+# keycloak are slow-booting JVMs and get the most, genai and weaviate sit in the
+# middle, client/postgres/seaweedfs get the least. seaweedfs runs as four pods
+# (master/volume/filer/s3) and is sized as one group. Memory has room to spare,
+# so the Spring services get a little extra heap headroom while keycloak and
+# postgres keep more memory than their CPU tier suggests, since starving the auth
+# server or the shared DB of memory risks OOM. Totals: CPU ~3150m, memory ~5056Mi.
+# Prometheus + Grafana run in alexandria-monitoring with its own 750m/1000Mi
 # quota, sized independently below.
 userService:
   resources:
@@ -36,8 +44,8 @@ userService:
       cpu: 100m
       memory: 192Mi
     limits:
-      cpu: 200m
-      memory: 384Mi
+      cpu: 550m
+      memory: 448Mi
 
 knowledgebaseService:
   resources:
@@ -45,8 +53,8 @@ knowledgebaseService:
       cpu: 150m
       memory: 256Mi
     limits:
-      cpu: 300m
-      memory: 512Mi
+      cpu: 550m
+      memory: 576Mi
 
 qaService:
   resources:
@@ -54,8 +62,8 @@ qaService:
       cpu: 100m
       memory: 192Mi
     limits:
-      cpu: 200m
-      memory: 384Mi
+      cpu: 550m
+      memory: 448Mi
 
 client:
   resources:
@@ -63,7 +71,7 @@ client:
       cpu: 50m
       memory: 64Mi
     limits:
-      cpu: 100m
+      cpu: 75m
       memory: 128Mi
 
 genai:
@@ -84,10 +92,10 @@ genai:
   baseUrl: "http://alexandria-genai:8000"
   resources:
     requests:
-      cpu: 250m
+      cpu: 100m
       memory: 256Mi
     limits:
-      cpu: 500m
+      cpu: 150m
       memory: 512Mi
 
 weaviate:
@@ -104,7 +112,7 @@ weaviate:
       cpu: 100m
       memory: 192Mi
     limits:
-      cpu: 200m
+      cpu: 150m
       memory: 384Mi
 
 ingress:
@@ -183,7 +191,7 @@ keycloak:
       cpu: 250m
       memory: 512Mi
     limits:
-      cpu: 500m
+      cpu: 550m
       memory: 1024Mi
   initContainers:
     copyQuarkusLib:
@@ -226,10 +234,10 @@ postgres-db:
   resources:
     requests:
       memory: "384Mi"
-      cpu: "250m"
+      cpu: "75m"
     limits:
       memory: "768Mi"
-      cpu: "500m"
+      cpu: "100m"
 
 s3:
   # endpoint: override to use external S3 (e.g. AWS). Leave empty to auto-derive from release name.
@@ -254,7 +262,7 @@ seaweedfs:
         cpu: 50m
         memory: 64Mi
       limits:
-        cpu: 100m
+        cpu: 75m
         memory: 128Mi
   volume:
     enabled: true
@@ -271,7 +279,7 @@ seaweedfs:
         cpu: 50m
         memory: 128Mi
       limits:
-        cpu: 200m
+        cpu: 150m
         memory: 256Mi
   filer:
     enabled: true
@@ -285,7 +293,7 @@ seaweedfs:
         cpu: 50m
         memory: 64Mi
       limits:
-        cpu: 100m
+        cpu: 75m
         memory: 128Mi
   s3:
     enabled: true
@@ -311,5 +319,5 @@ seaweedfs:
         cpu: 50m
         memory: 64Mi
       limits:
-        cpu: 100m
+        cpu: 75m
         memory: 128Mi

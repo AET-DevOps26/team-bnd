@@ -9,6 +9,10 @@ metadata:
     app.kubernetes.io/component: backend
 spec:
   replicas: {{ .Values.replicaCount }}
+  # Recreate, not rolling: a surge pod would briefly double this service's CPU
+  # limit and blow the namespace ResourceQuota, wedging the upgrade.
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       {{- include "alexandria.selectorLabels" . | nindent 6 }}
