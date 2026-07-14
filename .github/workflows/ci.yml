@@ -317,6 +317,15 @@ jobs:
         working-directory: services/spring
         run: ./gradlew --no-daemon --stacktrace :${{ matrix.service.gradle_module }}:build
 
+      - name: Upload Coverage Report
+        if: always() && env.RUN_JOB == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-${{ matrix.service.name }}
+          path: services/spring/${{ matrix.service.gradle_module }}/build/reports/jacoco/test/jacocoTestReport.xml
+          if-no-files-found: ignore
+          retention-days: 7
+
       - name: Upload Test Reports
         if: always() && env.RUN_JOB == 'true'
         uses: actions/upload-artifact@v7
@@ -427,9 +436,23 @@ jobs:
         working-directory: services/genai
         run: uv run ruff check .
 
-      - name: Run Tests
-        working-directory: services/genai
-        run: uv run pytest
+      # Run the full suite (unit + Weaviate integration tests) against a
+      # throwaway Weaviate via the compose test profile.
+      - name: Run Tests With Test Weaviate
+        run: docker compose run --rm genai-test
+
+      - name: Tear Down Test Weaviate
+        if: always()
+        run: docker compose --profile test down -v
+
+      - name: Upload Coverage Report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-genai
+          path: services/genai/coverage.xml
+          if-no-files-found: ignore
+          retention-days: 7
 
   # ---------------------------------------------------------------------
   # Contract drift guard: regenerate every service's OpenAPI spec from the
@@ -559,7 +582,7 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/${{ matrix.service.name }}
           tags: |
-            type=sha,format=short
+            type=sha,format=short,priority=1000
             type=ref,event=branch
             type=ref,event=pr
             type=raw,value=latest,enable=${{ github.ref == format('refs/heads/{0}', github.event.repository.default_branch) }}
@@ -739,6 +762,65 @@ jobs:
         run: docker compose down -v --remove-orphans
 
   # ---------------------------------------------------------------------
+  # Coverage badges: on main, upload each service's raw coverage report to a
+  # gist. shields.io reads the XML straight from the gist (its dynamic XML
+  # badge runs an XPath that computes the line %), so there's no percentage
+  # math or JSON to keep in sync here, the badge URL in the README owns that.
+  # ---------------------------------------------------------------------
+  coverage-badges:
+    name: Publish Coverage Badges
+    needs: [build-spring, build-genai]
+    if: github.event_name == 'push' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Download Coverage Reports
+        uses: actions/download-artifact@v8
+        with:
+          pattern: coverage-*
+          path: artifacts
+
+      - name: Publish Coverage XML to Gist
+        shell: bash
+        env:
+          GIST_TOKEN: ${{ secrets.GIST_SECRET }}
+        run: |
+          set -euo pipefail
+          if [[ -z "$GIST_TOKEN" ]]; then
+            echo "GIST_SECRET not set; skipping badge publish."
+            exit 0
+          fi
+          gist_id=81deec5c116cb700b4445f9d9fe1706a
+          # Report path -> gist filename. Each entry is pushed independently, so
+          # a missing report skips one badge instead of failing the whole run.
+          declare -A reports=(
+            [artifacts/coverage-user-service/jacocoTestReport.xml]=team-bnd-user-service-coverage.xml
+            [artifacts/coverage-knowledgebase-service/jacocoTestReport.xml]=team-bnd-knowledgebase-service-coverage.xml
+            [artifacts/coverage-qa-service/jacocoTestReport.xml]=team-bnd-qa-service-coverage.xml
+            [artifacts/coverage-genai/coverage.xml]=team-bnd-genai-coverage.xml
+          )
+          for report in "${!reports[@]}"; do
+            gist_file="${reports[$report]}"
+            if [[ ! -f "$report" ]]; then
+              echo "no report at $report; skipping $gist_file"
+              continue
+            fi
+            if jq -n --rawfile content "$report" --arg name "$gist_file" \
+                 '{files: {($name): {content: $content}}}' \
+               | curl -fsS --retry 5 --retry-all-errors --retry-delay 2 -X PATCH \
+                   -H "Authorization: Bearer $GIST_TOKEN" \
+                   -H "Accept: application/vnd.github+json" \
+                   -H "X-GitHub-Api-Version: 2022-11-28" \
+                   "https://api.github.com/gists/$gist_id" \
+                   --data @- -o /dev/null; then
+              echo "published $gist_file"
+            else
+              echo "failed to publish $gist_file"
+            fi
+          done
+
+  # ---------------------------------------------------------------------
   # Aggregate gate: branch protection should require this single check.
   # If anything upstream failed, this fails.
   # ---------------------------------------------------------------------
@@ -863,9 +945,6 @@ jobs:
         # Secrets are passed through env so they don't hit shell expansion.
         env:
           IMAGE_TAG: ${{ needs.build-image.outputs.image-tag }}
-          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
-          KC_BOOTSTRAP_ADMIN_USERNAME: ${{ secrets.KC_BOOTSTRAP_ADMIN_USERNAME }}
-          KC_BOOTSTRAP_ADMIN_PASSWORD: ${{ secrets.KC_BOOTSTRAP_ADMIN_PASSWORD }}
         working-directory: infra/k8s/alexandria
         run: |
           helm upgrade --install alexandria . \
@@ -884,6 +963,7 @@ jobs:
             --set "seaweedfs.s3.credentials.admin.accessKey=$S3_ACCESS_KEY" \
             --set "seaweedfs.s3.credentials.admin.secretKey=$S3_SECRET_KEY" \
             --set "grafana.adminPassword=$GRAFANA_ADMIN_PASSWORD" \
+            --set "genai.llmApiKey=$LLM_API_KEY" \
             --wait \
             --timeout 5m
 

@@ -13,6 +13,17 @@ from app.storage import ObjectNotFoundError, UnsupportedFileError
 client = TestClient(app)
 
 
+# --- lifespan ---
+
+
+def test_lifespan_closes_weaviate_client_on_shutdown():
+    with patch("app.main.close_client") as mock_close:
+        with TestClient(app):
+            pass
+
+    mock_close.assert_called_once()
+
+
 # --- health / hello ---
 
 

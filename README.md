@@ -1,5 +1,8 @@
 # team-bnd
 
+[![CI](https://github.com/AET-DevOps26/team-bnd/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/AET-DevOps26/team-bnd/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/AET-DevOps26/team-bnd/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/AET-DevOps26/team-bnd/actions/workflows/codeql.yml)
+
 ## Project summary
 
 Alexandria is a document management and knowledge extraction platform. Users upload documents, e.g., research papers, reports, manuals, meeting notes, and the system automatically organizes, tags, and summarizes them.
@@ -14,6 +17,15 @@ Alexandria consists of three main subsystems orchestrated via Docker Compose and
 - **Client**: A React SPA serving as the web interface.
 - **Server**: Three Spring Boot microservices (user-service, knowledgebase-service, qa-service) exposing REST APIs, backed by PostgreSQL with a schema per service.
 - **GenAI**: A Python/FastAPI service using LangChain to extract entities and summarize uploaded documents.
+
+## Test coverage
+
+| Service                      | Coverage                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Spring user-service          | ![user-service coverage](https://img.shields.io/badge/dynamic/xml?url=https%3A%2F%2Fgist.githubusercontent.com%2FDoPri%2F81deec5c116cb700b4445f9d9fe1706a%2Fraw%2Fteam-bnd-user-service-coverage.xml&query=round%28100%20%2A%20number%28%2Freport%2Fcounter%5B%40type%3D%27LINE%27%5D%2F%40covered%29%20div%20%28number%28%2Freport%2Fcounter%5B%40type%3D%27LINE%27%5D%2F%40covered%29%20%2B%20number%28%2Freport%2Fcounter%5B%40type%3D%27LINE%27%5D%2F%40missed%29%29%29&label=coverage&suffix=%25&color=228B22)                   |
+| Spring knowledgebase-service | ![knowledgebase-service coverage](https://img.shields.io/badge/dynamic/xml?url=https%3A%2F%2Fgist.githubusercontent.com%2FDoPri%2F81deec5c116cb700b4445f9d9fe1706a%2Fraw%2Fteam-bnd-knowledgebase-service-coverage.xml&query=round%28100%20%2A%20number%28%2Freport%2Fcounter%5B%40type%3D%27LINE%27%5D%2F%40covered%29%20div%20%28number%28%2Freport%2Fcounter%5B%40type%3D%27LINE%27%5D%2F%40covered%29%20%2B%20number%28%2Freport%2Fcounter%5B%40type%3D%27LINE%27%5D%2F%40missed%29%29%29&label=coverage&suffix=%25&color=228B22) |
+| Spring qa-service            | ![qa-service coverage](https://img.shields.io/badge/dynamic/xml?url=https%3A%2F%2Fgist.githubusercontent.com%2FDoPri%2F81deec5c116cb700b4445f9d9fe1706a%2Fraw%2Fteam-bnd-qa-service-coverage.xml&query=round%28100%20%2A%20number%28%2Freport%2Fcounter%5B%40type%3D%27LINE%27%5D%2F%40covered%29%20div%20%28number%28%2Freport%2Fcounter%5B%40type%3D%27LINE%27%5D%2F%40covered%29%20%2B%20number%28%2Freport%2Fcounter%5B%40type%3D%27LINE%27%5D%2F%40missed%29%29%29&label=coverage&suffix=%25&color=228B22)                       |
+| Python GenAI                 | ![genai coverage](https://img.shields.io/badge/dynamic/xml?url=https%3A%2F%2Fgist.githubusercontent.com%2FDoPri%2F81deec5c116cb700b4445f9d9fe1706a%2Fraw%2Fteam-bnd-genai-coverage.xml&query=round%28100%20%2A%20number%28%2Fcoverage%2F%40line-rate%29%29&label=coverage&suffix=%25&color=228B22)                                                                                                                                                                                                                                    |
 
 ## Setup
 
