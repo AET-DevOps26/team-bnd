@@ -30,7 +30,6 @@ export default function MainView() {
             </NavLink>
             <NavLink
               to="/documents"
-              end={false}
               className={({ isActive }) =>
                 `app-tab${isActive ? " app-tab--active" : ""}`
               }
