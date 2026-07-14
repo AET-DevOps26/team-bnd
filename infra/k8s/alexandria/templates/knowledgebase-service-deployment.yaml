@@ -8,7 +8,9 @@ metadata:
     app: knowledgebase-service
     app.kubernetes.io/component: backend
 spec:
+  {{- if not .Values.knowledgebaseService.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}
+  {{- end }}
   selector:
     matchLabels:
       {{- include "alexandria.selectorLabels" . | nindent 6 }}
