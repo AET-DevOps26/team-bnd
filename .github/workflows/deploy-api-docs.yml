@@ -1,0 +1,65 @@
+# Publish the merged OpenAPI spec as a Redoc site on GitHub Pages.
+#
+# api/openapi.yaml is the single source of truth, so that's what gets
+# rendered. Runs on pushes to main that touch the spec (plus manual
+# dispatch). Nothing is committed: the HTML is built fresh each run and
+# handed straight to the Pages deployment.
+
+name: Deploy API Docs
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "api/openapi.yaml"
+      - ".github/workflows/deploy-api-docs.yml"
+  workflow_dispatch:
+
+# Only checkout needs anything here; the deploy job asks for the rest itself.
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build Redoc HTML
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+
+      - name: Build Docs
+        run: |
+          mkdir -p site
+          npx --yes @redocly/cli@2.38.0 build-docs api/openapi.yaml \
+            --output site/index.html \
+            --title "Alexandria API Reference"
+
+      - name: Upload Pages Artifact
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: site
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write # to publish the Pages deployment
+      id-token: write # to prove the deployment came from this workflow
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5
