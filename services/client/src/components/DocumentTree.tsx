@@ -1,5 +1,5 @@
 import React from "react";
-import { useNavigate, useParams } from "react-router";
+import { Link, useNavigate, useParams } from "react-router";
 import UploadDocument from "./UploadDocument";
 import type { components } from "../api/schema";
 import { formatDate } from "../utils/format";
@@ -18,14 +18,10 @@ export default function DocumentTree({ documents, isLoading, error }: Props) {
   const errorMessage =
     error instanceof Error ? error.message : error ? String(error) : "";
 
-  function handleSelect(id: string) {
-    void navigate(`/documents/${id}`);
-  }
-
   return (
     <nav className="document-tree" aria-label="Document list">
       <h2 className="tree-heading">Documents</h2>
-      <UploadDocument onUploaded={handleSelect} />
+      <UploadDocument onUploaded={(id) => void navigate(`/documents/${id}`)} />
       {isLoading && <p className="tree-status">Loading…</p>}
       {!!error && (
         <p
@@ -54,16 +50,14 @@ export default function DocumentTree({ documents, isLoading, error }: Props) {
               <li
                 key={id}
                 className={`tree-item${selectedId === id ? " tree-item--active" : ""}`}
-                onClick={() => handleSelect(id)}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) => e.key === "Enter" && handleSelect(id)}
                 aria-current={selectedId === id ? "true" : undefined}
               >
-                <span className="tree-item__name">{doc.fileName}</span>
-                <span className="tree-item__date">
-                  {formatDate(doc.createdAt)}
-                </span>
+                <Link to={`/documents/${id}`} className="tree-item__link">
+                  <span className="tree-item__name">{doc.fileName}</span>
+                  <span className="tree-item__date">
+                    {formatDate(doc.createdAt)}
+                  </span>
+                </Link>
               </li>
             );
           })}
