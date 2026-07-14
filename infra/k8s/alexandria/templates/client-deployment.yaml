@@ -9,6 +9,8 @@ metadata:
 spec:
   {{- if not .Values.client.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}
+  strategy:
+    type: Recreate
   {{- end }}
   selector:
     matchLabels:
