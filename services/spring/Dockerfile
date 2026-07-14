@@ -42,7 +42,7 @@ RUN chown -R appuser:appgroup /app
 USER appuser
 
 # JVM settings tuned for a small resident footprint
-ENV JAVA_TOOL_OPTIONS="-XX:InitialRAMPercentage=5 -XX:MaxRAMPercentage=75 -XX:MaxHeapFreeRatio=25 -Xss512k -XX:TieredStopAtLevel=1 -XX:+ExitOnOutOfMemoryError"
+ENV JAVA_TOOL_OPTIONS="-XX:InitialRAMPercentage=5 -XX:MaxRAMPercentage=75 -XX:MinHeapFreeRatio=10 -XX:MaxHeapFreeRatio=25 -Xss512k -XX:TieredStopAtLevel=1 -XX:+ExitOnOutOfMemoryError"
 
 EXPOSE 8080
 
