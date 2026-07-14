@@ -110,7 +110,12 @@ subprojects {
 		}
 		classDirectories.setFrom(
 			files(classDirectories.files.collect {
-				fileTree(dir: it, exclude: ['com/alexandria/genai/client/**'])
+				fileTree(dir: it, exclude: [
+					'com/alexandria/genai/client/**',
+					'**/auth/**',
+					'**/config/**',
+					'**/*Application.*',
+				])
 			})
 		)
 	}
