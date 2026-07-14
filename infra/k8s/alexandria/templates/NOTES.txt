@@ -17,6 +17,16 @@ Alexandria has been deployed to namespace {{ .Release.Namespace }}.
 {{- $insecure = append $insecure "postgres-db.auth.password" }}
 {{- end }}
 
+{{- if empty .Values.genai.llmApiKey }}
+
+===========================================================================
+ WARNING: genai.llmApiKey is not set. The genai service will start but
+ all LLM and embedding calls will fail at runtime.
+
+ Set it in your values-secrets.yaml.
+===========================================================================
+{{- end }}
+
 {{- if $insecure }}
 
 ===========================================================================
