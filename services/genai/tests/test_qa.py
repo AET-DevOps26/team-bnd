@@ -195,3 +195,21 @@ def test_answer_is_stripped():
         result = answer_question("q", ["doc-1"])
 
     assert result.answer == "spaced answer"
+
+
+def test_citation_snippet_is_truncated_at_word_boundary_for_long_chunk():
+    from app.qa import _SNIPPET_MAX_CHARS
+
+    long_text = "word " * 200
+    with (
+        patch("app.qa.embed_query", return_value=[0.1]),
+        patch("app.qa.search", return_value=[_hit("doc-1", 0, long_text)]),
+        patch("app.qa.get_llm", return_value=_structured_llm("answer", [1])),
+        patch("app.qa.get_model_name", return_value="m"),
+    ):
+        result = answer_question("q", ["doc-1"])
+
+    snippet = result.citations[0].snippet
+    assert snippet.endswith("...")
+    assert len(snippet) <= _SNIPPET_MAX_CHARS + len("...")
+    assert not snippet[:-3].endswith(" ")

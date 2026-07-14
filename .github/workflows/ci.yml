@@ -436,9 +436,14 @@ jobs:
         working-directory: services/genai
         run: uv run ruff check .
 
-      - name: Run Tests
-        working-directory: services/genai
-        run: uv run pytest
+      # Run the full suite (unit + Weaviate integration tests) against a
+      # throwaway Weaviate via the compose test profile.
+      - name: Run Tests With Test Weaviate
+        run: docker compose run --rm genai-test
+
+      - name: Tear Down Test Weaviate
+        if: always()
+        run: docker compose --profile test down -v
 
       - name: Upload Coverage Report
         if: always()
