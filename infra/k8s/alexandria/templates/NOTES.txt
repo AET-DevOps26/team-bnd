@@ -7,7 +7,7 @@ Alexandria has been deployed to namespace {{ .Release.Namespace }}.
 {{- if eq .Values.keycloak.adminPassword "admin" }}
 {{- $insecure = append $insecure "keycloak.adminPassword" }}
 {{- end }}
-{{- if eq .Values.grafana.adminPassword "admin" }}
+{{- if and .Values.grafana.enabled (eq .Values.grafana.adminPassword "admin") }}
 {{- $insecure = append $insecure "grafana.adminPassword" }}
 {{- end }}
 {{- if eq .Values.keycloak.database.password "postgres-password" }}
@@ -37,6 +37,7 @@ Alexandria has been deployed to namespace {{ .Release.Namespace }}.
 
     helm uninstall {{ .Release.Name }} -n {{ .Release.Namespace }}
     kubectl delete pvc --all -n {{ .Release.Namespace }}
+    kubectl delete pvc --all -n {{ include "alexandria.monitoringNamespace" . }}
     helm install {{ .Release.Name }} infra/k8s/alexandria \
       --dependency-update \
       --namespace {{ .Release.Namespace }} \
