@@ -803,7 +803,7 @@ jobs:
             fi
             if jq -n --rawfile content "$report" --arg name "$gist_file" \
                  '{files: {($name): {content: $content}}}' \
-               | curl -fsS -X PATCH \
+               | curl -fsS --retry 5 --retry-all-errors --retry-delay 2 -X PATCH \
                    -H "Authorization: Bearer $GIST_TOKEN" \
                    -H "Accept: application/vnd.github+json" \
                    -H "X-GitHub-Api-Version: 2022-11-28" \
