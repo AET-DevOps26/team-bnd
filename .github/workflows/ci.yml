@@ -863,10 +863,6 @@ jobs:
         # Secrets are passed through env so they don't hit shell expansion.
         env:
           IMAGE_TAG: ${{ needs.build-image.outputs.image-tag }}
-          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
-          KC_BOOTSTRAP_ADMIN_USERNAME: ${{ secrets.KC_BOOTSTRAP_ADMIN_USERNAME }}
-          KC_BOOTSTRAP_ADMIN_PASSWORD: ${{ secrets.KC_BOOTSTRAP_ADMIN_PASSWORD }}
-          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
         working-directory: infra/k8s/alexandria
         run: |
           helm upgrade --install alexandria . \

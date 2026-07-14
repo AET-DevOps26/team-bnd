@@ -68,7 +68,6 @@ client:
 
 genai:
   llmApiKey: ""
-  logLevel: "info"
   llmProvider: "logos"
   llmBaseUrl: "https://logos.aet.cit.tum.de/v1"
   llmModel: "openai/gpt-oss-120b"

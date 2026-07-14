@@ -6,7 +6,6 @@ metadata:
     {{- include "alexandria.labels" . | nindent 4 }}
     app: genai
 data:
-  GENAI_LOG_LEVEL: {{ .Values.genai.logLevel | quote }}
   LLM_PROVIDER: {{ .Values.genai.llmProvider | quote }}
   LLM_BASE_URL: {{ .Values.genai.llmBaseUrl | quote }}
   LLM_MODEL: {{ .Values.genai.llmModel | quote }}

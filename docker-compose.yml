@@ -214,7 +214,6 @@ services:
     container_name: genai
     # kics-scan ignore-block
     environment:
-      GENAI_LOG_LEVEL: ${GENAI_LOG_LEVEL:-info}
       LLM_PROVIDER: ${LLM_PROVIDER:-logos}
       LLM_BASE_URL: ${LLM_BASE_URL:-https://logos.aet.cit.tum.de/v1}
       LLM_MODEL: ${LLM_MODEL:-openai/gpt-oss-120b}
