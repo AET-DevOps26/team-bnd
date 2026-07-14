@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.Set;
@@ -98,6 +99,15 @@ class BaseExceptionHandlerTest {
         assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
         assertThat(resp.getBody()).isNotNull();
         assertThat(resp.getBody().code()).isEqualTo("NOT_FOUND");
+    }
+
+    @Test
+    void maxUploadSizeExceeded_returns413() {
+        MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/v1/knowledgebase/documents/upload");
+        ResponseEntity<ErrorResponse> resp = advice.handleMaxUploadSize(new MaxUploadSizeExceededException(1048576L), request);
+        assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.PAYLOAD_TOO_LARGE);
+        assertThat(resp.getBody()).isNotNull();
+        assertThat(resp.getBody().code()).isEqualTo("PAYLOAD_TOO_LARGE");
     }
 
     @Test

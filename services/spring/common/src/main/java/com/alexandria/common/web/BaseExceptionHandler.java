@@ -16,6 +16,7 @@ import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.List;
@@ -95,6 +96,13 @@ public abstract class BaseExceptionHandler {
     public ResponseEntity<ErrorResponse> handleUnsupportedMediaType(HttpMediaTypeNotSupportedException e) {
         log.debug("Unsupported media type: {}", sanitize(e.getMessage()));
         return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE).body(new ErrorResponse("UNSUPPORTED_MEDIA_TYPE", e.getMessage()));
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ErrorResponse> handleMaxUploadSize(MaxUploadSizeExceededException e, HttpServletRequest request) {
+        // Spring throws this exception both for files and requests that exceed the cap
+        log.warn("Upload too large at {} {}: {}", sanitize(request.getMethod()), sanitize(request.getRequestURI()), sanitize(e.getMessage()));
+        return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).body(new ErrorResponse("PAYLOAD_TOO_LARGE", "Uploaded file is too large"));
     }
 
     @ExceptionHandler(NoResourceFoundException.class)

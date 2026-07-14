@@ -129,6 +129,7 @@ services:
       S3_ACCESS_KEY: ${S3_ACCESS_KEY:-admin}
       S3_SECRET_KEY: ${S3_SECRET_KEY:-locals3password}
       S3_BUCKET: ${S3_BUCKET:-alexandria-storage}
+      MAX_UPLOAD_SIZE: ${MAX_UPLOAD_SIZE:-25MB}
     restart: unless-stopped
     networks:
       - alexandria

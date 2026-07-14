@@ -40,6 +40,7 @@ userService:
       memory: 384Mi
 
 knowledgebaseService:
+  maxUploadSize: "25MB"
   resources:
     requests:
       cpu: 150m
