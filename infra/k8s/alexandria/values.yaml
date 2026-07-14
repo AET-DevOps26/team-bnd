@@ -124,9 +124,16 @@ ingress:
   className: nginx
   host: alexandria.stud.k8s.aet.cit.tum.de
 
+# NetworkPolicies: default-deny ingress with explicit allow rules.
+#  Off by default.
+networkPolicy:
+  enabled: false
+  ingressController:
+    namespaceSelector: {}
+    podSelector: {}
+
 # Self-hosted Prometheus and Grafana mirroring the docker-compose setup.
-# They live in their own namespace (per "Monitoring Best Practices in Kubernetes"
-# §1). Neither is exposed through the ingress — port-forward to reach them:
+# They live in their own namespace. Neither is exposed, port-forward to reach them:
 #   kubectl -n alexandria-monitoring port-forward svc/alexandria-prometheus 9090:9090
 #   kubectl -n alexandria-monitoring port-forward svc/alexandria-grafana 3000:3000
 monitoring:

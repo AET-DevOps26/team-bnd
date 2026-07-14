@@ -115,6 +115,23 @@ The operator isn't installed on the stud cluster and the CRDs aren't available, 
 
 The scrape targets differ slightly from the compose setup on purpose: compose runs an all-in-one SeaweedFS container and Traefik, while the chart splits SeaweedFS into `seaweedfs-s3` and `seaweedfs-volume` (different metrics port) and fronts traffic with the ingress instead of Traefik. The alert rules are kept in sync with `infra/prometheus/alert.rules.yml`.
 
+## NetworkPolicies
+
+The chart ships default-deny-ingress together with explicit allow policies (`templates/networkpolicies.yaml`) so each service only accepts traffic from the components that actually call it. The Spring services and client accept from the ingress, knowledgebase/qa from the other Spring services, GenAI from knowledgebase/qa, Weaviate only from GenAI, SeaweedFS S3 from GenAI/knowledgebase, Postgres from the Spring services and Keycloak. Every pod allows traffic from the monitoring namespace, so Prometheus can still scrape. Outgoing traffic (egress) is not limited.
+
+The implemented NetworkPolicies are off by default for two reasons:
+1. They only actually enforce on a CNI that implements NetworkPolicy
+2. A wrong rule can cut off live traffic
+
+To enable them:
+
+```bash
+helm upgrade alexandria infra/k8s/alexandria \
+  --namespace alexandria \
+  -f infra/k8s/alexandria/values-secrets.yaml \
+  --set networkPolicy.enabled=true
+```
+
 # Kubernetes Troubleshooting
 
 ### Spring or Keycloak fail postgres password authentication after a reinstall

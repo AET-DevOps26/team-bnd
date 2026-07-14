@@ -1,0 +1,244 @@
+{{- if .Values.networkPolicy.enabled }}
+{{- $ns := .Release.Namespace }}
+{{- $monitoringNs := include "alexandria.monitoringNamespace" . }}
+{{- $ic := .Values.networkPolicy.ingressController }}
+---
+# Default-deny: nothing in the namespace accepts ingress unless a policy below
+# explicitly allows it.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "alexandria.fullname" . }}-default-deny-ingress
+  namespace: {{ $ns }}
+  labels:
+    {{- include "alexandria.labels" . | nindent 4 }}
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+---
+# Prometheus lives in its own namespace and scrapes every pod's metrics port,
+# so allow ingress from the monitoring namespace to all pods here.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "alexandria.fullname" . }}-allow-monitoring
+  namespace: {{ $ns }}
+  labels:
+    {{- include "alexandria.labels" . | nindent 4 }}
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ $monitoringNs }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "alexandria.fullname" . }}-allow-ingress-controller
+  namespace: {{ $ns }}
+  labels:
+    {{- include "alexandria.labels" . | nindent 4 }}
+spec:
+  policyTypes:
+    - Ingress
+  podSelector:
+    matchExpressions:
+      - key: app
+        operator: In
+        values: ["client", "user-service", "knowledgebase-service", "qa-service", "genai"]
+  ingress:
+    - from:
+        - namespaceSelector:
+            {{- toYaml $ic.namespaceSelector | nindent 12 }}
+          podSelector:
+            {{- toYaml $ic.podSelector | nindent 12 }}
+---
+# user-service and qa-service call knowledgebase-service /internal endpoints
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "alexandria.fullname" . }}-allow-knowledgebase-internal
+  namespace: {{ $ns }}
+  labels:
+    {{- include "alexandria.labels" . | nindent 4 }}
+spec:
+  policyTypes:
+    - Ingress
+  podSelector:
+    matchLabels:
+      app: knowledgebase-service
+  ingress:
+    - from:
+        - podSelector:
+            matchExpressions:
+              - key: app
+                operator: In
+                values: ["user-service", "qa-service"]
+      ports:
+        - protocol: TCP
+          port: 8080
+---
+# user-service calls qa-service /internal endpoints
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "alexandria.fullname" . }}-allow-qa-internal
+  namespace: {{ $ns }}
+  labels:
+    {{- include "alexandria.labels" . | nindent 4 }}
+spec:
+  policyTypes:
+    - Ingress
+  podSelector:
+    matchLabels:
+      app: qa-service
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: user-service
+      ports:
+        - protocol: TCP
+          port: 8080
+---
+# knowledgebase-service and qa-service call the GenAI service
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "alexandria.fullname" . }}-allow-genai
+  namespace: {{ $ns }}
+  labels:
+    {{- include "alexandria.labels" . | nindent 4 }}
+spec:
+  policyTypes:
+    - Ingress
+  podSelector:
+    matchLabels:
+      app: genai
+  ingress:
+    - from:
+        - podSelector:
+            matchExpressions:
+              - key: app
+                operator: In
+                values: ["knowledgebase-service", "qa-service"]
+      ports:
+        - protocol: TCP
+          port: 8000
+---
+# only the GenAI service calls Weaviate
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "alexandria.fullname" . }}-allow-weaviate
+  namespace: {{ $ns }}
+  labels:
+    {{- include "alexandria.labels" . | nindent 4 }}
+spec:
+  policyTypes:
+    - Ingress
+  podSelector:
+    matchLabels:
+      app: weaviate
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: genai
+      ports:
+        - protocol: TCP
+          port: 8080
+        - protocol: TCP
+          port: {{ .Values.weaviate.grpcPort | default 50051 }}
+---
+# SeaweedFS S3 is reached by the GenAI and knowledgebase services for object
+# storage
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "alexandria.fullname" . }}-allow-seaweedfs-s3
+  namespace: {{ $ns }}
+  labels:
+    {{- include "alexandria.labels" . | nindent 4 }}
+spec:
+  policyTypes:
+    - Ingress
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: seaweedfs
+      app.kubernetes.io/component: s3
+  ingress:
+    - from:
+        - podSelector:
+            matchExpressions:
+              - key: app
+                operator: In
+                values: ["genai", "knowledgebase-service"]
+      ports:
+        - protocol: TCP
+          port: {{ .Values.seaweedfs.s3.port | default 8333 }}
+---
+# Postgres is reached by the three Spring services and by Keycloak
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "alexandria.fullname" . }}-allow-postgres
+  namespace: {{ $ns }}
+  labels:
+    {{- include "alexandria.labels" . | nindent 4 }}
+spec:
+  policyTypes:
+    - Ingress
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: postgres-db
+  ingress:
+    - from:
+        - podSelector:
+            matchExpressions:
+              - key: app
+                operator: In
+                values: ["user-service", "knowledgebase-service", "qa-service"]
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: keycloak
+      ports:
+        - protocol: TCP
+          port: 5432
+---
+# The Spring services and the client authenticate against Keycloak, and the
+# client redirects users to it, so allow both in-namespace services and the
+# ingress controller
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "alexandria.fullname" . }}-allow-keycloak
+  namespace: {{ $ns }}
+  labels:
+    {{- include "alexandria.labels" . | nindent 4 }}
+spec:
+  policyTypes:
+    - Ingress
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: keycloak
+  ingress:
+    - from:
+        - podSelector:
+            matchExpressions:
+              - key: app
+                operator: In
+                values: ["user-service", "knowledgebase-service", "qa-service", "client"]
+        - namespaceSelector:
+            {{- toYaml $ic.namespaceSelector | nindent 12 }}
+          podSelector:
+            {{- toYaml $ic.podSelector | nindent 12 }}
+      ports:
+        - protocol: TCP
+          port: 8080
+{{- end }}
