@@ -107,6 +107,19 @@ When a service's autoscaling is enabled the HPA owns the replica count, so the s
 kubectl -n alexandria get hpa
 ```
 
+## Rollout strategy
+
+The three Spring deployments (user, knowledgebase, qa) use `strategy: Recreate`
+instead of the default rolling update while they run as a single replica (i.e.
+autoscaling disabled, as above). The alexandria namespace runs under a
+ResourceQuota that caps limits, and a rolling update briefly starts a second pod
+whose limits stack on top of the running one. That can trip the quota and leave
+`helm upgrade` wedged, which has happened to us before. Recreate stops the old
+pod first. The tradeoff is a few seconds of downtime per upgrade, fine for
+single-replica services on the student cluster (no availability SLA, upgrades
+run on merge to main). With autoscaling enabled the deployments keep the rolling
+update, since multiple replicas are expected there.
+
 ## Rationale on Static Scrape Config
 
 We run our own Prometheus and Grafana as plain deployments and feed Prometheus a static scrape config from a ConfigMap (`templates/prometheus-config.yaml`), rather than using the Prometheus operator with ServiceMonitor/PodMonitor and PrometheusRule CRDs.
