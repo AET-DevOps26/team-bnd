@@ -1,1 +1,2 @@
 com.alexandria.common.metrics.ApplicationInfoMetricsAutoConfiguration
+com.alexandria.common.logging.LoggingAutoConfiguration

@@ -18,6 +18,13 @@ import org.springframework.web.bind.annotation.*;
 import java.security.Principal;
 import java.util.UUID;
 
+/**
+ * Public REST API for the caller's own account and preferences.
+ *
+ * <p>Every endpoint resolves the user from the OIDC subject in the bearer token; a user
+ * can only read or delete their own account. Deleting an account also purges the user's
+ * knowledgebase and Q&amp;A data through the service layer's internal fan-out.
+ */
 @RestController
 @RequestMapping(path = "/api/v1/users", produces = MediaType.APPLICATION_JSON_VALUE)
 @Tag(name = "User Service", description = "User account management")

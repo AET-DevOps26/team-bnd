@@ -3,6 +3,7 @@ package com.alexandria.knowledgebase;
 import com.alexandria.knowledgebase.document.*;
 import com.alexandria.knowledgebase.dto.DocumentRefDto;
 import com.alexandria.knowledgebase.dto.SemanticSearchResponseDto;
+import com.alexandria.knowledgebase.dto.UpdateDocumentRequest;
 import com.alexandria.knowledgebase.integration.GenAiClient;
 import com.alexandria.knowledgebase.search.SearchQuery;
 import com.alexandria.knowledgebase.search.SearchQueryRepository;
@@ -302,6 +303,189 @@ class KnowledgeBaseServiceTest {
         knowledgeBaseService.reprocessTags(docId, OWNER);
 
         assertThat(doc.getTags()).extracting(Tag::getLabel).containsExactlyInAnyOrder("keep-me", "fresh");
+    }
+
+    @Test
+    void unit_kb_getDocumentsDelegates() {
+        Document doc = new Document(OWNER, "a.pdf", "/uploads/a.pdf", "application/pdf", 1L);
+        when(documentService.findByOwnerSubject(OWNER)).thenReturn(List.of(doc));
+        assertThat(knowledgeBaseService.getDocuments(OWNER)).containsExactly(doc);
+    }
+
+    @Test
+    void unit_kb_resolveDocumentsReturnsEmptyForNoKeys() {
+        assertThat(knowledgeBaseService.resolveDocuments(OWNER, List.of())).isEmpty();
+        assertThat(knowledgeBaseService.resolveDocuments(OWNER, null)).isEmpty();
+        verify(documentService, never()).findByOwnerSubjectAndObjectKeyIn(anyString(), anyList());
+    }
+
+    @Test
+    void unit_kb_resolveDocumentsDelegatesForKeys() {
+        Document doc = new Document(OWNER, "a.pdf", "/uploads/a.pdf", "application/pdf", 1L);
+        when(documentService.findByOwnerSubjectAndObjectKeyIn(OWNER, List.of("/uploads/a.pdf"))).thenReturn(List.of(doc));
+        assertThat(knowledgeBaseService.resolveDocuments(OWNER, List.of("/uploads/a.pdf"))).containsExactly(doc);
+    }
+
+    @Test
+    void unit_kb_getDocumentSummaryAndEntitiesReadThroughDocument() {
+        UUID docId = UUID.randomUUID();
+        Document doc = new Document(OWNER, "a.pdf", "/uploads/a.pdf", "application/pdf", 1L);
+        Summary summary = new Summary(doc, "text", "model");
+        doc.setSummary(summary);
+        ExtractedEntity entity = new ExtractedEntity(doc, "Ada", EntityType.PERSON, 0.9);
+        doc.setExtractedEntities(List.of(entity));
+        when(documentService.findByIdAndOwner(docId, OWNER)).thenReturn(doc);
+
+        assertThat(knowledgeBaseService.getDocumentSummary(docId, OWNER)).isSameAs(summary);
+        assertThat(knowledgeBaseService.getDocumentEntities(docId, OWNER)).containsExactly(entity);
+    }
+
+    @Test
+    void unit_kb_getFileContentReturnsBytes() {
+        UUID docId = UUID.randomUUID();
+        Document doc = new Document(OWNER, "a.pdf", "/uploads/a.pdf", "application/pdf", 1L);
+        when(documentService.findByIdAndOwner(docId, OWNER)).thenReturn(doc);
+        when(objectStorageService.download("/uploads/a.pdf")).thenReturn("hi".getBytes());
+
+        assertThat(knowledgeBaseService.getFileContent(docId, OWNER)).contains("hi".getBytes());
+    }
+
+    @Test
+    void unit_kb_getFileContentEmptyOnDownloadFailure() {
+        UUID docId = UUID.randomUUID();
+        Document doc = new Document(OWNER, "a.pdf", "/uploads/a.pdf", "application/pdf", 1L);
+        when(documentService.findByIdAndOwner(docId, OWNER)).thenReturn(doc);
+        when(objectStorageService.download("/uploads/a.pdf")).thenThrow(new RuntimeException("s3 down"));
+
+        assertThat(knowledgeBaseService.getFileContent(docId, OWNER)).isEmpty();
+    }
+
+    @Test
+    void unit_kb_updateDocumentChangesFileName() {
+        UUID docId = UUID.randomUUID();
+        Document doc = new Document(OWNER, "a.pdf", "/uploads/a.pdf", "application/pdf", 1L);
+        when(documentService.findByIdAndOwner(docId, OWNER)).thenReturn(doc);
+        when(documentService.save(any(Document.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        knowledgeBaseService.updateDocument(docId, new UpdateDocumentRequest("b.pdf"), OWNER);
+
+        assertThat(doc.getFileName()).isEqualTo("b.pdf");
+    }
+
+    @Test
+    void unit_kb_updateDocumentIgnoresNullFileName() {
+        UUID docId = UUID.randomUUID();
+        Document doc = new Document(OWNER, "a.pdf", "/uploads/a.pdf", "application/pdf", 1L);
+        when(documentService.findByIdAndOwner(docId, OWNER)).thenReturn(doc);
+        when(documentService.save(any(Document.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        knowledgeBaseService.updateDocument(docId, new UpdateDocumentRequest(null), OWNER);
+
+        assertThat(doc.getFileName()).isEqualTo("a.pdf");
+    }
+
+    @Test
+    void unit_kb_addTagReusesOrCreates() {
+        UUID docId = UUID.randomUUID();
+        Document doc = new Document(OWNER, "a.pdf", "/uploads/a.pdf", "application/pdf", 1L);
+        when(documentService.findByIdAndOwner(docId, OWNER)).thenReturn(doc);
+        when(tagRepository.findByLabel("finance")).thenReturn(Optional.empty());
+        when(tagRepository.save(any(Tag.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        knowledgeBaseService.addTag(docId, OWNER, "finance", TagSource.USER);
+
+        assertThat(doc.getTags()).extracting(Tag::getLabel).containsExactly("finance");
+        verify(documentService).save(doc);
+    }
+
+    @Test
+    void unit_kb_removeTagWhenPresent() {
+        UUID docId = UUID.randomUUID();
+        UUID tagId = UUID.randomUUID();
+        Document doc = new Document(OWNER, "a.pdf", "/uploads/a.pdf", "application/pdf", 1L);
+        Tag tag = new Tag("finance", TagSource.USER);
+        doc.addTag(tag);
+        when(documentService.findByIdAndOwner(docId, OWNER)).thenReturn(doc);
+        when(tagRepository.findById(tagId)).thenReturn(Optional.of(tag));
+
+        knowledgeBaseService.removeTag(docId, OWNER, tagId);
+
+        assertThat(doc.getTags()).isEmpty();
+        verify(documentService).save(doc);
+    }
+
+    @Test
+    void unit_kb_removeTagNoopWhenMissing() {
+        UUID docId = UUID.randomUUID();
+        UUID tagId = UUID.randomUUID();
+        Document doc = new Document(OWNER, "a.pdf", "/uploads/a.pdf", "application/pdf", 1L);
+        when(documentService.findByIdAndOwner(docId, OWNER)).thenReturn(doc);
+        when(tagRepository.findById(tagId)).thenReturn(Optional.empty());
+
+        knowledgeBaseService.removeTag(docId, OWNER, tagId);
+
+        verify(documentService, never()).save(any(Document.class));
+    }
+
+    @Test
+    void unit_kb_reprocessSummaryDropsExistingBeforeRegenerating() {
+        UUID docId = UUID.randomUUID();
+        Document doc = new Document(OWNER, "a.pdf", "/uploads/a.pdf", "application/pdf", 1L);
+        Summary existing = new Summary(doc, "old", "model");
+        doc.setSummary(existing);
+        when(documentService.findByIdAndOwner(docId, OWNER)).thenReturn(doc);
+        when(genAiClient.summarize("/uploads/a.pdf")).thenReturn(new GenAiClient.SummarizeResponse("new", "model"));
+        when(summaryRepository.save(any(Summary.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        knowledgeBaseService.reprocessSummary(docId, OWNER);
+
+        verify(summaryRepository).delete(existing);
+        assertThat(doc.getSummary().getContent()).isEqualTo("new");
+    }
+
+    @Test
+    void unit_kb_reprocessEntitiesRebuildsFromGenAi() {
+        UUID docId = UUID.randomUUID();
+        Document doc = new Document(OWNER, "a.pdf", "/uploads/a.pdf", "application/pdf", 1L);
+        when(documentService.findByIdAndOwner(docId, OWNER)).thenReturn(doc);
+        when(genAiClient.extract("/uploads/a.pdf")).thenReturn(new GenAiClient.ExtractResponse(List.of(new GenAiClient.ExtractedEntityDto("Ada", EntityType.PERSON, 0.9)), "model"));
+        when(extractedEntityRepository.save(any(ExtractedEntity.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        knowledgeBaseService.reprocessEntities(docId, OWNER);
+
+        verify(extractedEntityRepository).deleteByDocumentId(docId);
+        org.mockito.ArgumentCaptor<ExtractedEntity> captor = org.mockito.ArgumentCaptor.forClass(ExtractedEntity.class);
+        verify(extractedEntityRepository).save(captor.capture());
+        assertThat(captor.getValue().getName()).isEqualTo("Ada");
+    }
+
+    @Test
+    void unit_kb_getSearchHistoryDelegates() {
+        SearchQuery query = new SearchQuery(OWNER, "report", 1);
+        when(searchQueryRepository.findByUserSubjectOrderByTimestampDesc(OWNER)).thenReturn(List.of(query));
+        assertThat(knowledgeBaseService.getSearchHistory(OWNER)).containsExactly(query);
+    }
+
+    @Test
+    void unit_kb_deleteSearchHistoryDelegates() {
+        knowledgeBaseService.deleteSearchHistory(OWNER);
+        verify(searchQueryRepository).deleteByUserSubject(OWNER);
+    }
+
+    @Test
+    void unit_kb_getTagsForUserWithCountMapsProjection() {
+        when(tagRepository.findTagCountsByOwnerSubject(OWNER)).thenReturn(List.of(tagCount("finance", 3)));
+        assertThat(knowledgeBaseService.getTagsForUserWithCount(OWNER)).containsEntry("finance", 3L);
+    }
+
+    @Test
+    void unit_kb_processDocumentAsyncSkipsMissingDocument() {
+        UUID docId = UUID.randomUUID();
+        when(documentService.findById(docId)).thenThrow(new RuntimeException("gone"));
+
+        knowledgeBaseService.processDocumentAsync(docId);
+
+        verifyNoInteractions(genAiClient);
     }
 
     private static TagRepository.TagCountProjection tagCount(String label, long count) {

@@ -172,4 +172,51 @@ class UserServiceTest {
         assertThatThrownBy(
                 () -> userService.updatePreferences("unknown", new UpdatePreferencesRequest(true, "en"))).isInstanceOf(UserNotFoundException.class);
     }
+
+    @Test
+    void unit_user_findOrCreateLinksSubjectToExistingEmail() {
+        String oidcSubject = "auth0|new";
+        User existingByEmail = new User("old-subject", "testuser", "test@example.com");
+        when(userRepository.findByOidcSubject(oidcSubject)).thenReturn(Optional.empty());
+        when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.of(existingByEmail));
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        User result = userService.findOrCreateByOidcSubject(oidcSubject, "testuser", "test@example.com");
+
+        assertThat(result.getOidcSubject()).isEqualTo(oidcSubject);
+        verify(userRepository).save(existingByEmail);
+    }
+
+    @Test
+    void unit_user_getPreferencesReturnsDefaultsForBlankJson() {
+        userService = new UserService(userRepository, knowledgeBaseClient, qaClient, new ObjectMapper());
+        User user = new User("oidc|123", "testuser", "test@example.com");
+
+        UserService.UserPreferences prefs = userService.getPreferences(user);
+
+        assertThat(prefs.darkTheme()).isFalse();
+        assertThat(prefs.language()).isEqualTo("en");
+    }
+
+    @Test
+    void unit_user_getPreferencesFallsBackToDefaultsOnCorruptJson() {
+        userService = new UserService(userRepository, knowledgeBaseClient, qaClient, new ObjectMapper());
+        User user = new User("oidc|123", "testuser", "test@example.com");
+        user.setPreferences("{not valid json");
+
+        UserService.UserPreferences prefs = userService.getPreferences(user);
+
+        assertThat(prefs).isEqualTo(UserService.UserPreferences.defaultPreferences());
+    }
+
+    @Test
+    void unit_user_updatePreferencesWrapsSerializationFailure() throws JsonProcessingException {
+        String oidcSubject = "auth0|123";
+        User user = new User(oidcSubject, "testuser", "test@example.com");
+        when(userRepository.findByOidcSubject(oidcSubject)).thenReturn(Optional.of(user));
+        when(objectMapper.writeValueAsString(any())).thenThrow(new JsonProcessingException("boom") {
+        });
+
+        assertThatThrownBy(() -> userService.updatePreferences(oidcSubject, new UpdatePreferencesRequest(true, "de"))).isInstanceOf(com.alexandria.user.exception.PreferencesSerializationException.class);
+    }
 }

@@ -17,6 +17,15 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+/**
+ * Service-to-service endpoints for the knowledge-base service.
+ *
+ * <p>This prefix is deliberately not routed by Traefik or the Kubernetes Ingress, so the
+ * endpoints are only reachable from other services inside the cluster network. Instead of
+ * a user bearer token they are authenticated by an HMAC signature, hence the per-method
+ * SecurityRequirements that clears the default bearer scheme. Used by qa-service and
+ * user-service to look up or purge a user's documents by OIDC subject.
+ */
 @RestController
 @RequestMapping(path = "/internal/knowledgebase", produces = MediaType.APPLICATION_JSON_VALUE)
 @Tag(name = "KnowledgeBase Service (Internal)", description = "Service-to-service endpoints authenticated by an HMAC signature")

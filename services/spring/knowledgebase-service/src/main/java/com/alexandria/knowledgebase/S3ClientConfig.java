@@ -10,9 +10,16 @@ import software.amazon.awssdk.services.s3.S3Client;
 
 import java.net.URI;
 
-// Based on https://www.baeldung.com/java-aws-s3 and
-// https://dev.to/sachithmayantha/seamless-file-storage-integrating-aws-s3-with-spring-boot-3045
-
+/**
+ * Builds the S3 client used to talk to the SeaweedFS object store.
+ *
+ * <p>Uses static credentials and an endpoint override with path-style access, which
+ * SeaweedFS (and most S3-compatible stores that are not AWS) require. All values come from
+ * {@code app.config.s3-*} properties.
+ *
+ * <p>Based on https://www.baeldung.com/java-aws-s3 and
+ * https://dev.to/sachithmayantha/seamless-file-storage-integrating-aws-s3-with-spring-boot-3045
+ */
 @Configuration
 public class S3ClientConfig {
     @Value("${app.config.s3-endpoint}")

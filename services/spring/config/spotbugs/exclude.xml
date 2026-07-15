@@ -24,4 +24,13 @@
   <Match>
     <Bug pattern="SE_NO_SERIALVERSIONID"/>
   </Match>
+
+  <!-- The request id echoed back by MdcLoggingFilter is validated against a strict
+       allowlist ([A-Za-z0-9._-]) before it ever reaches setHeader, so CR/LF response
+       splitting is impossible. SpotBugs' analysis can't see through the regex
+       guard, so this is a false positive. -->
+  <Match>
+    <Class name="com.alexandria.common.logging.MdcLoggingFilter"/>
+    <Bug pattern="HRS_REQUEST_PARAMETER_TO_HTTP_HEADER"/>
+  </Match>
 </FindBugsFilter>

@@ -16,6 +16,10 @@ import org.springdoc.core.customizers.OpenApiCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+/**
+ * OpenAPI/Swagger metadata and the bearer auth scheme for qa-service, additionally
+ * a customizer that points numeric 4xx/5xx responses at the shared ErrorResponse schema.
+ */
 @Configuration
 @OpenAPIDefinition(
         info = @Info(

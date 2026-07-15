@@ -31,6 +31,14 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+/**
+ * Core logic for documents, tags, summaries, entities and search.
+ *
+ * <p>Creating or uploading a document persists it and then starts an
+ * asynchronous GenAI pipeline (summarize, extract entities, tag, index) that runs
+ * off the request thread. Every GenAI call is best-effort, failures are logged and
+ * swallowed so a GenAI outage never breaks an upload or a delete.
+ */
 @Service
 public class KnowledgeBaseService {
 

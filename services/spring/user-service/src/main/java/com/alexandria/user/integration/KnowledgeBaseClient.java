@@ -9,6 +9,11 @@ import org.springframework.web.client.RestClient;
 import java.net.http.HttpClient;
 import java.time.Duration;
 
+/**
+ * Internal client used to purge a user's documents in knowledgebase-service when their
+ * account is deleted. Calls the /internal endpoints, so requests are signed with an HMAC
+ * signature by the shared interceptor rather than carrying a user bearer token.
+ */
 @Component
 public class KnowledgeBaseClient {
 

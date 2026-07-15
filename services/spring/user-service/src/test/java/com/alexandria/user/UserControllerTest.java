@@ -13,6 +13,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
+import static org.mockito.Mockito.doThrow;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -72,5 +73,12 @@ class UserControllerTest {
     @Test
     void integration_user_updatePreferencesPartialUpdate() throws Exception {
         mockMvc.perform(patch("/api/v1/users/me/preferences").with(jwt().jwt(j -> j.subject("sub123"))).contentType(MediaType.APPLICATION_JSON).content("{\"language\":\"fr\"}")).andExpect(status().isOk()).andExpect(jsonPath("$.darkTheme").value(false)).andExpect(jsonPath("$.language").value("fr"));
+    }
+
+    @Test
+    void integration_user_deleteReturns502WhenDownstreamCleanupFails() throws Exception {
+        doThrow(new RuntimeException("kb down")).when(knowledgeBaseClient).deleteUserData("sub123");
+
+        mockMvc.perform(delete("/api/v1/users/" + testUser.getId()).with(jwt().jwt(j -> j.subject("sub123")))).andExpect(status().isBadGateway());
     }
 }
