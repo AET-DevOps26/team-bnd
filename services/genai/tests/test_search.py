@@ -7,7 +7,9 @@ services are needed.
 import os
 from unittest.mock import patch
 
-from app.search import search_documents
+import pytest
+
+from app.search import _score_bounds, search_documents
 
 
 def _hit(object_key: str, chunk_index: int, text: str, distance: float) -> dict:
@@ -101,6 +103,12 @@ def test_score_anchors_are_env_configurable():
         results, _ = search_documents("q", ["doc-1"], limit=5)
 
     assert results[0]["score"] == 0.75
+
+
+def test_score_bounds_rejects_ceiling_not_above_floor():
+    with patch.dict(os.environ, {"SEARCH_SCORE_FLOOR": "0.5", "SEARCH_SCORE_CEILING": "0.3"}):
+        with pytest.raises(RuntimeError, match="SEARCH_SCORE_CEILING"):
+            _score_bounds()
 
 
 def test_empty_object_keys_returns_no_results_without_searching():

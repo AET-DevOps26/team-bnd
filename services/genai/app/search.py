@@ -33,17 +33,20 @@ def _score_bounds() -> tuple[float, float]:
     """Read the calibration anchors once, returning (floor, span)."""
     floor = float_env("SEARCH_SCORE_FLOOR", _DEFAULT_SCORE_FLOOR, minimum=0.0)
     ceiling = float_env("SEARCH_SCORE_CEILING", _DEFAULT_SCORE_CEILING, minimum=0.0)
+    if ceiling <= floor:
+        raise RuntimeError(f"SEARCH_SCORE_CEILING ({ceiling}) must be greater than SEARCH_SCORE_FLOOR ({floor})")
     return floor, ceiling - floor
 
 
 def _score(distance: float | None, floor: float, span: float) -> float:
     # Weaviate returns cosine distance (0 = identical, up to 2 for opposite vectors);
     # 1 - distance is the raw cosine similarity. Then calibrate onto [0, 1] so the
-    # compressed similarity band reads as an intuitive relevance percentage.
+    # compressed similarity band reads as an intuitive relevance percentage. span is
+    # always positive (_score_bounds rejects ceiling <= floor).
     if distance is None:
         return 0.0
     similarity = 1.0 - distance
-    calibrated = (similarity - floor) / span if span > 0 else similarity
+    calibrated = (similarity - floor) / span
     return round(min(1.0, max(0.0, calibrated)), 4)
 
 
