@@ -2,7 +2,7 @@
 
 A Helm chart is provided in `infra/k8s/alexandria/`.
 
-## Prerequisites:
+## Prerequisites
 
 - A running Kubernetes cluster (Rancher, Azure AKS, minikube, etc.)
 - `helm` and `kubectl` configured to access the cluster
@@ -17,13 +17,16 @@ kubectl config use-context <context>
 
 ## Deploy in one command
 
-**WARNING**: This is insecure as the deployed pods will use default secrets.
-
 ```bash
-helm install alexandria infra/k8s/alexandria \
+helm upgrade --install alexandria infra/k8s/alexandria \
   --namespace alexandria --create-namespace \
-  --dependency-update
+  --dependency-update \
+  --set "genai.llmApiKey=your-llm-api-key"
 ```
+
+All credentials (postgres password, S3 keys, Keycloak admin password, Grafana admin password,
+internal HMAC secret) are randomly generated on first install and preserved on subsequent
+upgrades. The only thing you need to provide is the LLM API key.
 
 Prometheus and Grafana live in their own namespace (`alexandria-monitoring` by
 default, override via `monitoring.namespace`) and are intentionally not exposed
@@ -37,50 +40,109 @@ kubectl -n alexandria-monitoring port-forward svc/alexandria-grafana 3000:3000
 # open http://localhost:3000
 ```
 
-## Secrets Setup:
+## Secrets
 
-1. Copy the secrets template:
-   ```bash
-   cp infra/k8s/alexandria/values-secrets.yaml.example infra/k8s/alexandria/values-secrets.yaml
-   ```
-2. Edit `values-secrets.yaml` and set your actual passwords (this file is gitignored)
+All credentials live in a single Kubernetes Secret named `alexandria-secrets`. The chart
+generates random values for everything on first install and preserves them across upgrades
+via `lookup`. The only credential that is never auto-generated is the LLM API key, since
+it comes from an external provider.
 
-## Deploy:
+Secrets are annotated with `helm.sh/resource-policy: keep`, so they survive `helm uninstall`.
+Delete them manually if you want a clean slate:
 
 ```bash
-helm install alexandria infra/k8s/alexandria \
-  --namespace alexandria --create-namespace \
-  --dependency-update \
-  -f infra/k8s/alexandria/values-secrets.yaml
+kubectl -n alexandria delete secret --all
+kubectl -n alexandria-monitoring delete secret --all
 ```
 
-## Upgrade after changes:
+### Secret keys
+
+`alexandria-secrets`:
+
+| Key | Purpose |
+|-----|---------|
+| `db-password` | PostgreSQL password (Spring services, Keycloak, postgres-db) |
+| `keycloak-admin-password` | Keycloak admin console |
+| `grafana-admin-password` | Grafana admin UI |
+| `s3-access-key` | SeaweedFS S3 access key |
+| `s3-secret-key` | SeaweedFS S3 secret key |
+| `internal-shared-secret` | HMAC for service-to-service /internal/** auth |
+
+`alexandria-genai-secrets`:
+
+| Key | Purpose |
+|-----|---------|
+| `llm-api-key` | LLM provider API key |
+
+### Hook ordering
+
+All secrets are created by Helm pre-install/pre-upgrade hooks with weight -5, so they
+land in the cluster before any Deployment or StatefulSet is applied. Postgres and
+Keycloak pods therefore start with the secrets already present. Verified on a bare
+`helm install` against the stud cluster (not just `helm template`).
+
+### Dry-run warning
+
+Never apply this chart from a `helm template` or `--dry-run` render. The `lookup`
+function returns empty in those modes, so `randAlphaNum` fires and produces fresh
+passwords that are not written to the cluster. Applying that YAML manually would put
+the cluster out of sync with any existing Postgres PVC or Keycloak data. Always run
+`helm upgrade --install` (or `helm install`) directly against a live cluster.
+
+### Pre-created secrets (CI/CD)
+
+For CI/CD pipelines, create the secrets before running Helm so they never appear in
+Helm release metadata:
+
+```bash
+kubectl create namespace alexandria --dry-run=client -o yaml | kubectl apply -f -
+
+kubectl -n alexandria create secret generic alexandria-secrets \
+  --from-literal=db-password="$POSTGRES_PASSWORD" \
+  --from-literal=keycloak-admin-password="$KC_ADMIN_PASSWORD" \
+  --from-literal=grafana-admin-password="$GRAFANA_ADMIN_PASSWORD" \
+  --from-literal=s3-access-key="$S3_ACCESS_KEY" \
+  --from-literal=s3-secret-key="$S3_SECRET_KEY" \
+  --from-literal=internal-shared-secret="$INTERNAL_SHARED_SECRET" \
+  --dry-run=client -o yaml | kubectl apply -f -
+
+kubectl -n alexandria create secret generic alexandria-genai-secrets \
+  --from-literal=llm-api-key="$LLM_API_KEY" \
+  --dry-run=client -o yaml | kubectl apply -f -
+
+helm upgrade --install alexandria infra/k8s/alexandria \
+  --namespace alexandria --create-namespace \
+  --dependency-update \
+  --set "existingSecret=alexandria-secrets" \
+  --set "genai.existingSecret=alexandria-genai-secrets"
+```
+
+## Upgrade after changes
 
 ```bash
 helm upgrade alexandria infra/k8s/alexandria \
   --namespace alexandria \
-  --dependency-update \
-  -f infra/k8s/alexandria/values-secrets.yaml
+  --dependency-update
 ```
 
-## Uninstall:
+## Uninstall
 
 ```bash
 helm uninstall alexandria --namespace alexandria
 ```
 
-## Override values (e.g., different image tag):
+## Override values (e.g., different image tag)
 
 ```bash
-helm install alexandria infra/k8s/alexandria \
+helm upgrade --install alexandria infra/k8s/alexandria \
   --namespace alexandria --create-namespace \
   --dependency-update \
-  -f infra/k8s/alexandria/values-secrets.yaml \
+  --set "genai.llmApiKey=your-llm-api-key" \
   --set image.tag=sha-abc123 \
   --set ingress.host=alexandria.example.com
 ```
 
-## Check status:
+## Check status
 
 ```bash
 kubectl -n alexandria get pods
@@ -95,7 +157,6 @@ The stateless services (user-service, knowledgebase-service, qa-service, client,
 ```bash
 helm upgrade alexandria infra/k8s/alexandria \
   --namespace alexandria \
-  -f infra/k8s/alexandria/values-secrets.yaml \
   --set userService.autoscaling.enabled=true \
   --set knowledgebaseService.autoscaling.enabled=true \
   --set qaService.autoscaling.enabled=true
@@ -141,7 +202,6 @@ To enable them:
 ```bash
 helm upgrade alexandria infra/k8s/alexandria \
   --namespace alexandria \
-  -f infra/k8s/alexandria/values-secrets.yaml \
   --set networkPolicy.enabled=true
 ```
 
@@ -171,15 +231,17 @@ With `allowFromAnywhere: false` the render fails fast if both selectors are left
 
 The postgres subchart creates a PersistentVolumeClaim that survives `helm uninstall`. On a subsequent install, postgres reuses the existing data directory (with the old password) and ignores the new `POSTGRES_PASSWORD` value, causing spring and keycloak to fail authentication.
 
-Fix: delete the PVC before reinstalling.
+Fix: delete the PVC and the old secrets before reinstalling so the new generated password matches what postgres initialises with.
 
 ```bash
 helm uninstall alexandria --namespace alexandria
 kubectl -n alexandria delete pvc --all
-helm install alexandria infra/k8s/alexandria \
+kubectl -n alexandria delete secret --all
+kubectl -n alexandria-monitoring delete secret --all
+helm upgrade --install alexandria infra/k8s/alexandria \
   --namespace alexandria --create-namespace \
   --dependency-update \
-  -f infra/k8s/alexandria/values-secrets.yaml
+  --set "genai.llmApiKey=your-llm-api-key"
 ```
 
 ### Getting Pod Logs from Cluster Deployment

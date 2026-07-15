@@ -4,6 +4,16 @@ global:
 
 replicaCount: 1
 
+# Lock in the release name so secret names derived from it are stable
+# and can be referenced in subchart values below.
+fullnameOverride: alexandria
+
+# If set, the chart will NOT create its own Secret and all services will
+# reference this pre-existing secret instead. Leave empty to auto-generate
+# a Secret named alexandria-secrets on first install.
+# The secret must contain all keys documented in templates/secrets.yaml.
+existingSecret: ""
+
 image:
   registry: ghcr.io
   repository: aet-devops26/team-bnd
@@ -18,7 +28,8 @@ spring:
     port: "5432"
     name: "alexandria"
     username: "postgres"
-    password: "postgres-password"
+    # Leave empty to auto-generate. Overridden by the centralized secret on first install.
+    password: ""
   oidc:
     issuerUri: "https://alexandria.stud.k8s.aet.cit.tum.de/auth/realms/alexandria"
     jwkSetUri: "http://alexandria-keycloak:8080/auth/realms/alexandria/protocol/openid-connect/certs"
@@ -26,8 +37,7 @@ spring:
     usernameClaim: "preferred_username"
     rolesClaim: "roles"
   internal:
-    # HMAC secret for /internal/** service-to-service auth.
-    # MUST override via values-secrets.yaml for real deployments!
+    # Leave empty to auto-generate a random value on first install.
     sharedSecret: ""
     clockSkewSeconds: 300
 
@@ -94,6 +104,7 @@ client:
     targetCPUUtilizationPercentage: 80
 
 genai:
+  existingSecret: ""
   llmApiKey: ""
   llmProvider: "logos"
   llmBaseUrl: "https://logos.aet.cit.tum.de/v1"
@@ -194,7 +205,8 @@ grafana:
   image:
     repository: grafana/grafana
     tag: 13.0.2
-  adminPassword: "admin"
+  # Leave empty to auto-generate a random password on first install.
+  adminPassword: ""
   persistence:
     size: 1Gi
   resources:
@@ -207,7 +219,12 @@ grafana:
 
 keycloak:
   keycloak:
-    adminPassword: "admin"
+    adminPassword: ""
+    # Point the subchart at the centralized secret; use a distinct key name to
+    # avoid collision with the grafana admin-password key in the same Secret.
+    existingSecret: alexandria-secrets
+    secretKeys:
+      adminPasswordKey: keycloak-admin-password
     proxyHeaders: "xforwarded"
     hostname: "https://alexandria.stud.k8s.aet.cit.tum.de/auth"
     httpRelativePath: /auth
@@ -227,7 +244,11 @@ keycloak:
     port: "5432"
     name: "keycloak"
     username: "postgres"
-    password: "postgres-password"
+    password: ""
+    existingSecret: alexandria-postgres-auth
+    secretKeys:
+      passwordKey: db-password
+      usernameKey: db-username
   postgres:
     enabled: false
   resources:
@@ -269,8 +290,11 @@ keycloak:
 postgres-db:
   auth:
     username: "postgres"
-    password: "postgres-password"
+    password: ""
     database: "keycloak"
+    existingSecret: alexandria-postgres-auth
+    secretKeys:
+      adminPasswordKey: db-password
   initdb:
     scripts:
       create-alexandria-db.sql: |
@@ -288,8 +312,8 @@ s3:
   endpoint: ""
   region: "eu-central-1"
   bucket: "alexandria-storage"
-  accessKey: "admin"
-  secretKey: "s3-secret-password"
+  accessKey: ""
+  secretKey: ""
 
 seaweedfs:
   enabled: true
@@ -343,10 +367,9 @@ seaweedfs:
     enabled: true
     port: 8333
     enableAuth: true
-    credentials:
-      admin:
-        accessKey: "admin"
-        secretKey: "s3-secret-password"
+    # The centralized secret contains the seaweedfs_s3_config JSON blob
+    # alongside all other credentials.
+    existingConfigSecret: alexandria-seaweedfs-s3-config
     createBuckets:
       - name: "alexandria-storage"
         anonymousRead: false

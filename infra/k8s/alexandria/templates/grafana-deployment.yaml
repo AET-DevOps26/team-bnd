@@ -50,7 +50,7 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: {{ include "alexandria.fullname" . }}-grafana
-                  key: admin-password
+                  key: grafana-admin-password
           ports:
             - name: http
               containerPort: 3000

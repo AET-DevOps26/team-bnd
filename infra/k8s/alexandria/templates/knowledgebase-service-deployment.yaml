@@ -38,7 +38,7 @@ spec:
             - sh
             - -c
             - |
-              until pg_isready -h {{ .Values.spring.database.host }} -p {{ .Values.spring.database.port }} -U {{ .Values.spring.database.username }}; do
+              until pg_isready -h {{ .Values.spring.database.host }} -p {{ .Values.spring.database.port }} -U postgres; do
                 echo "waiting for database..."
                 sleep 2
               done
@@ -71,22 +71,22 @@ spec:
             - name: POSTGRES_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "alexandria.fullname" . }}-spring-secrets
-                  key: postgres-password
+                  name: {{ include "alexandria.secretName" . }}
+                  key: db-password
             - name: S3_ACCESS_KEY
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "alexandria.fullname" . }}-spring-secrets
+                  name: {{ include "alexandria.secretName" . }}
                   key: s3-access-key
             - name: S3_SECRET_KEY
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "alexandria.fullname" . }}-spring-secrets
+                  name: {{ include "alexandria.secretName" . }}
                   key: s3-secret-key
             - name: INTERNAL_SHARED_SECRET
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "alexandria.fullname" . }}-spring-secrets
+                  name: {{ include "alexandria.secretName" . }}
                   key: internal-shared-secret
           volumeMounts:
             - name: tmp
