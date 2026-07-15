@@ -17,9 +17,12 @@ on:
 
 # Cancel superseded runs on the same branch / PR. Saves runner minutes
 # and means the latest commit is always the one that gets verified.
+# The default branch is exempt: cancelling a run mid-deploy SIGKILLs helm
+# and leaves the release stuck in pending-upgrade. On main, runs queue and
+# each helm upgrade finishes before the next starts.
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.ref != format('refs/heads/{0}', github.event.repository.default_branch) }}
 
 permissions:
   contents: read
@@ -963,7 +966,8 @@ jobs:
             --set "genai.llmApiKey=$LLM_API_KEY" \
             --set "spring.internal.sharedSecret=$INTERNAL_SHARED_SECRET" \
             --wait \
-            --timeout 5m
+            --timeout 5m \
+            --cleanup-on-fail
 
       - name: Verify Deployment
         run: |
