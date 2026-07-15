@@ -18,7 +18,7 @@ import org.springframework.context.annotation.Configuration;
 
 /**
  * OpenAPI/Swagger metadata and the bearer auth scheme for user-service, additionally
- * a customizer that points every error response at the shared ErrorResponse schema.
+ * a customizer that points numeric 4xx/5xx responses at the shared ErrorResponse schema.
  */
 @Configuration
 @OpenAPIDefinition(

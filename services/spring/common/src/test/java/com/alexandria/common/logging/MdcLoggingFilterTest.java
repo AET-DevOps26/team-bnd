@@ -38,6 +38,20 @@ class MdcLoggingFilterTest {
     }
 
     @Test
+    void unit_common_reusesSameRequestIdOnErrorDispatch() throws Exception {
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/v1/qa/history");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        String[] seenIds = new String[2];
+        filter.doFilter(request, response, (req, res) -> seenIds[0] = MDC.get("requestId"));
+        // Simulate the container re-running the filter for the ERROR dispatch to /error.
+        filter.doFilter(request, response, (req, res) -> seenIds[1] = MDC.get("requestId"));
+
+        assertThat(seenIds[0]).isNotBlank();
+        assertThat(seenIds[1]).isEqualTo(seenIds[0]);
+    }
+
+    @Test
     void unit_common_clearsMdcEvenWhenChainThrows() {
         MockHttpServletRequest request = new MockHttpServletRequest("DELETE", "/api/v1/users/1");
         MockHttpServletResponse response = new MockHttpServletResponse();

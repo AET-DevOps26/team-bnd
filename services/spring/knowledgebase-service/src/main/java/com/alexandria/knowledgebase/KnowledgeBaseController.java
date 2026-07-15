@@ -165,8 +165,9 @@ public class KnowledgeBaseController {
     }
 
     /**
-     * Returns the GenAI-generated summary for a document, or 204 No Content while it is
-     * still being processed (summaries are produced asynchronously after upload).
+     * Returns the GenAI-generated summary for a document, or 204 No Content when no summary
+     * is available yet (summaries are produced asynchronously after upload and may be missing
+     * if processing has not finished or failed).
      */
     @GetMapping("/documents/{id}/summary")
     @Operation(summary = "Get document summary")
