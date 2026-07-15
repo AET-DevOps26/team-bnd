@@ -1500,10 +1500,14 @@ test.describe("Alexandria client", () => {
       const input = page.locator('[aria-label="New tag name"]');
       await expect(input).toBeVisible();
       await input.fill("new-tag");
-      await input.press("Enter");
 
-      // Give the mutation a moment to fire
-      await page.waitForTimeout(500);
+      const addRequest = page.waitForRequest(
+        (req) =>
+          req.url().includes("/api/v1/knowledgebase/documents/doc-tag-1/tags") &&
+          req.method() === "POST",
+      );
+      await input.press("Enter");
+      await addRequest;
       expect(addTagCalled).toBe(true);
     });
 
@@ -1529,9 +1533,15 @@ test.describe("Alexandria client", () => {
       // beta is USER, second in sorted order
       const tags = tagList.locator('.tag[role="button"]');
       const removeButton = tags.nth(1).locator(".tag__remove");
-      await removeButton.click();
 
-      await page.waitForTimeout(500);
+      const deleteRequest = page.waitForRequest(
+        (req) =>
+          /\/api\/v1\/knowledgebase\/documents\/doc-tag-1\/tags\/t-b/.test(
+            req.url(),
+          ) && req.method() === "DELETE",
+      );
+      await removeButton.click();
+      await deleteRequest;
       expect(removeTagCalled).toBe(true);
     });
 

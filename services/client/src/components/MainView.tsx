@@ -23,7 +23,13 @@ export default function MainView() {
     "/api/v1/knowledgebase/tags",
   );
 
-  const allTags = tagsData?.tags ?? [];
+  const allTags = useMemo(
+    () =>
+      [...(tagsData?.tags ?? [])].sort((a, b) =>
+        (a.name ?? "").localeCompare(b.name ?? ""),
+      ),
+    [tagsData],
+  );
 
   // Client-side filter: only show documents matching ALL selected tags
   const filteredDocuments = useMemo(() => {

@@ -90,13 +90,13 @@ export default function DocumentTree({
               );
             })}
           </ul>
-          {hasHiddenTags && (
+          {hasHiddenTags && !hasSelectedHiddenTag && (
             <button
               type="button"
               className="tag-filter__toggle"
               onClick={() => setTagsExpanded((v) => !v)}
             >
-              {showAll
+              {tagsExpanded
                 ? "Show less"
                 : `+${allTags.length - VISIBLE_TAG_COUNT} more`}
             </button>
