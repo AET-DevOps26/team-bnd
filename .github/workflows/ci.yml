@@ -948,11 +948,7 @@ jobs:
         # Upserted via dry-run + apply so re-runs are idempotent.
         # Owned by kubectl, not Helm -- nothing sensitive ends up in release metadata.
         run: |
-          MONITORING_NS="alexandria-monitoring"
-
-          kubectl create namespace alexandria --dry-run=client -o yaml | kubectl apply -f -
-
-          kubectl -n alexandria create secret generic alexandria-secrets \
+          kubectl -n bnd-alexandria create secret generic alexandria-secrets \
             --from-literal=db-password="$POSTGRES_PASSWORD" \
             --from-literal=keycloak-admin-password="$KC_BOOTSTRAP_ADMIN_PASSWORD" \
             --from-literal=grafana-admin-password="$GRAFANA_ADMIN_PASSWORD" \
@@ -961,13 +957,9 @@ jobs:
             --from-literal=internal-shared-secret="$INTERNAL_SHARED_SECRET" \
             --dry-run=client -o yaml | kubectl apply -f -
 
-          kubectl -n alexandria create secret generic alexandria-genai-secrets \
+          kubectl -n bnd-alexandria create secret generic alexandria-genai-secrets \
             --from-literal=llm-api-key="$LLM_API_KEY" \
             --dry-run=client -o yaml | kubectl apply -f -
-
-          # Grafana's hook targets the monitoring namespace -- ensure it exists
-          # before Helm runs so the hook doesn't fail on a fresh cluster.
-          kubectl create namespace "$MONITORING_NS" --dry-run=client -o yaml | kubectl apply -f -
 
       - name: Deploy with Helm
         env:
@@ -975,7 +967,7 @@ jobs:
         working-directory: infra/k8s/alexandria
         run: |
           helm upgrade --install alexandria . \
-            --namespace alexandria \
+            --namespace bnd-alexandria \
             --set "image.tag=$IMAGE_TAG" \
             --set "existingSecret=alexandria-secrets" \
             --set "genai.existingSecret=alexandria-genai-secrets" \
@@ -985,6 +977,6 @@ jobs:
 
       - name: Verify Deployment
         run: |
-          kubectl -n alexandria get pods
-          kubectl -n alexandria get svc
-          kubectl -n alexandria get ingress
+          kubectl -n bnd-alexandria get pods
+          kubectl -n bnd-alexandria get svc
+          kubectl -n bnd-alexandria get ingress

@@ -19,7 +19,7 @@ kubectl config use-context <context>
 
 ```bash
 helm upgrade --install alexandria infra/k8s/alexandria \
-  --namespace alexandria --create-namespace \
+  --namespace bnd-alexandria --create-namespace \
   --dependency-update \
   --set "genai.llmApiKey=your-llm-api-key"
 ```
@@ -33,10 +33,10 @@ default, override via `monitoring.namespace`) and are intentionally not exposed
 through the ingress. To reach them, port-forward:
 
 ```bash
-kubectl -n alexandria-monitoring port-forward svc/alexandria-prometheus 9090:9090
+kubectl -n bnd-alexandria-monitoring port-forward svc/alexandria-prometheus 9090:9090
 # open http://localhost:9090/prometheus
 
-kubectl -n alexandria-monitoring port-forward svc/alexandria-grafana 3000:3000
+kubectl -n bnd-alexandria-monitoring port-forward svc/alexandria-grafana 3000:3000
 # open http://localhost:3000
 ```
 
@@ -51,27 +51,27 @@ Secrets are annotated with `helm.sh/resource-policy: keep`, so they survive `hel
 Delete them manually if you want a clean slate:
 
 ```bash
-kubectl -n alexandria delete secret --all
-kubectl -n alexandria-monitoring delete secret --all
+kubectl -n bnd-alexandria delete secret --all
+kubectl -n bnd-alexandria-monitoring delete secret --all
 ```
 
 ### Secret keys
 
 `alexandria-secrets`:
 
-| Key | Purpose |
-|-----|---------|
-| `db-password` | PostgreSQL password (Spring services, Keycloak, postgres-db) |
-| `keycloak-admin-password` | Keycloak admin console |
-| `grafana-admin-password` | Grafana admin UI |
-| `s3-access-key` | SeaweedFS S3 access key |
-| `s3-secret-key` | SeaweedFS S3 secret key |
-| `internal-shared-secret` | HMAC for service-to-service /internal/** auth |
+| Key                       | Purpose                                                      |
+| ------------------------- | ------------------------------------------------------------ |
+| `db-password`             | PostgreSQL password (Spring services, Keycloak, postgres-db) |
+| `keycloak-admin-password` | Keycloak admin console                                       |
+| `grafana-admin-password`  | Grafana admin UI                                             |
+| `s3-access-key`           | SeaweedFS S3 access key                                      |
+| `s3-secret-key`           | SeaweedFS S3 secret key                                      |
+| `internal-shared-secret`  | HMAC for service-to-service /internal/** auth                |
 
 `alexandria-genai-secrets`:
 
-| Key | Purpose |
-|-----|---------|
+| Key           | Purpose              |
+| ------------- | -------------------- |
 | `llm-api-key` | LLM provider API key |
 
 ### Hook ordering
@@ -121,21 +121,21 @@ helm upgrade --install alexandria infra/k8s/alexandria \
 
 ```bash
 helm upgrade alexandria infra/k8s/alexandria \
-  --namespace alexandria \
+  --namespace bnd-alexandria \
   --dependency-update
 ```
 
 ## Uninstall
 
 ```bash
-helm uninstall alexandria --namespace alexandria
+helm uninstall alexandria --namespace bnd-alexandria
 ```
 
 ## Override values (e.g., different image tag)
 
 ```bash
 helm upgrade --install alexandria infra/k8s/alexandria \
-  --namespace alexandria --create-namespace \
+  --namespace bnd-alexandria --create-namespace \
   --dependency-update \
   --set "genai.llmApiKey=your-llm-api-key" \
   --set image.tag=sha-abc123 \
@@ -145,9 +145,9 @@ helm upgrade --install alexandria infra/k8s/alexandria \
 ## Check status
 
 ```bash
-kubectl -n alexandria get pods
-kubectl -n alexandria get svc
-kubectl -n alexandria get ingress
+kubectl -n bnd-alexandria get pods
+kubectl -n bnd-alexandria get svc
+kubectl -n bnd-alexandria get ingress
 ```
 
 ## Autoscaling
@@ -156,7 +156,7 @@ The stateless services (user-service, knowledgebase-service, qa-service, client,
 
 ```bash
 helm upgrade alexandria infra/k8s/alexandria \
-  --namespace alexandria \
+  --namespace bnd-alexandria \
   --set userService.autoscaling.enabled=true \
   --set knowledgebaseService.autoscaling.enabled=true \
   --set qaService.autoscaling.enabled=true
@@ -165,14 +165,14 @@ helm upgrade alexandria infra/k8s/alexandria \
 When a service's autoscaling is enabled the HPA owns the replica count, so the static `replicaCount` is dropped from that deployment. Min/Max and the CPU target are defined under each `autoscaling` block in `values.yaml`. The maxReplicas defaults are deliberately low to keep the summed CPU and memory requests under the namespace resource quota. This needs the metrics server to be running in the cluster. Check scaling with:
 
 ```bash
-kubectl -n alexandria get hpa
+kubectl -n bnd-alexandria get hpa
 ```
 
 ## Rollout strategy
 
 The three Spring deployments (user, knowledgebase, qa) use `strategy: Recreate`
 instead of the default rolling update while they run as a single replica (i.e.
-autoscaling disabled, as above). The alexandria namespace runs under a
+autoscaling disabled, as above). The bnd-alexandria namespace runs under a
 ResourceQuota that caps limits, and a rolling update briefly starts a second pod
 whose limits stack on top of the running one. That can trip the quota and leave
 `helm upgrade` wedged, which has happened to us before. Recreate stops the old
@@ -194,6 +194,7 @@ The scrape targets differ slightly from the compose setup on purpose: compose ru
 The chart ships default-deny-ingress together with explicit allow policies (`templates/networkpolicies.yaml`) so each service only accepts traffic from the components that actually call it. Client, GenAi, Spring microservices and Keycloak accept traffic from the ingress (see `allowFromAnywhere` below), knowledgebase/qa from the other Spring services, GenAI from knowledgebase/qa, Weaviate only from GenAI, SeaweedFS S3 from GenAI/knowledgebase, Postgres from the Spring services and Keycloak. The SeaweedFS master/volume/filer/s3 pods are also allowed to talk to each other, since the subchart ships no policies of its own. Every pod allows traffic from the monitoring namespace, so Prometheus can still scrape. Outgoing traffic (egress) is not limited.
 
 The implemented NetworkPolicies are off by default for two reasons:
+
 1. They only actually enforce on a CNI that implements NetworkPolicy
 2. A wrong rule can cut off live traffic
 
@@ -201,7 +202,7 @@ To enable them:
 
 ```bash
 helm upgrade alexandria infra/k8s/alexandria \
-  --namespace alexandria \
+  --namespace bnd-alexandria \
   --set networkPolicy.enabled=true
 ```
 
@@ -234,12 +235,12 @@ The postgres subchart creates a PersistentVolumeClaim that survives `helm uninst
 Fix: delete the PVC and the old secrets before reinstalling so the new generated password matches what postgres initialises with.
 
 ```bash
-helm uninstall alexandria --namespace alexandria
-kubectl -n alexandria delete pvc --all
-kubectl -n alexandria delete secret --all
-kubectl -n alexandria-monitoring delete secret --all
+helm uninstall alexandria --namespace bnd-alexandria
+kubectl -n bnd-alexandria delete pvc --all
+kubectl -n bnd-alexandria delete secret --all
+kubectl -n bnd-alexandria-monitoring delete secret --all
 helm upgrade --install alexandria infra/k8s/alexandria \
-  --namespace alexandria --create-namespace \
+  --namespace bnd-alexandria --create-namespace \
   --dependency-update \
   --set "genai.llmApiKey=your-llm-api-key"
 ```
@@ -249,5 +250,5 @@ helm upgrade --install alexandria infra/k8s/alexandria \
 To show logs from a remote cluster, you can run
 
 ```bash
-kubectl -n alexandria logs <pod name>
+kubectl -n bnd-alexandria logs <pod name>
 ```
