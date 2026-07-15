@@ -74,6 +74,21 @@ kubectl -n alexandria-monitoring delete secret --all
 |-----|---------|
 | `llm-api-key` | LLM provider API key |
 
+### Hook ordering
+
+All secrets are created by Helm pre-install/pre-upgrade hooks with weight -5, so they
+land in the cluster before any Deployment or StatefulSet is applied. Postgres and
+Keycloak pods therefore start with the secrets already present. Verified on a bare
+`helm install` against the stud cluster (not just `helm template`).
+
+### Dry-run warning
+
+Never apply this chart from a `helm template` or `--dry-run` render. The `lookup`
+function returns empty in those modes, so `randAlphaNum` fires and produces fresh
+passwords that are not written to the cluster. Applying that YAML manually would put
+the cluster out of sync with any existing Postgres PVC or Keycloak data. Always run
+`helm upgrade --install` (or `helm install`) directly against a live cluster.
+
 ### Pre-created secrets (CI/CD)
 
 For CI/CD pipelines, create the secrets before running Helm so they never appear in
