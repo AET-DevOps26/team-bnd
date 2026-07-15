@@ -16,6 +16,7 @@ from app.search import search_documents
 from app.storage import ObjectNotFoundError, UnsupportedFileError, fetch_text
 from app.summarize import summarize
 from app.tag import generate_tags
+from app.tracing import setup_tracing
 from app.vectorstore import close_client, delete_document, index_chunks
 
 SERVICE_NAME = "alexandria-genai"
@@ -53,6 +54,9 @@ Instrumentator(should_group_untemplated=True).instrument(app).expose(
     include_in_schema=False,
     tags=["metrics"],
 )
+
+# Opt-in: only exports when OTEL_EXPORTER_OTLP_ENDPOINT is set (docker-compose.tracing.yml), else a no-op.
+setup_tracing(app, service_name=SERVICE_NAME, service_version=SERVICE_VERSION)
 
 # Render errors as the shared {code, message, fieldErrors} shape, in responses
 # and in the generated spec.

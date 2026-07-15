@@ -1,0 +1,40 @@
+# Opt-in tracing overlay. Adds a local Jaeger and points the GenAI service's
+# OTLP exporter at it. Not part of the default stack, bring it up explicitly:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.tracing.yml up
+#
+# Then open http://localhost/jaeger/, pick the "alexandria-genai" service, and
+# hit an AI endpoint (summarize, ask, search) to generate traces. Each request
+# shows up with its model/embedding calls as child spans.
+
+services:
+  genai:
+    environment:
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://jaeger:4318}
+      OTEL_SERVICE_NAME: ${OTEL_SERVICE_NAME:-alexandria-genai}
+    depends_on:
+      jaeger:
+        condition: service_started
+
+  jaeger:
+    image: jaegertracing/all-in-one:1.62.0
+    container_name: jaeger
+    # kics-scan ignore-block
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+      # Serve the UI under /jaeger so Traefik can route it like the other tools.
+      QUERY_BASE_PATH: /jaeger
+    restart: unless-stopped
+    networks:
+      - alexandria
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 512M
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.jaeger.rule=PathPrefix(`/jaeger`)"
+      - "traefik.http.routers.jaeger.entrypoints=web"
+      - "traefik.http.routers.jaeger.priority=10"
+      - "traefik.http.services.jaeger.loadbalancer.server.port=16686"

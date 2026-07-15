@@ -112,3 +112,13 @@ Prometheus scrapes metrics from each Spring service (`/actuator/prometheus`, one
 - Prometheus: http://localhost/prometheus/
 
 Dashboards are provisioned automatically under the "Alexandria" folder: an overview (request rate, errors, latency across services), an aggregate Spring dashboard plus one per Spring service (JVM, GC, threads, DB pool), a GenAI dashboard (request rate, latency, process memory), and an object storage dashboard (S3 request rate and latency, in-flight requests, disk usage). Dashboard JSON and the Prometheus scrape and alert config live under [`infra/prometheus`](infra/prometheus) and [`infra/grafana`](infra/grafana).
+
+#### Tracing (opt-in)
+
+The GenAI service can emit OpenTelemetry traces so you can see where a request spends its time, the query embedding vs. the LLM call. It's off by default; bring it up with the tracing overlay, which adds a local Jaeger and points GenAI at it:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.tracing.yml up
+```
+
+Jaeger UI is then at http://localhost/jaeger/ (service `alexandria-genai`). Details are in [`services/genai/README.md`](services/genai/README.md#tracing).
