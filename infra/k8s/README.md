@@ -80,6 +80,8 @@ For CI/CD pipelines, create the secrets before running Helm so they never appear
 Helm release metadata:
 
 ```bash
+kubectl create namespace alexandria --dry-run=client -o yaml | kubectl apply -f -
+
 kubectl -n alexandria create secret generic alexandria-secrets \
   --from-literal=db-password="$POSTGRES_PASSWORD" \
   --from-literal=keycloak-admin-password="$KC_ADMIN_PASSWORD" \

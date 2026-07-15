@@ -38,7 +38,7 @@ spec:
             - sh
             - -c
             - |
-              until pg_isready -h {{ .Values.spring.database.host }} -p {{ .Values.spring.database.port }} -U {{ .Values.spring.database.username }}; do
+              until pg_isready -h {{ .Values.spring.database.host }} -p {{ .Values.spring.database.port }} -U postgres; do
                 echo "waiting for database..."
                 sleep 2
               done

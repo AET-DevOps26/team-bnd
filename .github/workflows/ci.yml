@@ -947,6 +947,8 @@ jobs:
         run: |
           MONITORING_NS="alexandria-monitoring"
 
+          kubectl create namespace alexandria --dry-run=client -o yaml | kubectl apply -f -
+
           kubectl -n alexandria create secret generic alexandria-secrets \
             --from-literal=db-password="$POSTGRES_PASSWORD" \
             --from-literal=keycloak-admin-password="$KC_BOOTSTRAP_ADMIN_PASSWORD" \
