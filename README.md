@@ -29,6 +29,14 @@ Alexandria consists of three main subsystems orchestrated via Docker Compose and
 
 ## Setup
 
+### API Documentation
+
+The REST API is documented from `api/openapi.yaml`, our single source of truth. A Redoc render is published to GitHub Pages whenever the spec changes on main:
+
+https://aet-devops26.github.io/team-bnd/
+
+The per-service Swagger UIs are also available locally through Traefik (see the routes below).
+
 ### Traefik Reverse Proxy
 
 All services are accessed through Traefik as the reverse proxy. See [`docs/traefik.md`](docs/traefik.md) for architecture, routing, and configuration details.
