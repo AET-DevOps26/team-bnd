@@ -6,6 +6,10 @@ metadata:
   annotations:
       cert-manager.io/cluster-issuer: "letsencrypt-prod"
       nginx.ingress.kubernetes.io/proxy-body-size: {{ .Values.ingress.maxBodySize | quote }}
+      nginx.ingress.kubernetes.io/enable-cors: "true"
+      nginx.ingress.kubernetes.io/cors-allow-origin: {{ .Values.ingress.corsAllowOrigin | quote }}
+      nginx.ingress.kubernetes.io/cors-allow-methods: "GET, POST, PUT, PATCH, DELETE, OPTIONS"
+      nginx.ingress.kubernetes.io/cors-allow-headers: "Authorization, Content-Type"
   labels:
     {{- include "alexandria.labels" . | nindent 4 }}
 spec:
