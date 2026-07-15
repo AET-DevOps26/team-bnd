@@ -178,8 +178,8 @@ networkPolicy:
 
 # Self-hosted Prometheus and Grafana mirroring the docker-compose setup.
 # They live in their own namespace. Neither is exposed, port-forward to reach them:
-#   kubectl -n alexandria-monitoring port-forward svc/alexandria-prometheus 9090:9090
-#   kubectl -n alexandria-monitoring port-forward svc/alexandria-grafana 3000:3000
+#   kubectl -n bnd-alexandria-monitoring port-forward svc/alexandria-prometheus 9090:9090
+#   kubectl -n bnd-alexandria-monitoring port-forward svc/alexandria-grafana 3000:3000
 monitoring:
   namespace: ""
   createNamespace: false
