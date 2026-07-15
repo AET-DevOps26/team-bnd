@@ -22,7 +22,6 @@ from weaviate.classes.config import Configure, DataType, Property
 from weaviate.classes.data import DataObject
 from weaviate.classes.query import Filter, GroupBy, MetadataQuery
 from weaviate.exceptions import UnexpectedStatusCodeError
-from weaviate.util import generate_uuid5
 
 from app.embeddings import Chunk
 from app.env import int_env
@@ -80,11 +79,6 @@ def _ensure_collection(client: weaviate.WeaviateClient) -> None:
             raise
 
 
-def _chunk_uuid(object_key: str, chunk_index: int) -> str:
-    """Deterministic per-chunk id so a re-insert overwrites instead of duplicating."""
-    return generate_uuid5(f"{object_key}:{chunk_index}")
-
-
 def index_chunks(object_key: str, chunks: list[Chunk], vectors: list[list[float]]) -> int:
     """Replace a document's chunks in the index with the given chunks and vectors.
 
@@ -103,11 +97,14 @@ def index_chunks(object_key: str, chunks: list[Chunk], vectors: list[list[float]
     if not chunks:
         return 0
 
+    # Fresh id per insert (Weaviate assigns one), never a deterministic id. delete_document
+    # above already prevents duplicates, and reusing an id that delete just tombstoned can
+    # leave the re-inserted vector out of the HNSW graph until async tombstone cleanup runs,
+    # so the chunk exists as an object but is invisible to vector search.
     objects = [
         DataObject(
             properties={"text": chunk.text, "object_key": object_key, "chunk_index": chunk.chunk_index},
             vector=vector,
-            uuid=_chunk_uuid(object_key, chunk.chunk_index),
         )
         for chunk, vector in zip(chunks, vectors, strict=True)
     ]
@@ -122,6 +119,12 @@ def delete_document(object_key: str) -> int:
     collection = _client().collections.get(COLLECTION_NAME)
     result = collection.data.delete_many(where=Filter.by_property("object_key").equal(object_key))
     return result.successful
+
+
+def list_object_keys() -> list[str]:
+    """Return the distinct object keys that currently have chunks indexed."""
+    collection = _client().collections.get(COLLECTION_NAME)
+    return sorted({str(obj.properties["object_key"]) for obj in collection.iterator(return_properties=["object_key"])})
 
 
 def search(query_vector: list[float], object_keys: list[str], limit: int) -> list[dict]:

@@ -4,6 +4,7 @@ Weaviate retrieval and the embedder are mocked, so no network or running
 services are needed.
 """
 
+import os
 from unittest.mock import patch
 
 from app.search import search_documents
@@ -31,15 +32,40 @@ def test_returns_one_result_per_document_ranked_by_best_chunk():
     assert results[0]["snippet"] == "closest chunk"
 
 
-def test_score_is_similarity_derived_from_distance():
+def test_score_maps_midband_similarity_onto_calibrated_range():
+    # distance 0.70 -> cosine 0.30 -> (0.30 - 0.15) / (0.45 - 0.15) = 0.5
     with (
         patch("app.search.embed_query", return_value=[0.0]),
-        patch("app.search.search_grouped", return_value=[_hit("doc-1", 0, "x", 0.25)]),
+        patch("app.search.search_grouped", return_value=[_hit("doc-1", 0, "x", 0.70)]),
         patch("app.search.get_embedding_model_name", return_value="m"),
     ):
         results, _ = search_documents("q", ["doc-1"], limit=5)
 
-    assert results[0]["score"] == 0.75
+    assert results[0]["score"] == 0.5
+
+
+def test_score_saturates_at_ceiling():
+    # cosine 0.70 sits above the 0.45 ceiling, so it reads as a full 1.0.
+    with (
+        patch("app.search.embed_query", return_value=[0.0]),
+        patch("app.search.search_grouped", return_value=[_hit("doc-1", 0, "x", 0.30)]),
+        patch("app.search.get_embedding_model_name", return_value="m"),
+    ):
+        results, _ = search_documents("q", ["doc-1"], limit=5)
+
+    assert results[0]["score"] == 1.0
+
+
+def test_score_is_zero_below_floor():
+    # cosine 0.10 sits below the 0.15 floor, so it reads as 0.
+    with (
+        patch("app.search.embed_query", return_value=[0.0]),
+        patch("app.search.search_grouped", return_value=[_hit("doc-1", 0, "x", 0.90)]),
+        patch("app.search.get_embedding_model_name", return_value="m"),
+    ):
+        results, _ = search_documents("q", ["doc-1"], limit=5)
+
+    assert results[0]["score"] == 0.0
 
 
 def test_score_is_zero_when_distance_is_missing():
@@ -62,6 +88,19 @@ def test_score_clamps_to_zero_for_very_distant_chunks():
         results, _ = search_documents("q", ["doc-1"], limit=5)
 
     assert results[0]["score"] == 0.0
+
+
+def test_score_anchors_are_env_configurable():
+    # Floor 0 / ceiling 1 disables calibration: score is the raw cosine similarity.
+    with (
+        patch.dict(os.environ, {"SEARCH_SCORE_FLOOR": "0.0", "SEARCH_SCORE_CEILING": "1.0"}),
+        patch("app.search.embed_query", return_value=[0.0]),
+        patch("app.search.search_grouped", return_value=[_hit("doc-1", 0, "x", 0.25)]),
+        patch("app.search.get_embedding_model_name", return_value="m"),
+    ):
+        results, _ = search_documents("q", ["doc-1"], limit=5)
+
+    assert results[0]["score"] == 0.75
 
 
 def test_empty_object_keys_returns_no_results_without_searching():

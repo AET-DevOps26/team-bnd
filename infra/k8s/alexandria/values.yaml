@@ -107,6 +107,8 @@ genai:
   chunkSize: 1000
   chunkOverlap: 200
   ragTopK: 5
+  searchScoreFloor: 0.15
+  searchScoreCeiling: 0.45
   baseUrl: "http://alexandria-genai:8000"
   resources:
     requests:

@@ -19,6 +19,8 @@ data:
   CHUNK_SIZE: {{ .Values.genai.chunkSize | quote }}
   CHUNK_OVERLAP: {{ .Values.genai.chunkOverlap | quote }}
   RAG_TOP_K: {{ .Values.genai.ragTopK | quote }}
+  SEARCH_SCORE_FLOOR: {{ .Values.genai.searchScoreFloor | quote }}
+  SEARCH_SCORE_CEILING: {{ .Values.genai.searchScoreCeiling | quote }}
   S3_ENDPOINT: {{ .Values.s3.endpoint | default (include "alexandria.s3Endpoint" .) | quote }}
   S3_REGION: {{ .Values.s3.region | quote }}
   S3_BUCKET: {{ .Values.s3.bucket | quote }}

@@ -176,4 +176,38 @@ def test_embed_query_returns_single_vector():
     with patch("app.embeddings.get_embeddings", return_value=_FakeEmbeddings()):
         vector = embed_query("hello")
 
-    assert vector == [5.0, 0.0]
+    assert len(vector) == 2
+    assert vector[1] == 0.0
+
+
+class _RecordingEmbeddings:
+    """Records the exact strings handed to the embedding client."""
+
+    def __init__(self) -> None:
+        self.queries: list[str] = []
+        self.documents: list[str] = []
+
+    def embed_documents(self, texts: list[str]) -> list[list[float]]:
+        self.documents.extend(texts)
+        return [[0.0] for _ in texts]
+
+    def embed_query(self, text: str) -> list[float]:
+        self.queries.append(text)
+        return [0.0]
+
+
+def test_embed_query_wraps_text_in_retrieval_instruction():
+    recorder = _RecordingEmbeddings()
+    with patch("app.embeddings.get_embeddings", return_value=recorder):
+        embed_query("Streik")
+
+    assert recorder.queries == ["Instruct: Given a web search query, retrieve relevant passages that answer the query\nQuery:Streik"]
+
+
+def test_embed_chunks_does_not_apply_query_instruction():
+    recorder = _RecordingEmbeddings()
+    with patch("app.embeddings.get_embeddings", return_value=recorder):
+        embed_chunks([Chunk("k", 0, "plain document text")])
+
+    assert recorder.documents == ["plain document text"]
+    assert all("Instruct:" not in d for d in recorder.documents)

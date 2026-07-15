@@ -45,6 +45,10 @@ _DEFAULT_OLLAMA_MODEL = "nomic-embed-text"
 _DEFAULT_CHUNK_SIZE = 1000
 _DEFAULT_CHUNK_OVERLAP = 200
 
+# Qwen3-Embedding is asymmetric: the query is wrapped with a task instruction,
+# documents stay plain. English on purpose (the model was trained on English instructions). Query side only.
+_QUERY_INSTRUCTION_TASK = "Given a web search query, retrieve relevant passages that answer the query"
+
 # Quicker than chat but hit the same gateway, so same timeout/retry guardrails.
 _DEFAULT_TIMEOUT_SECONDS = 30.0
 _DEFAULT_MAX_RETRIES = 2
@@ -149,9 +153,10 @@ def embed_chunks(chunks: list[Chunk]) -> list[list[float]]:
 
 
 def embed_query(text: str) -> list[float]:
-    """Embed a single query string into one vector."""
+    """Embed a single query string into one vector, with the retrieval instruction applied."""
+    instructed = f"Instruct: {_QUERY_INSTRUCTION_TASK}\nQuery:{text}"
     vector, _ = run_model_call(
-        lambda: get_embeddings().embed_query(text),
+        lambda: get_embeddings().embed_query(instructed),
         operation="embedding",
         provider=get_embedding_provider(),
         fallback_model=get_embedding_model_name(),

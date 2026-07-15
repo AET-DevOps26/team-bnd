@@ -12,7 +12,6 @@ from unittest.mock import MagicMock, patch
 import httpx
 import pytest
 from weaviate.exceptions import UnexpectedStatusCodeError
-from weaviate.util import generate_uuid5
 
 from app import vectorstore
 from app.embeddings import Chunk
@@ -108,17 +107,6 @@ def test_ensure_collection_reraises_when_create_fails_for_real():
         vectorstore._ensure_collection(client)
 
 
-# --- chunk ids ---
-
-
-def test_chunk_uuid_is_deterministic_and_matches_weaviate_scheme():
-    assert vectorstore._chunk_uuid("doc", 0) == generate_uuid5("doc:0")
-
-
-def test_chunk_uuid_differs_per_chunk_index():
-    assert vectorstore._chunk_uuid("doc", 0) != vectorstore._chunk_uuid("doc", 1)
-
-
 # --- indexing ---
 
 
@@ -134,7 +122,8 @@ def test_index_chunks_writes_one_object_per_chunk_after_clearing_old():
     collection.data.delete_many.assert_called_once()  # stale chunks cleared first
     objects = collection.data.insert_many.call_args.args[0]
     assert [o.properties["chunk_index"] for o in objects] == [0, 1]
-    assert objects[0].uuid == generate_uuid5("doc:0")
+    # No pinned id: Weaviate assigns a fresh one, so a re-insert never lands on a tombstone.
+    assert all(o.uuid is None for o in objects)
 
 
 def test_index_chunks_with_no_chunks_clears_and_returns_zero():
@@ -173,6 +162,21 @@ def test_delete_document_returns_successful_count():
 
     with patch("app.vectorstore._client", return_value=client):
         assert vectorstore.delete_document("doc") == 3
+
+
+# --- listing ---
+
+
+def test_list_object_keys_returns_sorted_distinct_keys():
+    client, collection = _client_and_collection()
+    collection.iterator.return_value = [
+        MagicMock(properties={"object_key": "b"}),
+        MagicMock(properties={"object_key": "a"}),
+        MagicMock(properties={"object_key": "b"}),
+    ]
+
+    with patch("app.vectorstore._client", return_value=client):
+        assert vectorstore.list_object_keys() == ["a", "b"]
 
 
 # --- search ---

@@ -8,9 +8,13 @@ only documents that have been indexed are searchable.
 """
 
 from app.embeddings import embed_query, get_embedding_model_name
+from app.env import float_env
 from app.vectorstore import search_grouped
 
 _SNIPPET_MAX_CHARS = 300
+
+_DEFAULT_SCORE_FLOOR = 0.15
+_DEFAULT_SCORE_CEILING = 0.45
 
 
 def _snippet(text: str) -> str:
@@ -26,12 +30,17 @@ def _snippet(text: str) -> str:
 
 
 def _score(distance: float | None) -> float:
-    # Weaviate returns cosine distance (0 = identical, up to 2 for opposite
-    # vectors). Flip it into a similarity score where higher means more relevant,
-    # clamped at 0 so the score always stays in [0, 1].
+    # Weaviate returns cosine distance (0 = identical, up to 2 for opposite vectors);
+    # 1 - distance is the raw cosine similarity. Then calibrate onto [0, 1] so the
+    # compressed similarity band reads as an intuitive relevance percentage.
     if distance is None:
         return 0.0
-    return round(max(0.0, 1.0 - distance), 4)
+    similarity = 1.0 - distance
+    floor = float_env("SEARCH_SCORE_FLOOR", _DEFAULT_SCORE_FLOOR, minimum=0.0)
+    ceiling = float_env("SEARCH_SCORE_CEILING", _DEFAULT_SCORE_CEILING, minimum=0.0)
+    span = ceiling - floor
+    calibrated = (similarity - floor) / span if span > 0 else similarity
+    return round(min(1.0, max(0.0, calibrated)), 4)
 
 
 def search_documents(query: str, object_keys: list[str], limit: int) -> tuple[list[dict], str]:
