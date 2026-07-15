@@ -18,8 +18,7 @@ rendered with Markdown support. Each answer includes references to the source
 documents it was derived from; clicking a source reference switches back to
 the **Documents** tab and opens that document.
 
-Configuration
--------------
+## Configuration
 
 The client reads a single build-time variable:
 
@@ -38,8 +37,7 @@ VITE_API_URL=https://api.example.com npm run build
 
 or via a `.env` file in this directory (see the [Vite env docs](https://vite.dev/guide/env-and-mode)).
 
-Production
-----------
+## Production
 
 Build and run the production image (uses the multi-stage Dockerfile):
 
@@ -56,8 +54,7 @@ docker compose up -d client --build
 # then open http://localhost/
 ```
 
-Development
------------
+## Development
 
 A development image is provided which runs the Vite dev server inside the container. It is useful for working in a containerised dev environment and supports live reload. The Spring server and Keycloak are proxied at `http://localhost:5173/api` and `http://localhost:5173/auth`.
 
@@ -69,8 +66,7 @@ docker compose --profile dev up client-dev -d --build --renew-anon-volumes
 # then open http://localhost:5173
 ```
 
-Testing
--------
+## Testing
 
 Playwright is used for end-to-end tests. The tests run against a remote browser served by a Playwright Docker container.
 
@@ -87,8 +83,7 @@ cd services/client
 npm run test:e2e
 ```
 
-Notes
------
+## Notes
 - The dev Dockerfile starts Vite with --host 0.0.0.0 so the dev server is reachable from the host when running in a container.
 - The production image is based on `nginxinc/nginx-unprivileged` and serves the built files on port 8080 inside the container (Traefik in docker-compose routes to it via the internal network, no host port published by default).
 - When starting the development server, `--build --renew-anon-volumes` has to be specified.
