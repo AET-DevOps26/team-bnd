@@ -3,7 +3,11 @@ import createQueryClient from "openapi-react-query";
 import type { paths } from "./schema";
 import { userManager } from "../oidcConfig";
 
-export const fetchClient = createFetchClient<paths>({ baseUrl: "" });
+// Empty default keeps same-origin behaviour behind Traefik. Override with
+// VITE_API_URL at build time when the client is served from a different origin.
+export const fetchClient = createFetchClient<paths>({
+  baseUrl: import.meta.env.VITE_API_URL ?? "",
+});
 
 fetchClient.use({
   async onRequest({ request }) {

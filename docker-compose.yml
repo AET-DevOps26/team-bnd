@@ -89,6 +89,7 @@ services:
       - "traefik.http.routers.user-service.rule=PathPrefix(`/api/v1/users`) || PathPrefix(`/user-service/docs`) || PathPrefix(`/user-service/swagger-ui`) || PathPrefix(`/user-service/v3/api-docs`)"
       - "traefik.http.routers.user-service.entrypoints=web"
       - "traefik.http.routers.user-service.priority=20"
+      - "traefik.http.routers.user-service.middlewares=api-cors@docker"
       - "traefik.http.services.user-service.loadbalancer.server.port=8080"
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/actuator/health/readiness"]
@@ -147,6 +148,7 @@ services:
       - "traefik.http.routers.knowledgebase-service.rule=PathPrefix(`/api/v1/knowledgebase`) || PathPrefix(`/knowledgebase-service/docs`) || PathPrefix(`/knowledgebase-service/swagger-ui`) || PathPrefix(`/knowledgebase-service/v3/api-docs`)"
       - "traefik.http.routers.knowledgebase-service.entrypoints=web"
       - "traefik.http.routers.knowledgebase-service.priority=20"
+      - "traefik.http.routers.knowledgebase-service.middlewares=api-cors@docker"
       - "traefik.http.services.knowledgebase-service.loadbalancer.server.port=8080"
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/actuator/health/readiness"]
@@ -202,6 +204,7 @@ services:
       - "traefik.http.routers.qa-service.rule=PathPrefix(`/api/v1/qa`) || PathPrefix(`/qa-service/docs`) || PathPrefix(`/qa-service/swagger-ui`) || PathPrefix(`/qa-service/v3/api-docs`)"
       - "traefik.http.routers.qa-service.entrypoints=web"
       - "traefik.http.routers.qa-service.priority=20"
+      - "traefik.http.routers.qa-service.middlewares=api-cors@docker"
       - "traefik.http.services.qa-service.loadbalancer.server.port=8080"
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/actuator/health/readiness"]
@@ -489,6 +492,13 @@ services:
       - "traefik.http.routers.dashboard.entrypoints=web"
       - "traefik.http.routers.dashboard.service=api@internal"
       - "traefik.http.services.dashboard.loadbalancer.server.port=9999"
+      # Shared CORS middleware for the Spring API, attached to the three service routers.
+      # Origins are env-driven so a cross-origin client can be allowed per deployment.
+      - "traefik.http.middlewares.api-cors.headers.accesscontrolalloworiginlist=${CORS_ALLOWED_ORIGINS:-http://localhost}"
+      - "traefik.http.middlewares.api-cors.headers.accesscontrolallowmethods=GET,POST,PUT,PATCH,DELETE,OPTIONS"
+      - "traefik.http.middlewares.api-cors.headers.accesscontrolallowheaders=Authorization,Content-Type"
+      - "traefik.http.middlewares.api-cors.headers.accesscontrolmaxage=3600"
+      - "traefik.http.middlewares.api-cors.headers.addvaryheader=true"
     healthcheck:
       test: ["CMD", "traefik", "healthcheck", "--ping"]
       interval: 30s
