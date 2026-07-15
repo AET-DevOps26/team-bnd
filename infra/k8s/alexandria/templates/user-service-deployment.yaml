@@ -71,12 +71,12 @@ spec:
             - name: POSTGRES_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "alexandria.fullname" . }}-spring-secrets
-                  key: postgres-password
+                  name: {{ include "alexandria.secretName" . }}
+                  key: db-password
             - name: INTERNAL_SHARED_SECRET
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "alexandria.fullname" . }}-spring-secrets
+                  name: {{ include "alexandria.secretName" . }}
                   key: internal-shared-secret
           volumeMounts:
             - name: tmp

@@ -53,6 +53,14 @@ http://{{ .Release.Name }}-seaweedfs-s3:{{ .Values.seaweedfs.s3.port }}
 {{- default (printf "%s-monitoring" .Release.Namespace) .Values.monitoring.namespace }}
 {{- end }}
 
+{{- define "alexandria.secretName" -}}
+{{- .Values.existingSecret | default (printf "%s-secrets" (include "alexandria.fullname" .)) }}
+{{- end }}
+
+{{- define "alexandria.genaiSecretName" -}}
+{{- .Values.genai.existingSecret | default (printf "%s-genai-secrets" (include "alexandria.fullname" .)) }}
+{{- end }}
+
 {{- define "alexandria.ingressControllerPeer" -}}
 -
   {{- with .namespaceSelector }}
