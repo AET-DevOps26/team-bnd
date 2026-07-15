@@ -6,8 +6,10 @@ services are needed.
 
 from unittest.mock import patch
 
+import pytest
+
 from app.embeddings import Chunk
-from app.reindex import reindex_all
+from app.reindex import ReindexReport, main, reindex_all
 
 
 def _chunks(key: str) -> list[Chunk]:
@@ -60,3 +62,16 @@ def test_reindex_all_with_nothing_indexed_is_a_noop():
     assert report.total == 0
     assert report.reindexed == 0
     assert report.failed == []
+
+
+def test_main_exits_nonzero_when_any_document_failed():
+    with patch("app.reindex.reindex_all", return_value=ReindexReport(total=2, reindexed=1, failed=["bad"])):
+        with pytest.raises(SystemExit) as exc:
+            main()
+
+    assert exc.value.code == 1
+
+
+def test_main_exits_zero_when_all_documents_succeed():
+    with patch("app.reindex.reindex_all", return_value=ReindexReport(total=2, reindexed=2, failed=[])):
+        main()  # must not raise SystemExit

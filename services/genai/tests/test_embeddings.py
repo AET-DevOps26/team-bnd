@@ -196,18 +196,56 @@ class _RecordingEmbeddings:
         return [0.0]
 
 
-def test_embed_query_wraps_text_in_retrieval_instruction():
+def test_embed_query_wraps_text_in_qwen_instruction():
     recorder = _RecordingEmbeddings()
-    with patch("app.embeddings.get_embeddings", return_value=recorder):
+    with (
+        patch("app.embeddings.get_embeddings", return_value=recorder),
+        patch("app.embeddings.get_embedding_model_name", return_value="Qwen/Qwen3-Embedding-8B"),
+    ):
         embed_query("Streik")
 
     assert recorder.queries == ["Instruct: Given a web search query, retrieve relevant passages that answer the query\nQuery:Streik"]
 
 
-def test_embed_chunks_does_not_apply_query_instruction():
+def test_embed_query_uses_nomic_search_query_prefix():
     recorder = _RecordingEmbeddings()
-    with patch("app.embeddings.get_embeddings", return_value=recorder):
+    with (
+        patch("app.embeddings.get_embeddings", return_value=recorder),
+        patch("app.embeddings.get_embedding_model_name", return_value="nomic-embed-text"),
+    ):
+        embed_query("Streik")
+
+    assert recorder.queries == ["search_query: Streik"]
+
+
+def test_embed_query_is_plain_for_non_instruction_model():
+    recorder = _RecordingEmbeddings()
+    with (
+        patch("app.embeddings.get_embeddings", return_value=recorder),
+        patch("app.embeddings.get_embedding_model_name", return_value="text-embedding-3-small"),
+    ):
+        embed_query("Streik")
+
+    assert recorder.queries == ["Streik"]
+
+
+def test_embed_chunks_keeps_documents_plain_for_qwen():
+    recorder = _RecordingEmbeddings()
+    with (
+        patch("app.embeddings.get_embeddings", return_value=recorder),
+        patch("app.embeddings.get_embedding_model_name", return_value="Qwen/Qwen3-Embedding-8B"),
+    ):
         embed_chunks([Chunk("k", 0, "plain document text")])
 
     assert recorder.documents == ["plain document text"]
-    assert all("Instruct:" not in d for d in recorder.documents)
+
+
+def test_embed_chunks_uses_nomic_search_document_prefix():
+    recorder = _RecordingEmbeddings()
+    with (
+        patch("app.embeddings.get_embeddings", return_value=recorder),
+        patch("app.embeddings.get_embedding_model_name", return_value="nomic-embed-text"),
+    ):
+        embed_chunks([Chunk("k", 0, "plain document text")])
+
+    assert recorder.documents == ["search_document: plain document text"]

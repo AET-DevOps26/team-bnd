@@ -13,6 +13,7 @@ Usage (from a running genai container):
 """
 
 import logging
+import sys
 from dataclasses import dataclass, field
 
 from app.embeddings import chunk_text, embed_chunks
@@ -55,6 +56,7 @@ def main() -> None:
     logger.info("reindex complete: %d/%d succeeded, %d failed", report.reindexed, report.total, len(report.failed))
     if report.failed:
         logger.warning("failed keys: %s", report.failed)
+        sys.exit(1)
 
 
 if __name__ == "__main__":
