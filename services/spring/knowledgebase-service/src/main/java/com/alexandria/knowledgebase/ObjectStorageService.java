@@ -13,9 +13,17 @@ import software.amazon.awssdk.services.s3.model.*;
 import java.io.IOException;
 import java.util.function.Supplier;
 
-// Based on https://www.baeldung.com/java-aws-s3 and
-// https://dev.to/sachithmayantha/seamless-file-storage-integrating-aws-s3-with-spring-boot-3045
-
+/**
+ * Wrapper over the AWS S3 client for the SeaweedFS object store.
+ *
+ * <p>Handles bucket lifecycle and object upload/download/delete against the bucket
+ * configured by {@code app.config.s3-bucket}. Each operation is timed and counted
+ * ({@code s3.operation.duration}, {@code s3.operations}, tagged by operation and
+ * outcome) so object storage latency and errors surface in Prometheus.
+ *
+ * <p>Based on https://www.baeldung.com/java-aws-s3 and
+ * https://dev.to/sachithmayantha/seamless-file-storage-integrating-aws-s3-with-spring-boot-3045
+ */
 @Component
 public class ObjectStorageService {
     @Value("${app.config.s3-bucket}")

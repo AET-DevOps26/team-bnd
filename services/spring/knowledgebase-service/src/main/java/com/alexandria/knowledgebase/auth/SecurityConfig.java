@@ -14,8 +14,16 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter;
 import org.springframework.security.web.SecurityFilterChain;
 
+/**
+ * Stateless security for the knowledgebase-service.
+ *
+ * <p>Runs as an OAuth2 resource server: public API calls need a valid JWT, internal
+ * fan-out endpoints instead require an HMAC signature (checked by a filter placed before
+ * the bearer-token filter). The Swagger docs, actuator and health endpoints are open.
+ * Auth failures are rendered through the shared ErrorResponse handlers.
+ */
 // final (+ proxyBeanMethods=false so Spring won't try to CGLIB-subclass it) closes the
-// finalizer-attack window SpotBugs flags via CT_CONSTRUCTOR_THROW on the constructor.
+// finalizer-attack window on the constructor.
 @Configuration(proxyBeanMethods = false)
 @EnableWebSecurity
 public final class SecurityConfig {

@@ -27,6 +27,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+/**
+ * Public REST API for document management and knowledge operations.
+ *
+ * <p>All endpoints are scoped to the authenticated caller; the OIDC subject from the
+ * bearer token is used as the document owner, so a user only ever sees their own
+ * documents. Uploads and creates trigger an asynchronous GenAI pipeline (summary,
+ * entities, tags, indexing) in the service layer, the reprocess endpoints re-run
+ * individual steps on demand.
+ */
 @RestController
 @RequestMapping(path = "/api/v1/knowledgebase", produces = MediaType.APPLICATION_JSON_VALUE)
 @Tag(
@@ -119,6 +128,13 @@ public class KnowledgeBaseController {
         return ResponseEntity.ok(new TextSearchResponseDto(knowledgeBaseService.search(principal.getName(), q)));
     }
 
+    /**
+     * Ranks the user's indexed documents by semantic similarity to the query.
+     * Falls back to keyword search when the GenAI call fails or the index is empty,
+     * so a result set is always returned.
+     *
+     * @param limit maximum number of hits to return, between 1 and 50
+     */
     @GetMapping("/search/semantic")
     @Operation(summary = "Semantic search over document content, with keyword fallback")
     @ApiResponse(responseCode = "200", description = "Ranked search results with match context")
@@ -148,6 +164,10 @@ public class KnowledgeBaseController {
         return ResponseEntity.noContent().build();
     }
 
+    /**
+     * Returns the GenAI-generated summary for a document, or 204 No Content while it is
+     * still being processed (summaries are produced asynchronously after upload).
+     */
     @GetMapping("/documents/{id}/summary")
     @Operation(summary = "Get document summary")
     @ApiResponse(responseCode = "200", description = "Document summary retrieved")

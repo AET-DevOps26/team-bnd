@@ -5,6 +5,13 @@ import io.micrometer.core.instrument.Timer;
 
 import java.util.function.Supplier;
 
+/**
+ * Records latency and outcome for each GenAI client call.
+ *
+ * <p>Emits a {@code genai.client.call.duration} timer and a {@code genai.client.calls}
+ * counter, both tagged with the operation name and a success/error outcome, so
+ * per-operation error rate and latency are visible in Prometheus and Grafana.
+ */
 class GenAiMetrics {
 
     private final MeterRegistry registry;
@@ -13,6 +20,11 @@ class GenAiMetrics {
         this.registry = registry;
     }
 
+    /**
+     * Runs {@code call}, timing it and recording its outcome even if it throws.
+     *
+     * @return the value produced by {@code call}
+     */
     <T> T record(String operation, Supplier<T> call) {
         Timer.Sample sample = Timer.start(registry);
         String outcome = "success";

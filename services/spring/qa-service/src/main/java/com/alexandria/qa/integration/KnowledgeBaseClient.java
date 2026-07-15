@@ -12,6 +12,13 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Internal client for knowledgebase-service, used to fetch a user's document keys and
+ * resolve object keys back to document ids and file names when building citations.
+ *
+ * <p>Talks to the /internal/knowledgebase endpoints, so requests carry an HMAC signature
+ * added by the shared signing interceptor rather than a user bearer token.
+ */
 @Component
 public class KnowledgeBaseClient {
 

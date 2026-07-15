@@ -11,13 +11,23 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
-// inspired by https://medium.com/@georgeberar/springboot-extract-text-from-pdf-1d8d41b5adac
-
+/**
+ * Extracts raw text from an uploaded file for indexing and GenAI processing.
+ *
+ * <p>Handles PDFs (via PDFBox) and any {@code text/*} content; other types yield
+ * {@code null}. Extraction failures are logged rather than thrown so an upload of an
+ * unreadable file still succeeds, just without searchable text.
+ *
+ * <p>Inspired by https://medium.com/@georgeberar/springboot-extract-text-from-pdf-1d8d41b5adac
+ */
 @Component
 public class TextExtractor {
 
     private static final Logger log = LoggerFactory.getLogger(TextExtractor.class);
 
+    /**
+     * Returns the extracted text, or {@code null} if the type is unsupported or extraction fails.
+     */
     public String extract(MultipartFile file) {
         String contentType = file.getContentType();
         if (contentType == null) {

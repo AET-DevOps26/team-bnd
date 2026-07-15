@@ -15,6 +15,15 @@ import java.net.http.HttpClient;
 import java.time.Duration;
 import java.util.List;
 
+/**
+ * HTTP client for the GenAI service's ask endpoint, built on the generated AiApi.
+ *
+ * <p>Sends the question plus the user's document keys and maps the response onto the
+ * records exposed here. The call is timed and counted (genai.client.call.duration and
+ * genai.client.calls, tagged operation=ask and a success/error outcome) so its latency
+ * and error rate show up in Prometheus. Connect and read timeouts are set so a hung
+ * GenAI service cannot block request threads.
+ */
 @Component
 public class GenAiClient {
 

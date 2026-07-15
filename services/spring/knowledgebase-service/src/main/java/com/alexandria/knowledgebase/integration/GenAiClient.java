@@ -23,6 +23,15 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Supplier;
 
+/**
+ * HTTP client for the GenAI service, built on the OpenAPI-generated AiApi.
+ *
+ * <p>Wraps the summarize, extract, tag, index, delete-index and search operations and
+ * maps the generated response models onto the small records exposed here. Every call is
+ * timed and counted through GenAiMetrics so latency and error rate per operation
+ * show up in Prometheus. Connect and read timeouts are set explicitly so a hung GenAI
+ * service cannot block request threads indefinitely.
+ */
 @Component
 public class GenAiClient {
 

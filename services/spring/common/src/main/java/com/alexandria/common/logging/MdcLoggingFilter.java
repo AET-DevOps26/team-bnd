@@ -12,6 +12,15 @@ import java.io.IOException;
 import java.util.UUID;
 import java.util.regex.Pattern;
 
+/**
+ * Puts a request id and route onto the SLF4J (Simple Logging Facade for Java) MDC so every
+ * log line for a request can be correlated, and echoes the id back in the X-Request-Id
+ * response header.
+ *
+ * <p>An incoming X-Request-Id is reused when it looks like a trace id, otherwise a fresh
+ * UUID is generated. Runs at highest precedence so the context is set before anything else
+ * logs, and is always cleared in a finally block to avoid leaking ids across pooled threads.
+ */
 public class MdcLoggingFilter extends OncePerRequestFilter implements Ordered {
 
     public static final String REQUEST_ID_HEADER = "X-Request-Id";

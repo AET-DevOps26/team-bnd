@@ -18,6 +18,14 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+/**
+ * Account lifecycle and user preferences.
+ *
+ * <p>Users are provisioned lazily from OIDC claims on first sight. Preferences are stored
+ * as a small JSON blob on the user row and fall back to sane defaults if missing or
+ * corrupted. Deleting an account fans the delete out to knowledgebase-service and
+ * qa-service before the local row is removed.
+ */
 @Service
 public class UserService {
 
@@ -35,6 +43,11 @@ public class UserService {
         this.objectMapper = objectMapper;
     }
 
+    /**
+     * Returns the user for the given OIDC subject, creating one on first login.
+     * If a row already exists for the email (e.g. a pre-OIDC account), it is adopted by
+     * attaching the subject rather than creating a duplicate.
+     */
     @Transactional
     public User findOrCreateByOidcSubject(String oidcSubject, String username, String email) {
         Optional<User> bySubject = repository.findByOidcSubject(oidcSubject);
@@ -60,6 +73,11 @@ public class UserService {
         return parsePreferences(user.getPreferences());
     }
 
+    /**
+     * Deletes the user and purges their data in knowledgebase-service and qa-service.
+     * If either peer delete fails the local row is kept and a UserDeletionException is
+     * thrown, so the operation can be retried until every service has converged.
+     */
     public void deleteUser(UUID id) {
         // KB and QA services key their rows on the OIDC subject, not on the
         // local user UUID, so we fan out on the subject.

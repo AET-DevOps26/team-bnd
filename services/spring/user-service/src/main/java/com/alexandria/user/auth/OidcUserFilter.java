@@ -14,6 +14,13 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 
+/**
+ * Provisions a local user row from the JWT on every authenticated request.
+ *
+ * <p>After the bearer token is validated, this filter reads the configured subject and
+ * username claims plus the email and inserts the user via the service layer, so the first
+ * authenticated call for a new identity creates their account without a separate signup step.
+ */
 @Component
 public class OidcUserFilter extends OncePerRequestFilter {
 

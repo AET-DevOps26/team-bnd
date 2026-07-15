@@ -9,6 +9,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+/**
+ * Maps user-service specific exceptions onto the shared ErrorResponse schema, on top of the
+ * common handlers in BaseExceptionHandler. A failed cross-service delete surfaces as 502 so
+ * the caller knows to retry rather than assuming the account is fully gone.
+ */
 @RestControllerAdvice
 public class GlobalExceptionHandler extends BaseExceptionHandler {
 

@@ -7,6 +7,11 @@ import org.aspectj.lang.annotation.Pointcut;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Logs start, finish and failure around every write (POST/PUT/PATCH/DELETE) controller
+ * method, so state-changing requests leave an audit trail without each controller having
+ * to log by hand. Read endpoints are intentionally left out to keep the logs quiet.
+ */
 @Aspect
 public class WriteEndpointLoggingAspect {
 

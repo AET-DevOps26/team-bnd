@@ -14,6 +14,14 @@ import org.springframework.web.bind.annotation.*;
 import java.security.Principal;
 import java.util.List;
 
+/**
+ * Public REST API for question answering over the caller's knowledge base.
+ *
+ * <p>All endpoints are scoped to the authenticated user via the OIDC subject from the
+ * bearer token. Asking a question fans out to knowledgebase-service (for the user's
+ * document keys) and to the GenAI service (for the answer and citations). The resulting
+ * interaction is persisted so it shows up in the user's history.
+ */
 @RestController
 @RequestMapping(path = "/api/v1/qa", produces = MediaType.APPLICATION_JSON_VALUE)
 @Tag(name = "QA Service", description = "Question answering over the user's knowledge base")

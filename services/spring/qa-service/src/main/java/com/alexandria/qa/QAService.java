@@ -11,6 +11,13 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+/**
+ * Core logic for answering questions and keeping the Q&amp;A history.
+ *
+ * <p>Answering pulls the user's document keys from knowledgebase-service, sends the
+ * question and keys to the GenAI service, then resolves the returned citations back to
+ * concrete document ids and file names before persisting the interaction.
+ */
 @Service
 public class QAService {
 

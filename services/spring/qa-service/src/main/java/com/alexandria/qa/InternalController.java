@@ -11,6 +11,13 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * Service-to-service endpoints for the qa-service.
+ *
+ * <p>Not routed by Traefik or the Kubernetes Ingress, so only reachable from inside the
+ * cluster network, and authenticated by an HMAC signature instead of a user bearer token.
+ * Used by user-service to purge a user's Q&amp;A data on account deletion.
+ */
 @RestController
 @RequestMapping(path = "/internal/qa", produces = MediaType.APPLICATION_JSON_VALUE)
 @Tag(name = "QA Service (Internal)", description = "Service-to-service endpoints, reachable only inside the cluster network")
