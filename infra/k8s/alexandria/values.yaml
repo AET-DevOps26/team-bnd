@@ -148,10 +148,10 @@ ingress:
   # nginx client_max_body_size, kept a bit above Spring MAX_UPLOAD_SIZE
   # so oversized uploads get the Spring 413 error response
   maxBodySize: "30m"
-  # Browser origin allowed to call the API cross-origin. Same-origin traffic
-  # through this ingress is unaffected; override when the client is hosted
-  # elsewhere.
-  corsAllowOrigin: "http://localhost"
+  # Browser origin allowed to call the API cross-origin. Set to the ingress
+  # origin so no external origin is granted access; change it when the client is
+  # served from a different origin.
+  corsAllowOrigin: "https://alexandria.stud.k8s.aet.cit.tum.de"
 
 # NetworkPolicies: default-deny ingress with explicit allow rules.
 # Off by default.
