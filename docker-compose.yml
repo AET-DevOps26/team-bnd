@@ -131,6 +131,7 @@ services:
       S3_ACCESS_KEY: ${S3_ACCESS_KEY:-admin}
       S3_SECRET_KEY: ${S3_SECRET_KEY:-locals3password}
       S3_BUCKET: ${S3_BUCKET:-alexandria-storage}
+      MAX_UPLOAD_SIZE: ${MAX_UPLOAD_SIZE:-25MB}
       INTERNAL_SHARED_SECRET: ${INTERNAL_SHARED_SECRET:-local-dev-hmac-secret-not-for-prod}
       INTERNAL_CLOCK_SKEW_SECONDS: ${INTERNAL_CLOCK_SKEW_SECONDS:-300}
     restart: unless-stopped

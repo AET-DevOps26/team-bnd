@@ -5,6 +5,7 @@ metadata:
   name: {{ include "alexandria.fullname" . }}
   annotations:
       cert-manager.io/cluster-issuer: "letsencrypt-prod"
+      nginx.ingress.kubernetes.io/proxy-body-size: {{ .Values.ingress.maxBodySize | quote }}
   labels:
     {{- include "alexandria.labels" . | nindent 4 }}
 spec:

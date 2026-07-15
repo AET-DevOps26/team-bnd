@@ -4,6 +4,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.List;
@@ -25,6 +27,10 @@ import java.util.stream.Stream;
 public abstract class BaseExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(BaseExceptionHandler.class);
+
+    // empty for services that don't accept uploads
+    @Value("${spring.servlet.multipart.max-file-size:}")
+    private String maxUploadSize;
 
     private static String sanitize(String value) {
         if (value == null) {
@@ -95,6 +101,14 @@ public abstract class BaseExceptionHandler {
     public ResponseEntity<ErrorResponse> handleUnsupportedMediaType(HttpMediaTypeNotSupportedException e) {
         log.debug("Unsupported media type: {}", sanitize(e.getMessage()));
         return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE).body(new ErrorResponse("UNSUPPORTED_MEDIA_TYPE", e.getMessage()));
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ErrorResponse> handleMaxUploadSize(MaxUploadSizeExceededException e, HttpServletRequest request) {
+        // Spring throws this exception both for files and requests that exceed the cap
+        log.warn("Upload too large at {} {}: {}", sanitize(request.getMethod()), sanitize(request.getRequestURI()), sanitize(e.getMessage()));
+        String message = maxUploadSize == null || maxUploadSize.isBlank() ? "Uploaded file is too large" : "Uploaded file is too large, the maximum allowed size is " + maxUploadSize;
+        return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).body(new ErrorResponse("PAYLOAD_TOO_LARGE", message));
     }
 
     @ExceptionHandler(NoResourceFoundException.class)

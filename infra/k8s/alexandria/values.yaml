@@ -51,6 +51,7 @@ userService:
     targetCPUUtilizationPercentage: 75
 
 knowledgebaseService:
+  maxUploadSize: "25MB"
   resources:
     requests:
       cpu: 150m
@@ -142,6 +143,9 @@ ingress:
   enabled: true
   className: nginx
   host: alexandria.stud.k8s.aet.cit.tum.de
+  # nginx client_max_body_size, kept a bit above Spring MAX_UPLOAD_SIZE
+  # so oversized uploads get the Spring 413 error response
+  maxBodySize: "30m"
 
 # NetworkPolicies: default-deny ingress with explicit allow rules.
 # Off by default.

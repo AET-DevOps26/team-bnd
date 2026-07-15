@@ -22,3 +22,4 @@ data:
   S3_ENDPOINT: {{ .Values.s3.endpoint | default (include "alexandria.s3Endpoint" .) | quote }}
   S3_REGION: {{ .Values.s3.region | quote }}
   S3_BUCKET: {{ .Values.s3.bucket | quote }}
+  MAX_UPLOAD_SIZE: {{ .Values.knowledgebaseService.maxUploadSize | quote }}
