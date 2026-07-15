@@ -18,6 +18,26 @@ rendered with Markdown support. Each answer includes references to the source
 documents it was derived from; clicking a source reference switches back to
 the **Documents** tab and opens that document.
 
+Configuration
+-------------
+
+The client reads a single build-time variable:
+
+| Variable       | Default | Purpose                                                                 |
+| -------------- | ------- | ----------------------------------------------------------------------- |
+| `VITE_API_URL` | `""`    | Base URL prefixed to every API request made by the generated SDK client |
+
+Vite inlines `VITE_*` variables at build time, so this is set when the image is
+built, not at container runtime. The empty default keeps requests same-origin,
+which is what we want behind Traefik and the k8s ingress. Set it only when the
+client is served from a different origin than the API, e.g.
+
+```bash
+VITE_API_URL=https://api.example.com npm run build
+```
+
+or via a `.env` file in this directory (see the [Vite env docs](https://vite.dev/guide/env-and-mode)).
+
 Production
 ----------
 
