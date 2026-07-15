@@ -10,6 +10,14 @@ Upload, browse, and view documents. Each document shows its AI-generated
 summary, extracted entities, and tags. PDF and Markdown files include a live
 preview.
 
+### Tagging
+
+Documents can be tagged automatically (via AI processing) or manually by the
+user. The sidebar displays each document's tags as small chips and provides a
+tag filter that lets users narrow the document list by one or more tags (AND
+logic). In the detail view, users can add new tags or remove their own
+user-created tags. Tags are always sorted alphabetically for consistent display.
+
 ### Q&A (Ask)
 
 Users can ask natural-language questions about their uploaded documents via the
