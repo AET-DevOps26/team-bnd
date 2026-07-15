@@ -76,8 +76,21 @@ interface SemanticResultListProps {
   fallbackUsed: boolean;
 }
 
-function SemanticResultList({ results, fallbackUsed }: SemanticResultListProps) {
+function SemanticResultList({
+  results,
+  fallbackUsed,
+}: SemanticResultListProps) {
   if (results.length === 0) {
+    if (fallbackUsed) {
+      return (
+        <>
+          <p className="search-fallback-notice">
+            Vector search unavailable -- showing keyword results instead.
+          </p>
+          <p className="search-empty">No documents matched.</p>
+        </>
+      );
+    }
     return <p className="search-empty">No documents matched.</p>;
   }
 
@@ -92,9 +105,7 @@ function SemanticResultList({ results, fallbackUsed }: SemanticResultListProps) 
         {results.map((result, index) => {
           const doc = result.document;
           const score =
-            result.score != null
-              ? Math.round(result.score * 100)
-              : null;
+            result.score != null ? Math.round(result.score * 100) : null;
           return (
             <li
               key={doc?.id ?? index}
@@ -140,7 +151,9 @@ export default function SearchPanel() {
 
   const urlQuery = searchParams.get("q") ?? "";
   const urlModeRaw = searchParams.get("mode");
-  const urlMode: SearchMode = isSearchMode(urlModeRaw) ? urlModeRaw : "semantic";
+  const urlMode: SearchMode = isSearchMode(urlModeRaw)
+    ? urlModeRaw
+    : "semantic";
 
   // inputValue tracks what's currently typed; initialised from the URL so
   // the field is pre-filled when the user navigates back to a previous search.
@@ -157,20 +170,12 @@ export default function SearchPanel() {
 
   function commitSearch(query: string, nextMode: SearchMode) {
     const trimmed = query.trim();
-    if (!trimmed) return;
     setSearchParams({ q: trimmed, mode: nextMode }, { replace: false });
   }
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     commitSearch(inputValue, mode);
-  }
-
-  function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      commitSearch(inputValue, mode);
-    }
   }
 
   function handleModeChange(next: SearchMode) {
@@ -237,7 +242,6 @@ export default function SearchPanel() {
             className="search-input"
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
-            onKeyDown={handleKeyDown}
             placeholder="Search by keyword or meaning..."
             disabled={isLoading}
             aria-label="Search query"
@@ -245,12 +249,18 @@ export default function SearchPanel() {
           <button
             type="submit"
             className="search-submit"
-            disabled={isLoading || !inputValue.trim()}
+            disabled={
+              isLoading || (submittedQuery.length > 0 && !inputValue.trim())
+            }
           >
             {isLoading ? "Searching..." : "Search"}
           </button>
         </div>
-        <div className="search-mode-toggle" role="group" aria-label="Search mode">
+        <div
+          className="search-mode-toggle"
+          role="group"
+          aria-label="Search mode"
+        >
           <button
             type="button"
             className={`search-mode-btn${mode === "semantic" ? " search-mode-btn--active" : ""}`}
@@ -275,9 +285,7 @@ export default function SearchPanel() {
           <p className="search-empty">Enter a query above to search.</p>
         )}
 
-        {isLoading && (
-          <p className="search-status">Searching...</p>
-        )}
+        {isLoading && <p className="search-status">Searching...</p>}
 
         {!isLoading && !error && submittedQuery.length > 0 && (
           <>

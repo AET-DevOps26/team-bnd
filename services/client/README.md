@@ -39,7 +39,7 @@ or via a `.env` file in this directory (see the [Vite env docs](https://vite.dev
 
 ### Search
 
-The **Search** tab lets users find documents by meaning (semantic) or exact
+The **Search** tab lets users find documents by meaning (semantic) or
 keyword matches (text). Semantic search ranks results by relevance and shows
 the matching text snippet from each document alongside a relevance score.
 Keyword search matches against filenames and document content. Both modes use

@@ -1178,6 +1178,34 @@ test.describe("Alexandria client", () => {
       await expect(notice).toContainText("keyword results");
     });
 
+    test("shows fallback notice and empty state when vector search fell back to keyword with no results", async ({
+      page,
+    }) => {
+      await page.route("/api/v1/knowledgebase/search/semantic*", (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            results: [],
+            fallbackUsed: true,
+          }),
+        }),
+      );
+
+      await page.goto("/search");
+      await page.locator(".search-input").fill("empty query");
+      await page.locator(".search-submit").click();
+
+      // Both the fallback notice and empty state should be visible
+      const notice = page.locator(".search-fallback-notice");
+      const emptyState = page.locator(".search-empty");
+
+      await expect(notice).toBeVisible({ timeout: 5000 });
+      await expect(notice).toContainText("keyword results");
+      await expect(emptyState).toBeVisible({ timeout: 5000 });
+      await expect(emptyState).toContainText("No documents matched");
+    });
+
     test("keyword mode calls text search endpoint and shows results", async ({
       page,
     }) => {
