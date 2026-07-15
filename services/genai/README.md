@@ -35,7 +35,7 @@ Every error, whatever the status, uses the same `{code, message, fieldErrors}` s
 
 `ask` takes `{"question": "...", "objectKeys": [...]}` and answers with retrieval-augmented generation: the question is embedded, matched against the indexed chunks of the listed documents, and the top matches are passed to the LLM. The LLM answers via structured output, returning the answer as plain prose plus the ids of the sources it relied on, so the answer text carries no ad-hoc citation brackets. Those ids are resolved server-side into `citations`: an ordered list of `{marker, objectKey, snippet}`, one per document, with `marker` the number the client shows (1, 2, ...) and `snippet` the closest matching excerpt. When nothing relevant is found (or no documents are in scope), it says so instead of guessing and returns no citations.
 
-`search` takes `{"query": "...", "objectKeys": [...], "limit": 10}` and returns documents ranked by semantic similarity to the query. The query (capped at 1500 characters) is embedded and matched against the indexed chunks scoped to `objectKeys`. Results are de-duplicated to one entry per document using Weaviate's `group_by` on `object_key`, so a document with many close chunks never crowds out the rest; each carries a `snippet` (the closest chunk, truncated at a word boundary) and a `score` in `[0, 1]` (higher is more relevant) so the client can show why a document matched. `limit` (1-50, default 10) caps the number of documents; an empty `objectKeys` returns no results. Only indexed documents are searchable, so this reuses the same embedding config and Weaviate collection as `/genai/index` and `/genai/ask`.
+`search` takes `{"query": "...", "objectKeys": [...], "limit": 10}` and returns documents ranked by semantic similarity to the query. The query (capped at 1500 characters) is embedded and matched against the indexed chunks scoped to `objectKeys`. Results are de-duplicated to one entry per document using Weaviate's `group_by` on `object_key`, so a document with many close chunks never crowds out the rest; each carries a `snippet` (the closest chunk, truncated at a word boundary) and a `score` in `[0, 1]` (higher is more relevant) so the client can show why a document matched. The score isn't raw cosine: Qwen3 similarities sit in a narrow band (unrelated text still scores ~0.15, a strong match ~0.35-0.6), so displaying raw cosine makes every result look mediocre. The raw similarity is calibrated onto `[0, 1]` via `SEARCH_SCORE_FLOOR`/`SEARCH_SCORE_CEILING` (see below); the mapping is monotonic so ranking is unchanged. `limit` (1-50, default 10) caps the number of documents; an empty `objectKeys` returns no results. Only indexed documents are searchable, so this reuses the same embedding config and Weaviate collection as `/genai/index` and `/genai/ask`.
 
 FastAPI also exposes `/genai/openapi.json` and `/genai/docs` (Swagger UI) out of the box.
 
@@ -120,6 +120,8 @@ Document text is split into overlapping chunks and embedded into vectors for the
 | `WEAVIATE_URL`              | `http://weaviate:8080`           | Weaviate HTTP endpoint                         |
 | `WEAVIATE_GRPC_PORT`        | `50051`                          | Weaviate gRPC port (batch/query)               |
 | `RAG_TOP_K`                 | `5`                              | Chunks retrieved per question in `/genai/ask`  |
+| `SEARCH_SCORE_FLOOR`        | `0.15`                           | Cosine at or below this reads as score 0       |
+| `SEARCH_SCORE_CEILING`      | `0.45`                           | Cosine at or above this reads as score 1       |
 
 OpenAI defaults to `text-embedding-3-small`, Ollama to `nomic-embed-text`. Each provider/model emits a different vector size, and the Weaviate collection stores whatever the configured embedder produces rather than pinning a fixed dimension. Weaviate locks the collection to the first vector's width, so switching embedding providers to one with a different dimension means dropping and re-indexing the collection.
 
@@ -128,6 +130,10 @@ OpenAI defaults to `text-embedding-3-small`, Ollama to `nomic-embed-text`. Each 
 `POST /genai/index` pulls the document text from object storage, splits it into chunks, embeds each chunk, and stores them in Weaviate keyed by object key and chunk index. Re-indexing the same key replaces its chunks, so the call is idempotent. `DELETE /genai/index/{objectKey}` removes a document's chunks so the index stays in sync when a document is deleted; deleting an unindexed document is a no-op.
 
 `POST /genai/ask` embeds the question, retrieves the `RAG_TOP_K` nearest chunks scoped to the requested `objectKeys`, and asks the LLM to answer from those excerpts. The retrieval is scoped per request, so a user only ever sees answers grounded in the documents they pass in.
+
+Each chunk is stored under a fresh Weaviate id rather than a deterministic one. `index` deletes a key's old chunks before inserting the new ones, so reusing an id would re-insert it over the tombstone Weaviate just wrote, and until async tombstone cleanup runs that chunk can be missing from the vector index (present as an object, but never returned by search) so retrieval silently drops part of the document. Fresh ids avoid the tombstone entirely.
+
+Documents indexed by an older build that used deterministic ids can have chunks stuck in that missing state until they're rebuilt. `python -m app.reindex` (run inside the genai container: `docker compose exec genai python -m app.reindex`) rebuilds every currently-indexed document from object storage to heal them; it's a safe no-op once everything is already indexed with fresh ids.
 
 ### Logos (default -- TUM course API)
 

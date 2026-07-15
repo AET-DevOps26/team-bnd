@@ -45,6 +45,28 @@ _DEFAULT_OLLAMA_MODEL = "nomic-embed-text"
 _DEFAULT_CHUNK_SIZE = 1000
 _DEFAULT_CHUNK_OVERLAP = 200
 
+# How a query/document must be framed is model-specific. Qwen3-Embedding is
+# instruction-aware and asymmetric: wrap the query with a task instruction, leave
+# documents plain. nomic-embed-text needs a search_query:/search_document: task
+# prefix on both sides. Others (e.g. OpenAI text-embedding-3-small) take text as-is.
+# English instruction on purpose (Qwen was trained on English instructions).
+_QWEN_QUERY_INSTRUCTION = "Given a web search query, retrieve relevant passages that answer the query"
+
+
+def _format_query(text: str) -> str:
+    model = get_embedding_model_name().lower()
+    if "qwen" in model:
+        return f"Instruct: {_QWEN_QUERY_INSTRUCTION}\nQuery:{text}"
+    if "nomic" in model:
+        return f"search_query: {text}"
+    return text
+
+
+def _format_document(text: str) -> str:
+    if "nomic" in get_embedding_model_name().lower():
+        return f"search_document: {text}"
+    return text
+
 # Quicker than chat but hit the same gateway, so same timeout/retry guardrails.
 _DEFAULT_TIMEOUT_SECONDS = 30.0
 _DEFAULT_MAX_RETRIES = 2
@@ -140,7 +162,7 @@ def embed_chunks(chunks: list[Chunk]) -> list[list[float]]:
     if not chunks:
         return []
     vectors, _ = run_model_call(
-        lambda: get_embeddings().embed_documents([chunk.text for chunk in chunks]),
+        lambda: get_embeddings().embed_documents([_format_document(chunk.text) for chunk in chunks]),
         operation="embedding",
         provider=get_embedding_provider(),
         fallback_model=get_embedding_model_name(),
@@ -149,9 +171,9 @@ def embed_chunks(chunks: list[Chunk]) -> list[list[float]]:
 
 
 def embed_query(text: str) -> list[float]:
-    """Embed a single query string into one vector."""
+    """Embed a single query string into one vector, formatted for the configured model."""
     vector, _ = run_model_call(
-        lambda: get_embeddings().embed_query(text),
+        lambda: get_embeddings().embed_query(_format_query(text)),
         operation="embedding",
         provider=get_embedding_provider(),
         fallback_model=get_embedding_model_name(),
