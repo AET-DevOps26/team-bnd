@@ -78,6 +78,18 @@
         font-size: 0.9rem;
         font-weight: 500;
         word-break: break-all;
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
+
+    &__loader {
+        flex-shrink: 0;
+        // Scale the dots down a touch so they sit comfortably next to the filename.
+        .dots-loader__dot {
+            width: 4px;
+            height: 4px;
+        }
     }
 
     &__date {

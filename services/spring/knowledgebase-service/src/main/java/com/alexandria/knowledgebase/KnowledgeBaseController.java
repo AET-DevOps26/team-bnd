@@ -181,7 +181,7 @@ public class KnowledgeBaseController {
             return ResponseEntity.noContent().build();
         }
         DocumentSummaryDto summaryDto = new DocumentSummaryDto(
-                summary.getContent(), summary.getModelUsed(), summary.getGeneratedAt());
+                summary.getContent(), summary.getModelUsed(), summary.getGeneratedAt(), summary.getStatus(), summary.getErrorMessage());
         return ResponseEntity.ok(summaryDto);
     }
 

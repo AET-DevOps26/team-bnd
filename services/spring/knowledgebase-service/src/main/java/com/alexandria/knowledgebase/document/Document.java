@@ -54,6 +54,16 @@ public class Document {
     )
     private Set<Tag> tags = new HashSet<>();
 
+    // Pipeline processing states for entity extraction and tagging. Unlike summaries,
+    // these are collections with no single row to update, so the status lives here.
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private SummaryStatus entitiesStatus = SummaryStatus.COMPLETED;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private SummaryStatus tagsStatus = SummaryStatus.COMPLETED;
+
     public Document() {
     }
 
@@ -158,5 +168,21 @@ public class Document {
     public void removeTag(Tag tag) {
         tags.remove(tag);
         tag.getDocuments().remove(this);
+    }
+
+    public SummaryStatus getEntitiesStatus() {
+        return entitiesStatus;
+    }
+
+    public void setEntitiesStatus(SummaryStatus entitiesStatus) {
+        this.entitiesStatus = entitiesStatus;
+    }
+
+    public SummaryStatus getTagsStatus() {
+        return tagsStatus;
+    }
+
+    public void setTagsStatus(SummaryStatus tagsStatus) {
+        this.tagsStatus = tagsStatus;
     }
 }

@@ -746,6 +746,10 @@ export interface components {
             summary?: components["schemas"]["Summary"];
             extractedEntities?: components["schemas"]["ExtractedEntity"][];
             tags?: components["schemas"]["Tag"][];
+            /** @enum {string} */
+            entitiesStatus?: "PENDING" | "COMPLETED" | "FAILED";
+            /** @enum {string} */
+            tagsStatus?: "PENDING" | "COMPLETED" | "FAILED";
         };
         ExtractedEntity: {
             /** Format: uuid */
@@ -765,6 +769,9 @@ export interface components {
             /** Format: date-time */
             generatedAt?: string;
             modelUsed?: string;
+            /** @enum {string} */
+            status?: "PENDING" | "COMPLETED" | "FAILED";
+            errorMessage?: string;
         };
         Tag: {
             /** Format: uuid */
@@ -831,6 +838,9 @@ export interface components {
             modelUsed?: string;
             /** Format: date-time */
             generatedAt?: string;
+            /** @enum {string} */
+            status?: "PENDING" | "COMPLETED" | "FAILED";
+            errorMessage?: string;
         };
         DocumentEntityDto: {
             name?: string;

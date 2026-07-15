@@ -1,10 +1,19 @@
 import React from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import UploadDocument from "./UploadDocument";
+import DotsLoader from "./DotsLoader";
 import type { components } from "../api/schema";
 import { formatDate } from "../utils/format";
 
 type Document = components["schemas"]["Document"];
+
+function isProcessing(doc: Document): boolean {
+  return (
+    doc.summary?.status === "PENDING" ||
+    doc.entitiesStatus === "PENDING" ||
+    doc.tagsStatus === "PENDING"
+  );
+}
 
 interface Props {
   documents: Document[] | undefined;
@@ -52,7 +61,14 @@ export default function DocumentTree({ documents, isLoading, error }: Props) {
                 className={`tree-item${selectedId === id ? " tree-item--active" : ""}`}
               >
                 <Link to={`/documents/${id}`} className="tree-item__link" aria-current={selectedId === id ? "true" : undefined}>
-                  <span className="tree-item__name">{doc.fileName}</span>
+                  <span className="tree-item__name">
+                    {doc.fileName}
+                    {isProcessing(doc) && (
+                      <span className="tree-item__loader">
+                        <DotsLoader />
+                      </span>
+                    )}
+                  </span>
                   <span className="tree-item__date">
                     {formatDate(doc.createdAt)}
                   </span>

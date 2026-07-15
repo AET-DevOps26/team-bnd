@@ -11,7 +11,19 @@ export default function MainView() {
     data: documents,
     isLoading: documentsLoading,
     error: documentsError,
-  } = $api.useQuery("get", "/api/v1/knowledgebase/documents");
+  } = $api.useQuery("get", "/api/v1/knowledgebase/documents", undefined, {
+    refetchInterval: (query) => {
+      const docs = query.state.data;
+      if (!docs) return false;
+      const anyPending = docs.some(
+        (doc) =>
+          doc.summary?.status === "PENDING" ||
+          doc.entitiesStatus === "PENDING" ||
+          doc.tagsStatus === "PENDING",
+      );
+      return anyPending ? 3000 : false;
+    },
+  });
 
   return (
     <div className="app">

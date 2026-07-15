@@ -3,6 +3,7 @@ import ReactMarkdown from "react-markdown";
 import { useParams } from "react-router";
 import $api from "../api/client";
 import { formatBytes, formatDateTime } from "../utils/format";
+import DotsLoader from "./DotsLoader";
 
 const ENTITY_TYPE_LABELS: Record<string, string> = {
   PERSON: "Person",
@@ -21,7 +22,19 @@ export default function DocumentDetail() {
     "get",
     "/api/v1/knowledgebase/documents/{id}",
     { params: { path: { id: documentId ?? "" } } },
-    { enabled: !!documentId },
+    {
+      enabled: !!documentId,
+      // Poll while any pipeline step is still in progress.
+      refetchInterval: (query) => {
+        const doc = query.state.data;
+        if (!doc) return false;
+        const pending =
+          doc.summary?.status === "PENDING" ||
+          doc.entitiesStatus === "PENDING" ||
+          doc.tagsStatus === "PENDING";
+        return pending ? 3000 : false;
+      },
+    },
   );
   const fileType = (document?.fileType ?? "").split(";")[0];
   const isPdf = fileType === "application/pdf";
@@ -109,6 +122,8 @@ export default function DocumentDetail() {
   const tags = document.tags ?? [];
   const entities = document.extractedEntities ?? [];
   const summary = document.summary;
+  const entitiesStatus = document.entitiesStatus;
+  const tagsStatus = document.tagsStatus;
 
   return (
     <article className="document-detail">
@@ -124,48 +139,74 @@ export default function DocumentDetail() {
         </dl>
       </header>
 
-      {tags.length > 0 && (
+      {(tagsStatus || tags.length > 0) && (
         <section className="detail-section">
           <h3>Tags</h3>
-          <ul className="tag-list" aria-label="Document tags">
-            {tags.map((tag) => (
-              <li
-                key={tag.id}
-                className={`tag tag--${tag.source?.toLowerCase() ?? "user"}`}
-              >
-                {tag.label}
-              </li>
-            ))}
-          </ul>
+          {tagsStatus === "PENDING" && <DotsLoader />}
+          {tagsStatus === "FAILED" && tags.length === 0 && (
+            <p className="detail-tags-status detail-tags-status--error">
+              Tag generation failed.
+            </p>
+          )}
+          {tags.length > 0 && (
+            <ul className="tag-list" aria-label="Document tags">
+              {tags.map((tag) => (
+                <li
+                  key={tag.id}
+                  className={`tag tag--${tag.source?.toLowerCase() ?? "user"}`}
+                >
+                  {tag.label}
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
       )}
 
-      {entities.length > 0 && (
+      {(entitiesStatus || entities.length > 0) && (
         <section className="detail-section">
           <h3>Extracted Entities</h3>
-          <ul className="entity-list" aria-label="Extracted entities">
-            {entities.map((entity) => (
-              <li
-                key={entity.id}
-                className={`entity-item entity-item--${entity.type?.toLowerCase() ?? "unknown"}`}
-              >
-                <span className="entity-name">{entity.name}</span>
-                <span className="entity-type">
-                  {(entity.type && ENTITY_TYPE_LABELS[entity.type]) ??
-                    entity.type}
-                </span>
-              </li>
-            ))}
-          </ul>
+          {entitiesStatus === "PENDING" && <DotsLoader />}
+          {entitiesStatus === "FAILED" && entities.length === 0 && (
+            <p className="detail-entities-status detail-entities-status--error">
+              Entity extraction failed.
+            </p>
+          )}
+          {entities.length > 0 && (
+            <ul className="entity-list" aria-label="Extracted entities">
+              {entities.map((entity) => (
+                <li
+                  key={entity.id}
+                  className={`entity-item entity-item--${entity.type?.toLowerCase() ?? "unknown"}`}
+                >
+                  <span className="entity-name">{entity.name}</span>
+                  <span className="entity-type">
+                    {(entity.type && ENTITY_TYPE_LABELS[entity.type]) ??
+                      entity.type}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
       )}
 
       {summary && (
         <section className="detail-section">
           <h3>Summary</h3>
-          <p className="detail-summary">{summary.content}</p>
-          {summary.modelUsed && (
-            <p className="detail-meta-small">Model: {summary.modelUsed}</p>
+          {summary.status === "PENDING" && <DotsLoader />}
+          {summary.status === "FAILED" && (
+            <p className="detail-summary detail-summary--error">
+              Summary generation failed. You can try again via reprocess.
+            </p>
+          )}
+          {summary.status === "COMPLETED" && (
+            <>
+              <p className="detail-summary">{summary.content}</p>
+              {summary.modelUsed && (
+                <p className="detail-meta-small">Model: {summary.modelUsed}</p>
+              )}
+            </>
           )}
         </section>
       )}

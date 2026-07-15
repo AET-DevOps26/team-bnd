@@ -77,6 +77,14 @@ public class KnowledgeBaseService {
         document = documentService.save(document);
 
         if (textContent != null && !textContent.isBlank()) {
+            // Write all three pipeline states as PENDING now, before the async job starts,
+            // so the client always sees a status rather than null/empty collections.
+            Summary pending = new Summary(document);
+            summaryRepository.save(pending);
+            document.setSummary(pending);
+            document.setEntitiesStatus(SummaryStatus.PENDING);
+            document.setTagsStatus(SummaryStatus.PENDING);
+            documentService.save(document);
             scheduleAsyncProcessing(document.getId());
         }
 
@@ -98,6 +106,13 @@ public class KnowledgeBaseService {
         document = documentService.save(document);
         objectStorageService.upload(objectKey, file);
 
+        // Same as createDocument: write all three pipeline states as PENDING before dispatching.
+        Summary pending = new Summary(document);
+        summaryRepository.save(pending);
+        document.setSummary(pending);
+        document.setEntitiesStatus(SummaryStatus.PENDING);
+        document.setTagsStatus(SummaryStatus.PENDING);
+        documentService.save(document);
         scheduleAsyncProcessing(document.getId());
 
         return document;
@@ -143,13 +158,34 @@ public class KnowledgeBaseService {
     }
 
     private void processSummary(Document document) {
+        // The PENDING row was already inserted synchronously at upload/create time
+        // (or by reprocessSummary). Reset to PENDING here before calling the LLM so
+        // that reprocessSummary callers also see PENDING while generation is in progress.
+        Summary summary = document.getSummary();
+        if (summary == null) {
+            // Shouldn't happen in normal flow, but handle it defensively.
+            summary = new Summary(document);
+            summaryRepository.save(summary);
+            summaryRepository.flush();
+            document.setSummary(summary);
+        } else {
+            summary.setStatus(SummaryStatus.PENDING);
+            summary.setContent(null);
+            summary.setModelUsed(null);
+            summary.setGeneratedAt(null);
+            summary.setErrorMessage(null);
+            summaryRepository.save(summary);
+            summaryRepository.flush();
+        }
+
         try {
             SummarizeResponse response = genAiClient.summarize(document.getObjectKey());
-            Summary summary = new Summary(document, response.summary(), response.modelUsed());
+            summary.markCompleted(response.summary(), response.modelUsed());
             summaryRepository.save(summary);
-            document.setSummary(summary);
         } catch (Exception e) {
             log.warn("GenAI summarization failed for document {}: {}", document.getId(), e.getMessage());
+            summary.markFailed(e.getMessage());
+            summaryRepository.save(summary);
         }
     }
 
@@ -161,9 +197,12 @@ public class KnowledgeBaseService {
                 extractedEntityRepository.save(entity);
                 document.getExtractedEntities().add(entity);
             }
+            document.setEntitiesStatus(SummaryStatus.COMPLETED);
+            documentService.save(document);
         } catch (Exception e) {
-            log.warn(
-                    "GenAI entity extraction failed for document {}: {}", document.getId(), e.getMessage());
+            log.warn("GenAI entity extraction failed for document {}: {}", document.getId(), e.getMessage());
+            document.setEntitiesStatus(SummaryStatus.FAILED);
+            documentService.save(document);
         }
     }
 
@@ -179,9 +218,12 @@ public class KnowledgeBaseService {
                 Tag tag = tagRepository.findByLabel(label).orElseGet(() -> tagRepository.save(new Tag(label, TagSource.AUTO)));
                 document.addTag(tag);
             }
+            document.setTagsStatus(SummaryStatus.COMPLETED);
             documentService.save(document);
         } catch (Exception e) {
             log.warn("GenAI tagging failed for document {}: {}", document.getId(), e.getMessage());
+            document.setTagsStatus(SummaryStatus.FAILED);
+            documentService.save(document);
         }
     }
 
@@ -211,18 +253,16 @@ public class KnowledgeBaseService {
     @Transactional
     public void reprocessSummary(UUID id, String ownerSubject) {
         Document document = getDocument(id, ownerSubject);
-        Summary existing = document.getSummary();
-        if (existing != null) {
-            document.setSummary(null);
-            summaryRepository.delete(existing);
-            summaryRepository.flush();
-        }
+        // processSummary will reuse or create the summary row and write PENDING
+        // before touching the LLM, so there is no gap in visibility.
         processSummary(document);
     }
 
     @Transactional
     public void reprocessEntities(UUID id, String ownerSubject) {
         Document document = getDocument(id, ownerSubject);
+        document.setEntitiesStatus(SummaryStatus.PENDING);
+        documentService.save(document);
         extractedEntityRepository.deleteByDocumentId(id);
         extractedEntityRepository.flush();
         processEntities(document);
@@ -231,6 +271,7 @@ public class KnowledgeBaseService {
     @Transactional
     public void reprocessTags(UUID id, String ownerSubject) {
         Document document = getDocument(id, ownerSubject);
+        document.setTagsStatus(SummaryStatus.PENDING);
         // only drop the auto tags, user-added tags stay
         List<Tag> autoTags = document.getTags().stream().filter(tag -> tag.getSource() == TagSource.AUTO).toList();
         for (Tag tag : autoTags) {
