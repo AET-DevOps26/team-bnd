@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { useParams } from "react-router";
 import $api from "../api/client";
-import { formatDateTime } from "../utils/format";
+import { formatBytes, formatDateTime } from "../utils/format";
 
 const ENTITY_TYPE_LABELS: Record<string, string> = {
   PERSON: "Person",
@@ -10,13 +10,6 @@ const ENTITY_TYPE_LABELS: Record<string, string> = {
   TOPIC: "Topic",
   ORGANIZATION: "Organization",
 };
-
-function formatBytes(bytes?: number): string {
-  if (bytes == null) return "—";
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
 
 export default function DocumentDetail() {
   const { id: documentId = null } = useParams<{ id: string }>();
@@ -125,7 +118,7 @@ export default function DocumentDetail() {
           <dt>Type</dt>
           <dd>{document.fileType || "—"}</dd>
           <dt>Size</dt>
-          <dd>{formatBytes(document.fileSize)}</dd>
+          <dd>{formatBytes(document.fileSize, "\u2014")}</dd>
           <dt>Uploaded</dt>
           <dd>{formatDateTime(document.createdAt, "—")}</dd>
         </dl>

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router";
 import $api from "../api/client";
 import type { components } from "../api/schema";
+import { formatBytes } from "../utils/format";
 
 type SemanticSearchResultDto = components["schemas"]["SemanticSearchResultDto"];
 type DocumentRefDto = components["schemas"]["DocumentRefDto"];
@@ -18,13 +19,6 @@ function errorMessage(
   if (code === "NOT_AUTHENTICATED") return messages.notAuthenticated;
   if (code === "FORBIDDEN") return messages.forbidden;
   return messages.fallback;
-}
-
-function formatFileSize(bytes: number | undefined): string {
-  if (bytes == null) return "";
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 function formatFileType(mimeType: string | undefined): string {
@@ -53,7 +47,7 @@ function TextResultList({ results }: TextResultListProps) {
     <ul className="search-result-list" aria-label="Text search results">
       {results.map((doc) => {
         const type = formatFileType(doc.fileType);
-        const size = doc.fileSize != null ? formatFileSize(doc.fileSize) : null;
+        const size = doc.fileSize != null ? formatBytes(doc.fileSize) : null;
         const meta = [type, size].filter(Boolean).join(", ");
         return (
           <li
