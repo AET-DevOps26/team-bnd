@@ -4,7 +4,7 @@ updates:
     directory: "/"
     schedule:
       interval: weekly
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 0
     cooldown:
       default-days: 7
     groups:
@@ -19,7 +19,7 @@ updates:
       - "/services/spring/qa-service"
     schedule:
       interval: weekly
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 0
     cooldown:
       default-days: 7
       semver-patch-days: 3
@@ -39,7 +39,7 @@ updates:
       - "/services/client"
     schedule:
       interval: weekly
-    open-pull-requests-limit: 3
+    open-pull-requests-limit: 0
     cooldown:
       default-days: 7
 
@@ -47,7 +47,7 @@ updates:
     directory: "/services/client"
     schedule:
       interval: weekly
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 0
     cooldown:
       default-days: 7
       semver-patch-days: 3
@@ -60,7 +60,7 @@ updates:
     directory: "/services/genai"
     schedule:
       interval: weekly
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 0
     cooldown:
       default-days: 7
       semver-patch-days: 3
@@ -73,6 +73,6 @@ updates:
     directory: "/infra/azure/terraform"
     schedule:
       interval: weekly
-    open-pull-requests-limit: 3
+    open-pull-requests-limit: 0
     cooldown:
       default-days: 7
