@@ -698,8 +698,10 @@ jobs:
 
       - name: Provision Test User via Keycloak Admin API
         run: |
+          RETRY=(--retry 5 --retry-all-errors --retry-connrefused --retry-delay 2 --max-time 30)
+
           # Obtain an admin access token from the master realm
-          ADMIN_TOKEN=$(curl -fsS \
+          ADMIN_TOKEN=$(curl -fsS "${RETRY[@]}" \
             -d "client_id=admin-cli" \
             -d "username=${KC_BOOTSTRAP_ADMIN_USERNAME}" \
             -d "password=${KC_BOOTSTRAP_ADMIN_PASSWORD}" \
@@ -708,7 +710,7 @@ jobs:
             | jq -r '.access_token')
 
           # Create the test user in the alexandria realm
-          CREATE_RESPONSE=$(curl -sS -o /dev/null -w "%{http_code}" \
+          CREATE_RESPONSE=$(curl -sS "${RETRY[@]}" -o /dev/null -w "%{http_code}" \
             -H "Authorization: Bearer ${ADMIN_TOKEN}" \
             -H "Content-Type: application/json" \
             -d "{\"username\": \"${TEST_USER}\", \"enabled\": true, \"email\": \"${TEST_USER}@test.local\"}" \
@@ -720,13 +722,13 @@ jobs:
           fi
 
           # Fetch the user ID
-          USER_ID=$(curl -fsS \
+          USER_ID=$(curl -fsS "${RETRY[@]}" \
             -H "Authorization: Bearer ${ADMIN_TOKEN}" \
             "http://localhost/auth/admin/realms/alexandria/users?username=${TEST_USER}&exact=true" \
             | jq -r '.[0].id')
 
           # Set the test user's password (temporary=false so no reset required)
-          curl -fsS -X PUT \
+          curl -fsS "${RETRY[@]}" -X PUT \
             -H "Authorization: Bearer ${ADMIN_TOKEN}" \
             -H "Content-Type: application/json" \
             -d "{\"type\": \"password\", \"value\": \"${TEST_PASSWORD}\", \"temporary\": false}" \

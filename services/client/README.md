@@ -31,6 +31,16 @@ rendered with Markdown support. Each answer includes references to the source
 documents it was derived from; clicking a source reference switches back to
 the **Documents** tab and opens that document.
 
+### Search
+
+The **Search** tab lets users find documents by meaning (semantic) or
+keyword matches (text). Semantic search ranks results by relevance and shows
+the matching text snippet from each document alongside a relevance score.
+Keyword search matches against filenames and document content.
+If the vector index is unavailable, semantic mode falls back to keyword search
+and shows a notice. Recent searches are listed below the results and the whole
+history can be cleared.
+
 ## Configuration
 
 The client reads a single build-time variable:
@@ -50,15 +60,17 @@ VITE_API_URL=https://api.example.com npm run build
 
 or via a `.env` file in this directory (see the [Vite env docs](https://vite.dev/guide/env-and-mode)).
 
-### Search
+## Development
 
-The **Search** tab lets users find documents by meaning (semantic) or
-keyword matches (text). Semantic search ranks results by relevance and shows
-the matching text snippet from each document alongside a relevance score.
-Keyword search matches against filenames and document content.
-If the vector index is unavailable, semantic mode falls back to keyword search
-and shows a notice. Recent searches are listed below the results and the whole
-history can be cleared.
+A development image is provided which runs the Vite dev server inside the container. It is useful for working in a containerised dev environment and supports live reload. The Spring server and Keycloak are proxied at `http://localhost:5173/api` and `http://localhost:5173/auth`.
+
+```bash
+# bring up entire stack
+docker compose up -d
+# build and start dev image (has to be executed again when deps are added)
+docker compose --profile dev up client-dev -d --build --renew-anon-volumes
+# then open http://localhost:5173
+```
 
 ## Production
 
@@ -75,18 +87,6 @@ Or with docker-compose (builds the image and serves it with nginx):
 ```bash
 docker compose up -d client --build
 # then open http://localhost/
-```
-
-## Development
-
-A development image is provided which runs the Vite dev server inside the container. It is useful for working in a containerised dev environment and supports live reload. The Spring server and Keycloak are proxied at `http://localhost:5173/api` and `http://localhost:5173/auth`.
-
-```bash
-# bring up entire stack
-docker compose up -d
-# build and start dev image (has to be executed again when deps are added)
-docker compose --profile dev up client-dev -d --build --renew-anon-volumes
-# then open http://localhost:5173
 ```
 
 ## Testing

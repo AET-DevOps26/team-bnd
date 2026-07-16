@@ -1,4 +1,4 @@
-# team-bnd
+# Alexandria (Team BND)
 
 [![CI](https://github.com/AET-DevOps26/team-bnd/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/AET-DevOps26/team-bnd/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/AET-DevOps26/team-bnd/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/AET-DevOps26/team-bnd/actions/workflows/codeql.yml)
@@ -60,7 +60,7 @@ The per-service Swagger UIs are also available locally through Traefik (see the 
 
 ### Traefik Reverse Proxy
 
-All services are accessed through Traefik as the reverse proxy. See [`docs/traefik.md`](docs/traefik.md) for architecture, routing, and configuration details.
+All services are accessed through Traefik as the reverse proxy. See [`docs/Traefik.md`](docs/Traefik.md) for architecture, routing, and configuration details.
 
 **Quick reference:**
 
