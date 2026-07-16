@@ -139,11 +139,12 @@ export default function QAPanel() {
   }
 
   // Only the explicitly selected interaction is shown; a null selection (e.g.
-  // after clicking outside) hides the answer entirely.
+  // after clicking outside) hides the answer entirely. Uses the same id ?? index
+  // key as the recent list so ID-less entries can still be reopened.
   const activeInteraction =
     expandedId == null
       ? undefined
-      : interactions.find((i) => (i.id ?? null) === expandedId);
+      : interactions.find((i, index) => (i.id ?? index) === expandedId);
 
   const askErrorMessage = askError
     ? errorMessage(askError, {

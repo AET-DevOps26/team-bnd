@@ -148,6 +148,10 @@
             background: $color-bg-hover;
         }
 
+        &:focus-visible {
+            opacity: 1;
+        }
+
         &:disabled {
             cursor: not-allowed;
         }

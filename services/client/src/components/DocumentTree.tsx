@@ -7,6 +7,7 @@ import $api from "../api/client";
 import type { components } from "../api/schema";
 import { formatDate } from "../utils/format";
 import { isProcessing } from "../utils/documentStatus";
+import { entityKey } from "./MainView";
 
 type Document = components["schemas"]["Document"];
 type TagDto = components["schemas"]["TagDto"];
@@ -76,6 +77,9 @@ export default function DocumentTree({
         onSuccess: () => {
           void queryClient.invalidateQueries({
             queryKey: ["get", "/api/v1/knowledgebase/documents"],
+          });
+          void queryClient.invalidateQueries({
+            queryKey: ["get", "/api/v1/knowledgebase/tags"],
           });
           if (selectedId === id) void navigate("/documents");
         },
@@ -201,13 +205,14 @@ export default function DocumentTree({
                 </span>
                 <ul className="tag-filter__list">
                   {group.names.map((item) => {
-                    const active = selectedEntities.includes(item.name);
+                    const key = entityKey(group.type, item.name);
+                    const active = selectedEntities.includes(key);
                     return (
                       <li key={item.name}>
                         <button
                           type="button"
                           className={`tag-filter__chip entity-chip entity-chip--${group.type.toLowerCase()}${active ? " tag-filter__chip--active" : ""}`}
-                          onClick={() => onToggleEntity(item.name)}
+                          onClick={() => onToggleEntity(key)}
                           aria-pressed={active}
                         >
                           {item.name}

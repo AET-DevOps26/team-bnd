@@ -433,6 +433,7 @@ test.describe("Alexandria client", () => {
               summary: {
                 id: "sum-1",
                 content: "A sample report about testing.",
+                status: "COMPLETED",
                 generatedAt: "2026-05-01T10:01:00Z",
                 modelUsed: "test-model",
               },
@@ -493,6 +494,7 @@ test.describe("Alexandria client", () => {
               summary: {
                 id: "sum-2",
                 content: "Key decisions made during the meeting.",
+                status: "COMPLETED",
                 generatedAt: "2026-05-02T09:01:00Z",
                 modelUsed: "gpt-4",
               },
@@ -1189,6 +1191,18 @@ test.describe("Alexandria client", () => {
   });
 
   test.describe("Search panel", () => {
+    // The panel loads search history on mount; stub it so tests don't hit a
+    // real endpoint (which would 401 and trigger an auth redirect).
+    test.beforeEach(async ({ page }) => {
+      await page.route("/api/v1/knowledgebase/history/search", (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify([]),
+        }),
+      );
+    });
+
     test("Search tab is visible and navigates to /search", async ({ page }) => {
       await page.goto("/ask");
 
@@ -1723,7 +1737,7 @@ test.describe("Alexandria client", () => {
       await page.locator(".tag-filter__chip", { hasText: "finance" }).click();
       await expect(page.locator(".tree-item")).toHaveCount(0);
       await expect(page.locator(".tree-status")).toContainText(
-        "No documents match the selected tags",
+        "No documents match the selected filters",
       );
     });
   });

@@ -7,6 +7,12 @@ import { isProcessing, pollWhileProcessing } from "../utils/documentStatus";
 
 const ENTITY_TYPE_ORDER = ["PERSON", "ORGANIZATION", "TOPIC", "DATE"] as const;
 
+// Same-named entities of different types (e.g. a PERSON and a DATE) must stay
+// distinct, so filter selections are keyed by type + name, not name alone.
+export function entityKey(type: string, name: string): string {
+  return `${type}\u0000${name}`;
+}
+
 export interface MainViewContext {
   onToggleTag: (tagName: string) => void;
 }
@@ -18,10 +24,15 @@ export default function MainView() {
   const [selectedEntities, setSelectedEntities] = useState<string[]>([]);
   const [lastDocumentId, setLastDocumentId] = useState<string | null>(null);
 
-  // Remember the last opened document so the Documents tab can reopen it.
+  // Remember the last opened document so the Documents tab can reopen it, and
+  // forget it when we're back on the bare list (e.g. after a delete).
   useEffect(() => {
     const match = location.pathname.match(/^\/documents\/(.+)$/);
-    if (match?.[1]) setLastDocumentId(match[1]);
+    if (match?.[1]) {
+      setLastDocumentId(match[1]);
+    } else if (location.pathname === "/documents") {
+      setLastDocumentId(null);
+    }
   }, [location.pathname]);
 
   const {
@@ -47,7 +58,10 @@ export default function MainView() {
     "get",
     "/api/v1/knowledgebase/tags",
     undefined,
-    { refetchInterval: anyProcessing ? 3000 : false },
+    {
+      refetchInterval: (query) =>
+        pollWhileProcessing(anyProcessing, query.state.dataUpdateCount),
+    },
   );
 
   const allTags = useMemo(
@@ -88,19 +102,20 @@ export default function MainView() {
     });
   }, [documents]);
 
-  // Client-side filter: match ALL selected tags AND all selected entities
+  // Client-side filter: match ALL selected tags AND all selected entities.
+  // Entities are matched by type+name so identically named ones stay distinct.
   const filteredDocuments = useMemo(() => {
     if (!documents) return undefined;
     if (selectedTags.length === 0 && selectedEntities.length === 0)
       return documents;
     return documents.filter((doc) => {
       const docTagLabels = (doc.tags ?? []).map((t) => t.label ?? "");
-      const docEntityNames = (doc.extractedEntities ?? []).map(
-        (e) => e.name ?? "",
+      const docEntityKeys = (doc.extractedEntities ?? []).map((e) =>
+        entityKey(e.type ?? "", e.name ?? ""),
       );
       return (
         selectedTags.every((tag) => docTagLabels.includes(tag)) &&
-        selectedEntities.every((name) => docEntityNames.includes(name))
+        selectedEntities.every((key) => docEntityKeys.includes(key))
       );
     });
   }, [documents, selectedTags, selectedEntities]);
@@ -113,9 +128,9 @@ export default function MainView() {
     );
   }
 
-  function handleToggleEntity(name: string) {
+  function handleToggleEntity(key: string) {
     setSelectedEntities((prev) =>
-      prev.includes(name) ? prev.filter((e) => e !== name) : [...prev, name],
+      prev.includes(key) ? prev.filter((e) => e !== key) : [...prev, key],
     );
   }
 

@@ -200,13 +200,17 @@ export default function DocumentDetail() {
     );
   }
 
+  // Returns the invalidations so callers can await them (keeps a mutation pending
+  // until the refetch settles, e.g. the reprocess buttons).
   function invalidateDocument() {
-    void queryClient.invalidateQueries({
-      queryKey: ["get", "/api/v1/knowledgebase/documents/{id}"],
-    });
-    void queryClient.invalidateQueries({
-      queryKey: ["get", "/api/v1/knowledgebase/documents"],
-    });
+    return Promise.all([
+      queryClient.invalidateQueries({
+        queryKey: ["get", "/api/v1/knowledgebase/documents/{id}"],
+      }),
+      queryClient.invalidateQueries({
+        queryKey: ["get", "/api/v1/knowledgebase/documents"],
+      }),
+    ]);
   }
 
   function openRename() {
@@ -248,7 +252,11 @@ export default function DocumentDetail() {
       { params: { path: { id: documentId } } },
       {
         onSuccess: () => {
-          invalidateDocument();
+          void invalidateDocument();
+          void queryClient.invalidateQueries({
+            queryKey: ["get", "/api/v1/knowledgebase/tags"],
+          });
+          // Navigating to the bare list clears the remembered document id.
           void navigate("/documents");
         },
       },
@@ -262,7 +270,8 @@ export default function DocumentDetail() {
       | typeof reprocessEntitiesMutation,
   ) {
     if (!documentId) return;
-    // Backend resets the status to PENDING; existing polling picks up the result.
+    // Backend resets the status to PENDING; await invalidation so the button
+    // stays pending until the fresh (pending) document is refetched.
     mutation.mutate(
       { params: { path: { id: documentId } } },
       { onSuccess: () => invalidateDocument() },

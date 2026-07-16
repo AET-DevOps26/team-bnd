@@ -234,13 +234,13 @@ export default function SearchPanel() {
     "/api/v1/knowledgebase/history/search",
   );
 
-  // collapse repeats of the same query so a term searched several times
+  // Drop empty queries and collapse repeats so a term searched several times
   // only shows its most recent entry.
   const history = useMemo(() => {
     const seen = new Set<string>();
     return (historyData ?? []).filter((entry) => {
-      const key = entry.queryText ?? "";
-      if (seen.has(key)) return false;
+      const key = entry.queryText?.trim();
+      if (!key || seen.has(key)) return false;
       seen.add(key);
       return true;
     });
@@ -362,7 +362,7 @@ export default function SearchPanel() {
           </div>
           <ul className="search-history__list">
             {history.map((entry) => (
-              <li key={entry.id} className="search-history__item">
+              <li key={entry.queryText} className="search-history__item">
                 <button
                   type="button"
                   className="search-history__query"

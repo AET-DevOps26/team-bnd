@@ -10,12 +10,18 @@ type UploadState = "idle" | "uploading" | "success" | "error";
 
 // Only types the backend can extract text from and process (PDF + plain/markdown).
 const ACCEPTED_EXTENSIONS = [".pdf", ".txt", ".md", ".markdown"];
+const ACCEPTED_MIME_TYPES = new Set([
+  "application/pdf",
+  "text/plain",
+  "text/markdown",
+]);
 const ACCEPT_ATTR = "application/pdf,text/plain,text/markdown,.md,.markdown";
 
 function isSupportedFile(file: File): boolean {
-  if (file.type === "application/pdf" || file.type.startsWith("text/")) {
+  if (ACCEPTED_MIME_TYPES.has(file.type)) {
     return true;
   }
+  // Fallback for files whose MIME type is missing or generic (e.g. .md).
   const name = file.name.toLowerCase();
   return ACCEPTED_EXTENSIONS.some((ext) => name.endsWith(ext));
 }
