@@ -7,12 +7,18 @@
     border-radius: $radius-md;
     background: $color-bg-subtle;
     text-align: center;
+    cursor: pointer;
     transition:
         background 0.15s $ease-out,
         border-color 0.15s $ease-out;
 
     &:hover {
         border-color: $color-primary;
+    }
+
+    &:focus-visible {
+        outline: 2px solid $color-primary;
+        outline-offset: 2px;
     }
 
     &--drag-over {

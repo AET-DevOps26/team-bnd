@@ -11,6 +11,9 @@
   --alx-radius: 8px;
   --alx-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
     "Helvetica Neue", Arial, sans-serif;
+
+  /* document graphic, static twin of the client's ArchiveScene */
+  --alx-archive-scene: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 520 560'%3E%3Cg fill='%23f3ecdd' stroke='%23d9cdb4' stroke-width='1.5'%3E%3Crect opacity='.5' x='54' y='196' width='150' height='196' rx='10'/%3E%3Crect opacity='.72' x='42' y='176' width='150' height='196' rx='10'/%3E%3Crect x='30' y='156' width='150' height='196' rx='10'/%3E%3C/g%3E%3Cg stroke='%230a2942' stroke-width='4' stroke-linecap='round'%3E%3Cline opacity='.55' x1='50' y1='192' x2='160' y2='192'/%3E%3Cline opacity='.55' x1='50' y1='212' x2='160' y2='212'/%3E%3Cline opacity='.55' x1='50' y1='232' x2='132' y2='232'/%3E%3Cline opacity='.25' x1='50' y1='262' x2='160' y2='262'/%3E%3Cline opacity='.25' x1='50' y1='282' x2='160' y2='282'/%3E%3Cline opacity='.25' x1='50' y1='302' x2='120' y2='302'/%3E%3C/g%3E%3Cg fill='none' stroke='rgba(255,255,255,.55)' stroke-width='2' stroke-dasharray='5 6' stroke-linecap='round'%3E%3Cpath d='M198 200 C 250 200, 250 132, 300 132'/%3E%3Cpath d='M198 254 C 258 254, 258 262, 300 262'/%3E%3Cpath d='M198 308 C 250 308, 250 392, 300 392'/%3E%3C/g%3E%3Cg fill='rgba(255,255,255,.97)'%3E%3Crect x='300' y='96' width='182' height='92' rx='12'/%3E%3Crect x='300' y='216' width='182' height='92' rx='12'/%3E%3Crect x='300' y='336' width='182' height='92' rx='12'/%3E%3C/g%3E%3Cg fill='%237a828c' font-family='sans-serif' font-size='11' font-weight='700' letter-spacing='1.2'%3E%3Ctext x='318' y='121'%3ESUMMARY%3C/text%3E%3Ctext x='318' y='241'%3EENTITIES%3C/text%3E%3Ctext x='318' y='361'%3ETAGS%3C/text%3E%3C/g%3E%3Cg stroke='%23dde2e8' stroke-width='5' stroke-linecap='round'%3E%3Cline x1='318' y1='141' x2='464' y2='141'/%3E%3Cline x1='318' y1='155' x2='464' y2='155'/%3E%3Cline x1='318' y1='169' x2='420' y2='169'/%3E%3C/g%3E%3Cg%3E%3Crect fill='%23e8f3fb' x='318' y='253' width='60' height='18' rx='9'/%3E%3Crect fill='%23e8f5e9' x='386' y='253' width='46' height='18' rx='9'/%3E%3Crect fill='%23fef3c7' x='318' y='277' width='52' height='18' rx='9'/%3E%3Crect fill='%23e8f3fb' x='378' y='277' width='72' height='18' rx='9'/%3E%3Crect fill='%23fef3c7' x='318' y='373' width='54' height='18' rx='9'/%3E%3Crect fill='%23e8f3fb' x='380' y='373' width='44' height='18' rx='9'/%3E%3Crect fill='%23e8f5e9' x='318' y='397' width='66' height='18' rx='9'/%3E%3Crect fill='%23fef3c7' x='392' y='397' width='40' height='18' rx='9'/%3E%3C/g%3E%3C/svg%3E");
 }
 
 html {
@@ -36,11 +39,11 @@ body,
   background-size: cover;
 }
 
-/* grid over the right canvas */
+/* grid over the right canvas, drifting like the client scene */
 body::before {
   content: "";
   position: fixed;
-  inset: 0;
+  inset: -2px;
   left: 50%;
   pointer-events: none;
   background-image:
@@ -48,6 +51,48 @@ body::before {
     linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
   background-size: 46px 46px;
   mask-image: radial-gradient(80% 80% at 50% 45%, #000 40%, transparent 100%);
+  animation: alx-archive-drift 26s ease-in-out infinite alternate;
+}
+
+/* document graphic over the right canvas: fade in, then float */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  left: 50%;
+  pointer-events: none;
+  background-image: var(--alx-archive-scene);
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: min(30rem, 62%) auto;
+  opacity: 0;
+  animation:
+    alx-archive-fade 0.9s ease 0.15s forwards,
+    alx-archive-float 9s ease-in-out 1.05s infinite alternate;
+}
+
+@keyframes alx-archive-fade {
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes alx-archive-float {
+  from {
+    transform: translateY(3px);
+  }
+  to {
+    transform: translateY(-3px);
+  }
+}
+
+@keyframes alx-archive-drift {
+  from {
+    transform: translate(0, 0);
+  }
+  to {
+    transform: translate(-24px, -16px);
+  }
 }
 
 /* left half: white panel holding the login card */
@@ -93,6 +138,33 @@ body::before {
   font-weight: 700;
   letter-spacing: -0.01em;
   color: var(--alx-text);
+}
+
+/* instruction / subtitle text sits on the white panel, so use dark ink */
+#kc-page-subtitle,
+.pf-v5-c-login__main-header-desc,
+.instruction,
+#kc-info-message p,
+.pf-v5-c-login__main-body p {
+  color: var(--alx-text);
+  font-family: var(--alx-font);
+}
+
+/* feedback banner (e.g. logout "re-authenticate"): light tint, dark ink */
+.pf-v5-c-alert,
+.alert,
+#kc-content-wrapper .pf-v5-c-alert {
+  background: var(--alx-primary-tint, #e8f3fb);
+  border: 1px solid var(--alx-border);
+  border-radius: var(--alx-radius);
+  box-shadow: none;
+}
+
+.pf-v5-c-alert__title,
+.kc-feedback-text,
+.pf-v5-c-alert .pf-v5-c-alert__title {
+  color: var(--alx-text);
+  font-family: var(--alx-font);
 }
 
 /* labels + inputs */
@@ -157,14 +229,50 @@ input[type="email"]:focus {
   outline: none;
 }
 
-/* password reveal button sits beside the control */
+/* password field: one grey rounded pill wrapping input + reveal button */
+.pf-v5-c-input-group {
+  background: #fff;
+  border: 1px solid var(--alx-border);
+  border-radius: var(--alx-radius);
+  box-shadow: none;
+  overflow: hidden;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.pf-v5-c-input-group:focus-within {
+  border-color: var(--alx-primary);
+  box-shadow: 0 0 0 3px rgba(11, 99, 148, 0.18);
+}
+
+/* inner input + button are borderless so the wrapper draws the only outline */
+.pf-v5-c-input-group__item,
+.pf-v5-c-input-group .pf-v5-c-form-control {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.pf-v5-c-input-group .pf-v5-c-form-control:focus-within {
+  box-shadow: none;
+}
+
+/* password reveal button sits flush beside the control */
 .pf-v5-c-button.pf-m-control,
 button[aria-label="Show password"],
 button[aria-label="Hide password"] {
-  background: #fff;
+  background: transparent;
   color: var(--alx-text-muted);
-  border: 1px solid var(--alx-border);
-  border-radius: var(--alx-radius);
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* drop PatternFly's control-button outline pseudo-element */
+.pf-v5-c-button.pf-m-control::before,
+.pf-v5-c-button.pf-m-control::after {
+  content: none;
+  border: none;
 }
 
 /* primary button */
@@ -212,6 +320,24 @@ a:hover {
   margin-inline: 0;
   padding-inline: 0;
   text-align: center;
+  border: none;
+  box-shadow: none;
+}
+
+/* no divider above the submit row / "back to login" footer */
+#kc-form-buttons,
+.pf-v5-c-login__main-footer,
+#kc-info,
+#kc-info-wrapper {
+  border-top: none;
+}
+
+#kc-form-buttons::before,
+#kc-form-buttons::after,
+.pf-v5-c-login__main-footer::before,
+.pf-v5-c-login__main-footer::after {
+  content: none;
+  border: none;
 }
 
 /* keep "New user?" text visible */
@@ -229,7 +355,19 @@ a:hover {
     width: 100%;
   }
 
-  body::before {
+  body::before,
+  body::after {
     display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body::before {
+    animation: none;
+  }
+
+  body::after {
+    opacity: 1;
+    animation: none;
   }
 }

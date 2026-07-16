@@ -140,6 +140,13 @@
     }
 }
 
+.search-mode-hint {
+    margin: 0.5rem 0 0;
+    font-size: 0.78rem;
+    line-height: 1.45;
+    color: $color-text-muted;
+}
+
 // Error / status messages
 .search-error {
     margin: 0 0 1rem;

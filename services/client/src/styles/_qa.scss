@@ -43,8 +43,14 @@
 .qa-input-row {
     display: flex;
     flex-direction: column;
-    align-items: flex-end;
     gap: 0.6rem;
+}
+
+.qa-submit-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
 }
 
 .qa-input {
@@ -120,7 +126,7 @@
 }
 
 .qa-input-hint {
-    margin: 0.3rem 0 0;
+    margin: 0;
     font-size: 0.75rem;
     color: $color-text-faint;
 }
