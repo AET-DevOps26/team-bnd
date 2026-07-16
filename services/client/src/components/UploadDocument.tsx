@@ -8,6 +8,24 @@ interface Props {
 
 type UploadState = "idle" | "uploading" | "success" | "error";
 
+// Only types the backend can extract text from and process (PDF + plain/markdown).
+const ACCEPTED_EXTENSIONS = [".pdf", ".txt", ".md", ".markdown"];
+const ACCEPTED_MIME_TYPES = new Set([
+  "application/pdf",
+  "text/plain",
+  "text/markdown",
+]);
+const ACCEPT_ATTR = "application/pdf,text/plain,text/markdown,.md,.markdown";
+
+function isSupportedFile(file: File): boolean {
+  if (ACCEPTED_MIME_TYPES.has(file.type)) {
+    return true;
+  }
+  // Fallback for files whose MIME type is missing or generic (e.g. .md).
+  const name = file.name.toLowerCase();
+  return ACCEPTED_EXTENSIONS.some((ext) => name.endsWith(ext));
+}
+
 export default function UploadDocument({ onUploaded }: Props) {
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -16,6 +34,12 @@ export default function UploadDocument({ onUploaded }: Props) {
   const [errorMessage, setErrorMessage] = useState<string>("");
 
   async function handleFile(file: File) {
+    if (!isSupportedFile(file)) {
+      setState("error");
+      setErrorMessage("Unsupported file type. Upload a PDF, text or Markdown file.");
+      return;
+    }
+
     setState("uploading");
     setErrorMessage("");
 
@@ -115,6 +139,7 @@ export default function UploadDocument({ onUploaded }: Props) {
         ref={fileInputRef}
         type="file"
         className="upload-input"
+        accept={ACCEPT_ATTR}
         onChange={handleInputChange}
         aria-label="Upload document file"
       />
@@ -145,7 +170,9 @@ export default function UploadDocument({ onUploaded }: Props) {
       )}
 
       {state !== "uploading" && (
-        <p className="upload-hint">or drag and drop a file here</p>
+        <p className="upload-hint">
+          or drag and drop a file here (PDF, text or Markdown)
+        </p>
       )}
     </div>
   );

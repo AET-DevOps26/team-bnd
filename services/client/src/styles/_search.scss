@@ -272,11 +272,98 @@
     font-variant-numeric: tabular-nums;
 }
 
+// Search history
+.search-history {
+    flex-shrink: 0;
+    margin-top: 1.25rem;
+    padding-top: 1rem;
+    border-top: 1px solid $color-border-light;
+    max-width: calc(100% - 320px - 2rem);
+
+    &__head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 0.5rem;
+    }
+
+    &__label {
+        font-size: 0.72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.07em;
+        color: $color-text-muted;
+    }
+
+    &__clear {
+        border: none;
+        background: none;
+        color: $color-primary;
+        font-size: 0.72rem;
+        font-weight: 600;
+        cursor: pointer;
+        padding: 0;
+
+        &:hover:not(:disabled) {
+            text-decoration: underline;
+        }
+
+        &:disabled {
+            color: $color-text-light;
+            cursor: not-allowed;
+        }
+    }
+
+    &__list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 0.15rem;
+    }
+
+    &__item {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 0.6rem;
+        padding: 0.25rem 0;
+    }
+
+    &__query {
+        min-width: 0;
+        border: none;
+        background: none;
+        padding: 0;
+        font-family: $font-family;
+        font-size: 0.85rem;
+        color: $color-primary;
+        text-align: left;
+        cursor: pointer;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+
+        &:hover {
+            text-decoration: underline;
+        }
+    }
+
+    &__meta {
+        flex-shrink: 0;
+        font-size: 0.72rem;
+        color: $color-text-muted;
+        font-variant-numeric: tabular-nums;
+    }
+}
+
 // drop the fixed sidebar reservation when it no longer fits
 @media (max-width: 900px) {
     .search-form,
     .search-error,
-    .search-results {
+    .search-results,
+    .search-history {
         max-width: none;
     }
 }

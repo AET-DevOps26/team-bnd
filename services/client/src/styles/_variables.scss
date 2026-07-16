@@ -72,6 +72,22 @@ $font-mono:
 $ease-out: cubic-bezier(0.22, 1, 0.36, 1);
 $ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
 
+// Tag colors (auto = generated, user = manual)
+$color-tag-auto: #1d6f4f;
+$color-tag-auto-bg: #dcf5ea;
+$color-tag-user: #0b6394;
+$color-tag-user-bg: #dcecf8;
+
+// Entity colors per type
+$color-entity-person: #1155a3;
+$color-entity-person-bg: #dbe9fb;
+$color-entity-date: #a3560a;
+$color-entity-date-bg: #fdeccb;
+$color-entity-topic: #1d7a3e;
+$color-entity-topic-bg: #d8f3e0;
+$color-entity-org: #6d28d9;
+$color-entity-org-bg: #eae2fc;
+
 // Layout
 
 $sidebar-width: 280px;

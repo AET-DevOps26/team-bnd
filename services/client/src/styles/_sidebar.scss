@@ -47,6 +47,7 @@
 }
 
 .tree-item {
+    position: relative;
     display: flex;
     flex-direction: column;
     gap: 0.15rem;
@@ -60,6 +61,10 @@
 
     &:hover {
         background: $color-bg-hover;
+
+        .tree-item__delete {
+            opacity: 0.6;
+        }
     }
 
     &:focus-within {
@@ -110,6 +115,47 @@
         color: $color-text-muted;
         font-variant-numeric: tabular-nums;
     }
+
+    &__delete {
+        position: absolute;
+        top: 50%;
+        right: 0.5rem;
+        transform: translateY(-50%);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 1.6rem;
+        height: 1.6rem;
+        border: none;
+        border-radius: $radius-sm;
+        background: none;
+        color: $color-text-muted;
+        cursor: pointer;
+        opacity: 0;
+        transition:
+            opacity 0.12s $ease-out,
+            background 0.12s $ease-out,
+            color 0.12s $ease-out;
+
+        .icon-trash {
+            width: 0.9rem;
+            height: 0.9rem;
+        }
+
+        &:hover {
+            opacity: 1 !important;
+            color: $color-primary;
+            background: $color-bg-hover;
+        }
+
+        &:focus-visible {
+            opacity: 1;
+        }
+
+        &:disabled {
+            cursor: not-allowed;
+        }
+    }
 }
 
 // Tag filter in the sidebar
@@ -130,6 +176,33 @@
         text-transform: uppercase;
         letter-spacing: 0.05em;
         color: $color-text-muted;
+    }
+
+    &__toggle-head {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        border: none;
+        background: none;
+        padding: 0;
+        cursor: pointer;
+
+        &:hover .tag-filter__label {
+            color: $color-text-secondary;
+        }
+    }
+
+    &__caret {
+        width: 0.32rem;
+        height: 0.32rem;
+        border-right: 1.5px solid $color-text-muted;
+        border-bottom: 1.5px solid $color-text-muted;
+        transform: rotate(-45deg);
+        transition: transform 0.15s $ease-out;
+
+        &--open {
+            transform: rotate(45deg);
+        }
     }
 
     &__clear {
@@ -163,18 +236,18 @@
         border-radius: $radius-pill;
         font-size: 0.72rem;
         font-weight: 500;
-        border: 1px solid $color-border;
-        background: $color-bg-white;
-        color: $color-text-body;
         cursor: pointer;
         transition:
-            background 0.12s $ease-out,
-            border-color 0.12s $ease-out,
-            color 0.12s $ease-out;
+            filter 0.12s $ease-out,
+            box-shadow 0.12s $ease-out;
+
+        // default (tag) chips reuse the document tag palette
+        background: $color-tag-user-bg;
+        color: $color-tag-user;
+        border: 1px solid rgba($color-tag-user, 0.28);
 
         &:hover {
-            background: $color-bg-hover;
-            border-color: $color-primary;
+            filter: brightness(0.95);
         }
 
         &:focus-visible {
@@ -182,11 +255,37 @@
             outline-offset: 1px;
         }
 
+        // selected chips get a ring in their own colour
         &--active {
-            background: $color-primary-tint;
-            border-color: $color-primary;
-            color: $color-primary;
             font-weight: 600;
+            box-shadow: 0 0 0 1.5px currentcolor inset;
+        }
+    }
+
+    // entity chips mirror the per-type colours from the detail view
+    .entity-chip {
+        &--person {
+            color: $color-entity-person;
+            background: $color-entity-person-bg;
+            border-color: rgba($color-entity-person, 0.32);
+        }
+
+        &--date {
+            color: $color-entity-date;
+            background: $color-entity-date-bg;
+            border-color: rgba($color-entity-date, 0.32);
+        }
+
+        &--topic {
+            color: $color-entity-topic;
+            background: $color-entity-topic-bg;
+            border-color: rgba($color-entity-topic, 0.32);
+        }
+
+        &--organization {
+            color: $color-entity-org;
+            background: $color-entity-org-bg;
+            border-color: rgba($color-entity-org, 0.32);
         }
     }
 
@@ -217,5 +316,24 @@
         &:hover {
             text-decoration: underline;
         }
+    }
+}
+
+// Entity filter groups reuse the tag-filter chip styles
+.entity-filter__group {
+    margin-top: 0.5rem;
+
+    &:first-of-type {
+        margin-top: 0;
+    }
+
+    &-label {
+        display: block;
+        margin-bottom: 0.3rem;
+        font-size: 0.66rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: $color-text-faint;
     }
 }

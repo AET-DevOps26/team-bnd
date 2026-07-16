@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
-import { useOutletContext, useParams } from "react-router";
+import { useNavigate, useOutletContext, useParams } from "react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import $api from "../api/client";
 import { formatBytes, formatDateTime } from "../utils/format";
@@ -17,10 +17,13 @@ const ENTITY_TYPE_LABELS: Record<string, string> = {
 export default function DocumentDetail() {
   const { id: documentId = null } = useParams<{ id: string }>();
   const { onToggleTag } = useOutletContext<MainViewContext>();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [newTagLabel, setNewTagLabel] = useState("");
   const [addingTag, setAddingTag] = useState(false);
   const tagInputRef = useRef<HTMLInputElement>(null);
+  const [renaming, setRenaming] = useState(false);
+  const [renameValue, setRenameValue] = useState("");
 
   const {
     data: document,
@@ -53,6 +56,31 @@ export default function DocumentDetail() {
   const removeTagMutation = $api.useMutation(
     "delete",
     "/api/v1/knowledgebase/documents/{documentId}/tags/{tagId}",
+  );
+
+  const renameMutation = $api.useMutation(
+    "patch",
+    "/api/v1/knowledgebase/documents/{id}",
+  );
+
+  const deleteMutation = $api.useMutation(
+    "delete",
+    "/api/v1/knowledgebase/documents/{id}",
+  );
+
+  const reprocessSummaryMutation = $api.useMutation(
+    "post",
+    "/api/v1/knowledgebase/documents/{id}/reprocess/summary",
+  );
+
+  const reprocessTagsMutation = $api.useMutation(
+    "post",
+    "/api/v1/knowledgebase/documents/{id}/reprocess/tags",
+  );
+
+  const reprocessEntitiesMutation = $api.useMutation(
+    "post",
+    "/api/v1/knowledgebase/documents/{id}/reprocess/entities",
   );
 
   const fileType = (document?.fileType ?? "").split(";")[0];
@@ -172,6 +200,84 @@ export default function DocumentDetail() {
     );
   }
 
+  // Returns the invalidations so callers can await them (keeps a mutation pending
+  // until the refetch settles, e.g. the reprocess buttons).
+  function invalidateDocument() {
+    return Promise.all([
+      queryClient.invalidateQueries({
+        queryKey: ["get", "/api/v1/knowledgebase/documents/{id}"],
+      }),
+      queryClient.invalidateQueries({
+        queryKey: ["get", "/api/v1/knowledgebase/documents"],
+      }),
+    ]);
+  }
+
+  function openRename() {
+    setRenameValue(document?.fileName ?? "");
+    setRenaming(true);
+    renameMutation.reset();
+  }
+
+  function submitRename() {
+    const fileName = renameValue.trim();
+    if (!documentId || !fileName || fileName === document?.fileName) {
+      setRenaming(false);
+      return;
+    }
+    renameMutation.mutate(
+      { params: { path: { id: documentId } }, body: { fileName } },
+      {
+        onSuccess: () => {
+          setRenaming(false);
+          invalidateDocument();
+        },
+      },
+    );
+  }
+
+  function handleRenameKeyDown(e: React.KeyboardEvent) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      submitRename();
+    } else if (e.key === "Escape") {
+      setRenaming(false);
+    }
+  }
+
+  function handleDelete() {
+    if (!documentId) return;
+    if (!confirm("Delete this document? This cannot be undone.")) return;
+    deleteMutation.mutate(
+      { params: { path: { id: documentId } } },
+      {
+        onSuccess: () => {
+          void invalidateDocument();
+          void queryClient.invalidateQueries({
+            queryKey: ["get", "/api/v1/knowledgebase/tags"],
+          });
+          // Navigating to the bare list clears the remembered document id.
+          void navigate("/documents");
+        },
+      },
+    );
+  }
+
+  function handleReprocess(
+    mutation:
+      | typeof reprocessSummaryMutation
+      | typeof reprocessTagsMutation
+      | typeof reprocessEntitiesMutation,
+  ) {
+    if (!documentId) return;
+    // Backend resets the status to PENDING; await invalidation so the button
+    // stays pending until the fresh (pending) document is refetched.
+    mutation.mutate(
+      { params: { path: { id: documentId } } },
+      { onSuccess: () => invalidateDocument() },
+    );
+  }
+
   if (!documentId) {
     return (
       <div className="document-detail document-detail--empty">
@@ -197,7 +303,9 @@ export default function DocumentDetail() {
             ? "Authentication error. Retrying login..."
             : errorMessage === "FORBIDDEN"
               ? "You do not have permission to view this document."
-              : "Failed to load document."}
+              : errorMessage === "NOT_FOUND"
+                ? "This document no longer exists."
+                : "Failed to load document."}
         </p>
       </div>
     );
@@ -217,7 +325,47 @@ export default function DocumentDetail() {
 
   const header = (
     <header className="detail-header">
-      <h2 className="detail-title">{document.fileName}</h2>
+      {renaming ? (
+        <input
+          className="detail-title-input"
+          value={renameValue}
+          onChange={(e) => setRenameValue(e.target.value)}
+          onKeyDown={handleRenameKeyDown}
+          onBlur={submitRename}
+          aria-label="Document name"
+          maxLength={255}
+          autoFocus
+        />
+      ) : (
+        <>
+          <h2
+            className="detail-title detail-title--editable"
+            onClick={openRename}
+            title="Click to rename"
+          >
+            {document.fileName}
+          </h2>
+          <button
+            type="button"
+            className="detail-rename"
+            onClick={openRename}
+            aria-label="Rename document"
+            title="Rename document"
+          >
+            <span className="icon-pencil" aria-hidden="true" />
+          </button>
+        </>
+      )}
+      <button
+        type="button"
+        className="detail-delete"
+        onClick={handleDelete}
+        disabled={deleteMutation.isPending}
+        aria-label="Delete document"
+        title="Delete document"
+      >
+        <span className="icon-trash" aria-hidden="true" />
+      </button>
     </header>
   );
 
@@ -237,7 +385,18 @@ export default function DocumentDetail() {
 
   const tagsSection = (
     <section className="detail-section">
-      <h3>Tags</h3>
+      <div className="detail-section-head">
+        <h3>Tags</h3>
+        <button
+          type="button"
+          className="detail-reprocess"
+          onClick={() => handleReprocess(reprocessTagsMutation)}
+          disabled={tagsStatus === "PENDING" || reprocessTagsMutation.isPending}
+        >
+          <span className="icon-cycle" aria-hidden="true" />
+          Regenerate
+        </button>
+      </div>
       {tagsStatus === "PENDING" && <DotsLoader />}
       {tagsStatus === "FAILED" && tags.length === 0 && (
         <p className="detail-tags-status detail-tags-status--error">
@@ -323,7 +482,20 @@ export default function DocumentDetail() {
     entitiesStatus === "FAILED" ||
     entities.length > 0) && (
     <section className="detail-section">
-      <h3>Extracted Entities</h3>
+      <div className="detail-section-head">
+        <h3>Extracted Entities</h3>
+        <button
+          type="button"
+          className="detail-reprocess"
+          onClick={() => handleReprocess(reprocessEntitiesMutation)}
+          disabled={
+            entitiesStatus === "PENDING" || reprocessEntitiesMutation.isPending
+          }
+        >
+          <span className="icon-cycle" aria-hidden="true" />
+          Regenerate
+        </button>
+      </div>
       {entitiesStatus === "PENDING" && <DotsLoader />}
       {entitiesStatus === "FAILED" && entities.length === 0 && (
         <p className="detail-entities-status detail-entities-status--error">
@@ -350,7 +522,20 @@ export default function DocumentDetail() {
 
   const summarySection = summary && (
     <section className="detail-section">
-      <h3>Summary</h3>
+      <div className="detail-section-head">
+        <h3>Summary</h3>
+        <button
+          type="button"
+          className="detail-reprocess"
+          onClick={() => handleReprocess(reprocessSummaryMutation)}
+          disabled={
+            summary.status === "PENDING" || reprocessSummaryMutation.isPending
+          }
+        >
+          <span className="icon-cycle" aria-hidden="true" />
+          Regenerate
+        </button>
+      </div>
       {summary.status === "PENDING" && <DotsLoader />}
       {summary.status === "FAILED" && (
         <p className="detail-summary detail-summary--error">

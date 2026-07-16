@@ -321,6 +321,64 @@ test.describe("Alexandria client", () => {
       });
       await expect(uploadArea).not.toHaveClass(/upload-area--drag-over/);
     });
+
+    test("rejects an unsupported file type without calling the upload endpoint", async ({
+      page,
+    }) => {
+      let uploadCalled = false;
+      await page.route(
+        "/api/v1/knowledgebase/documents/upload",
+        async (route) => {
+          uploadCalled = true;
+          await route.fulfill({
+            status: 201,
+            contentType: "application/json",
+            body: JSON.stringify(uploadedDoc),
+          });
+        },
+      );
+
+      const fileInput = page.locator('[aria-label="Upload document file"]');
+      await fileInput.setInputFiles({
+        name: "photo.png",
+        mimeType: "image/png",
+        buffer: Buffer.from([0x89, 0x50, 0x4e, 0x47]),
+      });
+
+      const status = page.locator(".upload-status--error");
+      await expect(status).toBeVisible({ timeout: 5000 });
+      await expect(status).toContainText("Unsupported file type");
+
+      // The client blocked it, so the endpoint was never hit
+      expect(uploadCalled).toBe(false);
+    });
+
+    test("accepts a Markdown file by extension", async ({ page }) => {
+      let uploadCalled = false;
+      await page.route(
+        "/api/v1/knowledgebase/documents/upload",
+        async (route) => {
+          uploadCalled = true;
+          await route.fulfill({
+            status: 201,
+            contentType: "application/json",
+            body: JSON.stringify(uploadedDoc),
+          });
+        },
+      );
+
+      const fileInput = page.locator('[aria-label="Upload document file"]');
+      await fileInput.setInputFiles({
+        name: "notes.md",
+        mimeType: "application/octet-stream",
+        buffer: Buffer.from("# Notes\n"),
+      });
+
+      await expect(page.locator(".upload-status--success")).toBeVisible({
+        timeout: 5000,
+      });
+      expect(uploadCalled).toBe(true);
+    });
   });
 
   test.describe("Document detail", () => {
@@ -375,6 +433,7 @@ test.describe("Alexandria client", () => {
               summary: {
                 id: "sum-1",
                 content: "A sample report about testing.",
+                status: "COMPLETED",
                 generatedAt: "2026-05-01T10:01:00Z",
                 modelUsed: "test-model",
               },
@@ -435,6 +494,7 @@ test.describe("Alexandria client", () => {
               summary: {
                 id: "sum-2",
                 content: "Key decisions made during the meeting.",
+                status: "COMPLETED",
                 generatedAt: "2026-05-02T09:01:00Z",
                 modelUsed: "gpt-4",
               },
@@ -454,6 +514,23 @@ test.describe("Alexandria client", () => {
       await expect(page.locator(".detail-summary")).toHaveText(
         "Key decisions made during the meeting.",
       );
+    });
+
+    test("opening a deleted document shows a not-found message, not a spinner", async ({
+      page,
+    }) => {
+      const missingId = "00000000-0000-0000-0000-0000000000ff";
+      await page.route(
+        `/api/v1/knowledgebase/documents/${missingId}`,
+        (route) => route.fulfill({ status: 404, body: "Not Found" }),
+      );
+
+      await page.goto(`/documents/${missingId}`);
+
+      const error = page.locator(".document-detail--error");
+      await expect(error).toBeVisible({ timeout: 5000 });
+      await expect(error).toContainText("This document no longer exists.");
+      await expect(page.locator(".document-detail--loading")).toHaveCount(0);
     });
   });
 
@@ -527,6 +604,7 @@ test.describe("Alexandria client", () => {
       await page.locator(".qa-input").fill("What is the main topic?");
       await page.locator(".qa-submit").click();
 
+      // A freshly asked question becomes the active answer shown above the list.
       const interaction = page.locator(".qa-interaction").first();
       await expect(interaction).toBeVisible({ timeout: 5000 });
       await expect(interaction).toContainText("What is the main topic?");
@@ -801,12 +879,19 @@ test.describe("Alexandria client", () => {
 
       await page.goto("/ask");
 
+      // The most recent interaction is shown as the active answer by default,
+      // and it is also listed under "Recent questions".
       const interaction = page.locator(".qa-interaction").first();
       await expect(interaction).toBeVisible({ timeout: 5000 });
       await expect(interaction).toContainText(
         "Previous question from history?",
       );
       await expect(interaction).toContainText("This is a historical answer.");
+
+      await expect(page.locator(".qa-recent__item")).toHaveCount(1);
+      await expect(page.locator(".qa-recent__query").first()).toContainText(
+        "Previous question from history?",
+      );
     });
 
     test("shows an error message when the ask endpoint returns 500", async ({
@@ -910,26 +995,177 @@ test.describe("Alexandria client", () => {
 
       await page.goto("/ask");
 
-      // Both interactions should be visible
-      await expect(page.locator(".qa-interaction")).toHaveCount(2, {
+      // Both questions appear in the recent list
+      await expect(page.locator(".qa-recent__item")).toHaveCount(2, {
         timeout: 5000,
       });
 
       // Accept the confirm dialog that QAPanel fires before clearing
       page.on("dialog", (dialog) => dialog.accept());
 
-      await page.locator(".qa-clear-button").click();
+      // Clear now lives in the "Recent questions" header, like the search panel
+      await page.locator(".qa-recent__clear").click();
 
-      // All interactions should be gone and the empty state should appear
-      await expect(page.locator(".qa-interaction")).toHaveCount(0, {
-        timeout: 5000,
-      });
+      // The list and the active answer are gone; the empty state appears
+      await expect(page.locator(".qa-recent")).toHaveCount(0, { timeout: 5000 });
+      await expect(page.locator(".qa-interaction")).toHaveCount(0);
       await expect(page.locator(".qa-empty")).toBeVisible({ timeout: 5000 });
       await expect(page.locator(".qa-empty")).toContainText("No questions yet");
+    });
+
+    test("recent questions list shows one entry per interaction with a timestamp", async ({
+      page,
+    }) => {
+      await page.unroute("/api/v1/qa/history");
+      await page.route("/api/v1/qa/history", (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify([
+            {
+              id: "aaaaaaaa-0000-0000-0000-00000000000a",
+              question: "Recent one?",
+              answer: "Answer one.",
+              citations: [],
+              timestamp: "2026-07-06T08:00:00Z",
+              modelUsed: "gpt-4o",
+            },
+            {
+              id: "aaaaaaaa-0000-0000-0000-00000000000b",
+              question: "Recent two?",
+              answer: "Answer two.",
+              citations: [],
+              timestamp: "2026-07-06T09:00:00Z",
+              modelUsed: "gpt-4o",
+            },
+          ]),
+        }),
+      );
+
+      await page.goto("/ask");
+
+      const recent = page.locator(".qa-recent");
+      await expect(recent).toBeVisible({ timeout: 5000 });
+      await expect(recent.locator(".qa-recent__item")).toHaveCount(2);
+      await expect(recent.locator(".qa-recent__meta").first()).not.toBeEmpty();
+    });
+
+    test("clicking a recent question shows its answer as the active one", async ({
+      page,
+    }) => {
+      await page.unroute("/api/v1/qa/history");
+      await page.route("/api/v1/qa/history", (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify([
+            {
+              id: "aaaaaaaa-0000-0000-0000-00000000000c",
+              question: "Newest question?",
+              answer: "Newest answer text.",
+              citations: [],
+              timestamp: "2026-07-06T09:00:00Z",
+              modelUsed: "gpt-4o",
+            },
+            {
+              id: "aaaaaaaa-0000-0000-0000-00000000000e",
+              question: "Older question?",
+              answer: "Older answer text.",
+              citations: [],
+              timestamp: "2026-07-06T08:00:00Z",
+              modelUsed: "gpt-4o",
+            },
+          ]),
+        }),
+      );
+
+      await page.goto("/ask");
+
+      // Newest is active by default
+      const interaction = page.locator(".qa-interaction").first();
+      await expect(interaction).toBeVisible({ timeout: 5000 });
+      await expect(interaction).toContainText("Newest answer text.");
+
+      // Selecting the older question swaps the active answer
+      await page
+        .locator(".qa-recent__query")
+        .filter({ hasText: "Older question?" })
+        .click();
+
+      await expect(interaction).toContainText("Older answer text.");
+      await expect(interaction).not.toContainText("Newest answer text.");
+    });
+
+    test("the active question is marked in the recent list", async ({
+      page,
+    }) => {
+      await page.unroute("/api/v1/qa/history");
+      await page.route("/api/v1/qa/history", (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify([
+            {
+              id: "aaaaaaaa-0000-0000-0000-00000000000d",
+              question: "Active question?",
+              answer: "Active answer.",
+              citations: [],
+              timestamp: "2026-07-06T08:00:00Z",
+              modelUsed: "gpt-4o",
+            },
+          ]),
+        }),
+      );
+
+      await page.goto("/ask");
+
+      const activeQuery = page.locator(".qa-recent__query--active");
+      await expect(activeQuery).toBeVisible({ timeout: 5000 });
+      await expect(activeQuery).toContainText("Active question?");
+    });
+
+    test("the Hide button dismisses the shown answer", async ({ page }) => {
+      await page.unroute("/api/v1/qa/history");
+      await page.route("/api/v1/qa/history", (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify([
+            {
+              id: "aaaaaaaa-0000-0000-0000-000000000010",
+              question: "Hide via button?",
+              answer: "Hidden by button.",
+              citations: [],
+              timestamp: "2026-07-06T08:00:00Z",
+              modelUsed: "gpt-4o",
+            },
+          ]),
+        }),
+      );
+
+      await page.goto("/ask");
+
+      const interaction = page.locator(".qa-interaction");
+      await expect(interaction).toBeVisible({ timeout: 5000 });
+
+      await interaction.locator(".qa-hide").click();
+      await expect(interaction).toHaveCount(0);
     });
   });
 
   test.describe("Search panel", () => {
+    // The panel loads search history on mount; stub it so tests don't hit a
+    // real endpoint (which would 401 and trigger an auth redirect).
+    test.beforeEach(async ({ page }) => {
+      await page.route("/api/v1/knowledgebase/history/search", (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify([]),
+        }),
+      );
+    });
+
     test("Search tab is visible and navigates to /search", async ({ page }) => {
       await page.goto("/ask");
 
@@ -1464,7 +1700,7 @@ test.describe("Alexandria client", () => {
       await page.locator(".tag-filter__chip", { hasText: "finance" }).click();
       await expect(page.locator(".tree-item")).toHaveCount(0);
       await expect(page.locator(".tree-status")).toContainText(
-        "No documents match the selected tags",
+        "No documents match the selected filters",
       );
     });
   });
