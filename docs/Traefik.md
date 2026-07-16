@@ -2,28 +2,28 @@
 
 Alexandria uses [Traefik](https://traefik.io/) as the reverse proxy and API gateway for all HTTP traffic in Docker Compose deployments.
 
-## Architecture Overview
+## Architecture
 
-```
-                         ┌─────────────┐
-            HTTP:80 ──▶  │   Traefik   │
-                         └──────┬──────┘
-                                │
-           ┌────────────────────┼──────────────────┐
-           │                    │                  │
-           ▼                    ▼                  ▼
-     ┌──────────┐        ┌──────────┐        ┌──────────┐
-     │  Client  │        │  Spring  │        │ Keycloak │
-     │  (nginx) │        │  (API)   │        │  (OIDC)  │
-     └──────────┘        └────┬─────┘        └──────────┘
-                              │
-              ┌───────────────┴───────────────┐
-              │                               │
-              ▼                               ▼
-        ┌──────────┐                   ┌──────────┐
-        │  GenAI   │                   │ Postgres │
-        │ (Python) │                   │   (DB)   │
-        └──────────┘                   └──────────┘
+```text
+                            ┌─────────────┐
+               HTTP:80 ──▶ │   Traefik   │
+                            └──────┬──────┘
+                                   │
+        ┌────────────┬─────────────┼─────────────┬─────────────┐
+        │            │             │             │             │
+        ▼            ▼             ▼             ▼             ▼
+  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐
+  │  Client  │  │  Spring  │  │ Keycloak │  │  Grafana │  │  Prometh │
+  │  (nginx) │  │  (API)   │  │  (OIDC)  │  │          │  │    eus   │
+  └──────────┘  └────┬─────┘  └──────────┘  └──────────┘  └──────────┘
+                     │
+                     │
+                     │
+                     ▼
+               ┌──────────┐
+               │  GenAI   │
+               │ (Python) │
+               └──────────┘
 ```
 
 **Public services** (accessible via Traefik):
@@ -37,6 +37,7 @@ Alexandria uses [Traefik](https://traefik.io/) as the reverse proxy and API gate
 **Private services** (internal Docker network only):
 
 - PostgreSQL
+- Internal Spring endpoints
 - GenAI (except health and docs endpoints)
 
 Traefik also exposes its own Prometheus metrics on a separate internal `metrics` entrypoint (`:8082`), which is only reachable inside the Docker network and is scraped by Prometheus. It is not bound to the public `web` entrypoint.
@@ -148,7 +149,7 @@ Open the Traefik dashboard at `http://traefik.localhost/` and check:
 # Test client (should return HTML)
 curl -s http://localhost/ | head -5
 
-# Test Spring API (Swagger UI is public; most /api endpoints require a JWT)
+# Test Spring API (Swagger UI is public, most /api endpoints require a JWT)
 curl -sI http://localhost/knowledgebase-service/docs
 
 # Test Keycloak
@@ -157,41 +158,6 @@ curl http://localhost/auth/
 # Test GenAI docs
 curl http://localhost/genai/docs
 ```
-
-## Production Considerations
-
-### HTTPS Setup
-
-When a domain becomes available, Traefik can automatically provision TLS certificates via Let's Encrypt:
-
-```yaml
-traefik:
-  command:
-    - "--certificatesresolvers.letsencrypt.acme.email=admin@example.com"
-    - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
-    - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
-    - "--entrypoints.websecure.address=:443"
-  volumes:
-    - letsencrypt:/letsencrypt
-```
-
-Then update service routers to use HTTPS:
-
-```yaml
-labels:
-  - "traefik.http.routers.myservice.tls.certresolver=letsencrypt"
-  - "traefik.http.routers.myservice.entrypoints=websecure"
-```
-
-### Disable Dashboard in Production
-
-```yaml
-traefik:
-  command:
-    - "--api.dashboard=false"
-```
-
-Or protect it with authentication middleware.
 
 ## Kubernetes
 

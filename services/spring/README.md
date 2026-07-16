@@ -84,36 +84,6 @@ Each service exposes its own Swagger UI, routed through Traefik:
 
 The three services also expose a set of `/internal/{knowledgebase,qa}/**` endpoints for service-to-service calls. This prefix is deliberately not routed by Traefik or the Kubernetes Ingress, so the endpoints are only reachable from other containers inside the `alexandria` network. They are described in the `info` section of the aggregated OpenAPI spec.
 
-## Observability
-
-### Metrics
-
-Each service uses Spring Boot Actuator with the Micrometer Prometheus registry and exposes
-`/actuator/prometheus` (along with `health`, `info` and `metrics`). Prometheus scrapes one
-job per service; and Grafana visualizes them.
-
-On top of the default JVM and HTTP server metrics, we add a few custom ones:
-- **GenAI client calls** (`GenAiClient`): A `genai.client.call.duration` timer and a
-  `genai.client.calls` counter, tagged with the `operation` (summarize, extract, tag, index,
-  search, ask, ...) and a `success`/`error` outcome, so per-operation latency and error rate
-  are visible
-- **Object storage** (`ObjectStorageService`, knowledgebase-service only): `s3.operation.duration`
-  and `s3.operations`, tagged by operation (upload/download/delete) and outcome
-
-### Logging
-
-The shared `common` module auto-configures structured logging for every service (via
-`LoggingAutoConfiguration`), so logs are consistent without per-service setup:
-
-- Logs are emitted as JSON (Logback) with an additional `service` field
-- The MDC filter puts a `requestId` and `route` on the MDC (Mapped Diagnostic Context) for every
-  request and echoes back the id in the `X-Request-Id` response header. A caller-supplied
-  `X-Request-Id` is reused when it looks like a trace id, otherwise a fresh UUID is generated,
-  so a single request can be followed across services
-- For every write endpoint (`POST`/`PUT`/`PATCH`/`DELETE`), start/finish/failure are logged
-
-Set `SPRING_LOG_LEVEL` to change the root log level (defaults to `INFO`).
-
 ## Production
 
 The three services share one Dockerfile, the concrete image is picked at build
@@ -180,3 +150,33 @@ one service or all of them:
 
 Test reports for a given service are written to
 `services/spring/<service>/build/reports/tests/test/index.html`.
+
+## Observability
+
+### Metrics
+
+Each service uses Spring Boot Actuator with the Micrometer Prometheus registry and exposes
+`/actuator/prometheus` (along with `health`, `info` and `metrics`). Prometheus scrapes one
+job per service; and Grafana visualizes them.
+
+On top of the default JVM and HTTP server metrics, we add a few custom ones:
+- **GenAI client calls** (`GenAiClient`): A `genai.client.call.duration` timer and a
+  `genai.client.calls` counter, tagged with the `operation` (summarize, extract, tag, index,
+  search, ask, ...) and a `success`/`error` outcome, so per-operation latency and error rate
+  are visible
+- **Object storage** (`ObjectStorageService`, knowledgebase-service only): `s3.operation.duration`
+  and `s3.operations`, tagged by operation (upload/download/delete) and outcome
+
+### Logging
+
+The shared `common` module auto-configures structured logging for every service (via
+`LoggingAutoConfiguration`), so logs are consistent without per-service setup:
+
+- Logs are emitted as JSON (Logback) with an additional `service` field
+- The MDC filter puts a `requestId` and `route` on the MDC (Mapped Diagnostic Context) for every
+  request and echoes back the id in the `X-Request-Id` response header. A caller-supplied
+  `X-Request-Id` is reused when it looks like a trace id, otherwise a fresh UUID is generated,
+  so a single request can be followed across services
+- For every write endpoint (`POST`/`PUT`/`PATCH`/`DELETE`), start/finish/failure are logged
+
+Set `SPRING_LOG_LEVEL` to change the root log level (defaults to `INFO`).

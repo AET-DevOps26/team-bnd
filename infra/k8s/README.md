@@ -28,9 +28,10 @@ All credentials (postgres password, S3 keys, Keycloak admin password, Grafana ad
 internal HMAC secret) are randomly generated on first install and preserved on subsequent
 upgrades. The only thing you need to provide is the LLM API key.
 
-Prometheus and Grafana live in their own namespace (`alexandria-monitoring` by
-default, override via `monitoring.namespace`) and are intentionally not exposed
-through the ingress. To reach them, port-forward:
+Prometheus and Grafana live in their own namespace (`bnd-alexandria-monitoring`
+by default, i.e. `<release-namespace>-monitoring`; override via
+`monitoring.namespace`) and are intentionally not exposed through the ingress.
+To reach them, port-forward:
 
 ```bash
 kubectl -n bnd-alexandria-monitoring port-forward svc/alexandria-prometheus 9090:9090
@@ -42,10 +43,11 @@ kubectl -n bnd-alexandria-monitoring port-forward svc/alexandria-grafana 3000:30
 
 ## Secrets
 
-All credentials live in a single Kubernetes Secret named `alexandria-secrets`. The chart
+The auto-generated credentials live in a single Kubernetes Secret named `alexandria-secrets`. The chart
 generates random values for everything on first install and preserves them across upgrades
 via `lookup`. The only credential that is never auto-generated is the LLM API key, since
-it comes from an external provider.
+it comes from an external provider; it lives in a separate `alexandria-genai-secrets` Secret,
+sourced from `genai.llmApiKey` (or an existing secret you point to via `genai.existingSecret`).
 
 Secrets are annotated with `helm.sh/resource-policy: keep`, so they survive `helm uninstall`.
 Delete them manually if you want a clean slate:
@@ -95,9 +97,9 @@ For CI/CD pipelines, create the secrets before running Helm so they never appear
 Helm release metadata:
 
 ```bash
-kubectl create namespace alexandria --dry-run=client -o yaml | kubectl apply -f -
+kubectl create namespace bnd-alexandria --dry-run=client -o yaml | kubectl apply -f -
 
-kubectl -n alexandria create secret generic alexandria-secrets \
+kubectl -n bnd-alexandria create secret generic alexandria-secrets \
   --from-literal=db-password="$POSTGRES_PASSWORD" \
   --from-literal=keycloak-admin-password="$KC_ADMIN_PASSWORD" \
   --from-literal=grafana-admin-password="$GRAFANA_ADMIN_PASSWORD" \
@@ -106,12 +108,12 @@ kubectl -n alexandria create secret generic alexandria-secrets \
   --from-literal=internal-shared-secret="$INTERNAL_SHARED_SECRET" \
   --dry-run=client -o yaml | kubectl apply -f -
 
-kubectl -n alexandria create secret generic alexandria-genai-secrets \
+kubectl -n bnd-alexandria create secret generic alexandria-genai-secrets \
   --from-literal=llm-api-key="$LLM_API_KEY" \
   --dry-run=client -o yaml | kubectl apply -f -
 
 helm upgrade --install alexandria infra/k8s/alexandria \
-  --namespace alexandria --create-namespace \
+  --namespace bnd-alexandria --create-namespace \
   --dependency-update \
   --set "existingSecret=alexandria-secrets" \
   --set "genai.existingSecret=alexandria-genai-secrets"
@@ -226,7 +228,7 @@ networkPolicy:
 
 With `allowFromAnywhere: false` the render fails fast if both selectors are left empty, so the default-deny can't be silently defeated.
 
-# Kubernetes Troubleshooting
+## Troubleshooting
 
 ### Spring or Keycloak fail postgres password authentication after a reinstall
 
