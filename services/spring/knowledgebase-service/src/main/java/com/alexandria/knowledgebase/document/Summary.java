@@ -18,23 +18,41 @@ public class Summary {
     @JsonBackReference
     private Document document;
 
-    @Column(nullable = false, columnDefinition = "TEXT")
+    // Null when status is PENDING or FAILED.
+    @Column(columnDefinition = "TEXT")
     private String content;
 
-    @Column(nullable = false)
+    @Column
     private Instant generatedAt;
 
-    @Column(nullable = false)
+    @Column
     private String modelUsed;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private SummaryStatus status = SummaryStatus.PENDING;
+
+    // Human-readable reason for FAILED state; null otherwise.
+    @Column(columnDefinition = "TEXT")
+    private String errorMessage;
 
     public Summary() {
     }
 
+    // Constructor for inserting a PENDING placeholder before the LLM call.
+    public Summary(Document document) {
+        this.document = document;
+        this.status = SummaryStatus.PENDING;
+    }
+
+    // Constructor for a completed summary (kept for compatibility with call sites
+    // that do not use the two-step pending/complete approach).
     public Summary(Document document, String content, String modelUsed) {
         this.document = document;
         this.content = content;
         this.modelUsed = modelUsed;
         this.generatedAt = Instant.now();
+        this.status = SummaryStatus.COMPLETED;
     }
 
     public UUID getId() {
@@ -71,5 +89,36 @@ public class Summary {
 
     public void setModelUsed(String modelUsed) {
         this.modelUsed = modelUsed;
+    }
+
+    public SummaryStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(SummaryStatus status) {
+        this.status = status;
+    }
+
+    public String getErrorMessage() {
+        return errorMessage;
+    }
+
+    public void setErrorMessage(String errorMessage) {
+        this.errorMessage = errorMessage;
+    }
+
+    // Transition helpers so callers don't have to set individual fields.
+
+    public void markCompleted(String content, String modelUsed) {
+        this.content = content;
+        this.modelUsed = modelUsed;
+        this.generatedAt = Instant.now();
+        this.status = SummaryStatus.COMPLETED;
+        this.errorMessage = null;
+    }
+
+    public void markFailed(String reason) {
+        this.status = SummaryStatus.FAILED;
+        this.errorMessage = reason;
     }
 }

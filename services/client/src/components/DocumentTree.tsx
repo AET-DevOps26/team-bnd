@@ -1,8 +1,10 @@
 import React, { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import UploadDocument from "./UploadDocument";
+import DotsLoader from "./DotsLoader";
 import type { components } from "../api/schema";
 import { formatDate } from "../utils/format";
+import { isProcessing } from "../utils/documentStatus";
 
 type Document = components["schemas"]["Document"];
 type TagDto = components["schemas"]["TagDto"];
@@ -148,7 +150,14 @@ export default function DocumentTree({
                   className="tree-item__link"
                   aria-current={selectedId === id ? "true" : undefined}
                 >
-                  <span className="tree-item__name">{doc.fileName}</span>
+                  <span className="tree-item__name">
+                    {doc.fileName}
+                    {isProcessing(doc) && (
+                      <span className="tree-item__loader">
+                        <DotsLoader />
+                      </span>
+                    )}
+                  </span>
                   <span className="tree-item__date">
                     {formatDate(doc.createdAt)}
                   </span>

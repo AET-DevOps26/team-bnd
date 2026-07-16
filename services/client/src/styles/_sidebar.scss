@@ -91,6 +91,18 @@
         color: $color-text-dark;
         line-height: 1.35;
         overflow-wrap: anywhere;
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
+
+    &__loader {
+        flex-shrink: 0;
+        // Scale the dots down a touch so they sit comfortably next to the filename.
+        .dots-loader__dot {
+            width: 4px;
+            height: 4px;
+        }
     }
 
     &__date {

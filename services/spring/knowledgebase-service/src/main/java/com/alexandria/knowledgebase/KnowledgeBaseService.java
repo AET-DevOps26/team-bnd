@@ -5,6 +5,7 @@ import com.alexandria.knowledgebase.dto.DocumentRefDto;
 import com.alexandria.knowledgebase.dto.SemanticSearchResponseDto;
 import com.alexandria.knowledgebase.dto.SemanticSearchResultDto;
 import com.alexandria.knowledgebase.dto.UpdateDocumentRequest;
+import com.alexandria.knowledgebase.exception.DocumentNotFoundException;
 import com.alexandria.knowledgebase.integration.GenAiClient;
 import com.alexandria.knowledgebase.integration.GenAiClient.ExtractResponse;
 import com.alexandria.knowledgebase.integration.GenAiClient.ExtractedEntityDto;
@@ -77,6 +78,14 @@ public class KnowledgeBaseService {
         document = documentService.save(document);
 
         if (textContent != null && !textContent.isBlank()) {
+            // Write all three pipeline states as PENDING now, before the async job starts,
+            // so the client always sees a status rather than null/empty collections.
+            Summary pending = new Summary(document);
+            summaryRepository.save(pending);
+            document.setSummary(pending);
+            document.setEntitiesStatus(SummaryStatus.PENDING);
+            document.setTagsStatus(SummaryStatus.PENDING);
+            documentService.save(document);
             scheduleAsyncProcessing(document.getId());
         }
 
@@ -98,58 +107,116 @@ public class KnowledgeBaseService {
         document = documentService.save(document);
         objectStorageService.upload(objectKey, file);
 
-        scheduleAsyncProcessing(document.getId());
+        if (textContent != null && !textContent.isBlank()) {
+            // Same as createDocument: write all three pipeline states as PENDING before dispatching,
+            // but only when there is text to process, so empty uploads don't get stuck in PENDING.
+            Summary pending = new Summary(document);
+            summaryRepository.save(pending);
+            document.setSummary(pending);
+            document.setEntitiesStatus(SummaryStatus.PENDING);
+            document.setTagsStatus(SummaryStatus.PENDING);
+            documentService.save(document);
+            scheduleAsyncProcessing(document.getId());
+        }
 
         return document;
     }
 
-    // Only dispatch the async pipeline once the surrounding transaction has committed;
-    // otherwise processDocumentAsync's own transaction could run first and fail to find
-    // the not-yet-visible row. With no active transaction (e.g. tests) dispatch directly.
     private void scheduleAsyncProcessing(UUID documentId) {
+        dispatchAfterCommit(() -> self.getObject().processDocumentAsync(documentId));
+    }
+
+    // Only run the async worker once the surrounding transaction has committed; otherwise the
+    // worker's own transaction could run first and either miss the not-yet-visible row or the
+    // PENDING status the caller just wrote. With no active transaction (e.g. tests) run directly.
+    private void dispatchAfterCommit(Runnable worker) {
         if (TransactionSynchronizationManager.isSynchronizationActive()) {
             TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
                 @Override
                 public void afterCommit() {
-                    self.getObject().processDocumentAsync(documentId);
+                    worker.run();
                 }
             });
         } else {
-            self.getObject().processDocumentAsync(documentId);
+            worker.run();
         }
     }
 
-    // Runs the GenAI pipeline off the request thread so uploads return as soon as the
-    // file is stored. Reloads the document by id because the persistence context that
-    // created it does not carry over to this thread, and the row may already be gone.
+    // Runs the GenAI pipeline off the request thread so uploads return as soon as the file is
+    // stored. Each step runs in its own transaction (via the self-proxy) so its status commits
+    // independently: the client sees each stage flip as it finishes, and a crash mid-pipeline
+    // leaves the already-finished steps committed instead of rolling the whole thing back to
+    // PENDING. This method itself is not transactional so the steps don't share one boundary.
     @Async
-    @Transactional
     public void processDocumentAsync(UUID documentId) {
-        Document document;
-        try {
-            document = documentService.findById(documentId);
-        } catch (Exception e) {
-            log.warn("Skipping async GenAI processing for missing document {}: {}", documentId, e.getMessage());
+        Document document = findDocumentForAsyncStep(documentId);
+        if (document == null) {
             return;
         }
         String textContent = document.getRawTextContent();
         if (textContent == null || textContent.isBlank()) {
             return;
         }
-        processSummary(document);
-        processEntities(document);
-        processTags(document);
-        processIndexing(document);
+        KnowledgeBaseService worker = self.getObject();
+        for (PipelineStep step : PipelineStep.values()) {
+            worker.runStep(documentId, step);
+        }
+    }
+
+    public enum PipelineStep {
+        SUMMARY, ENTITIES, TAGS, INDEX
+    }
+
+    // One transaction per step so each status commits on its own. Called directly (in sequence)
+    // by the initial pipeline and via runStepAsync for the reprocess endpoints.
+    @Transactional
+    public void runStep(UUID id, PipelineStep step) {
+        Document document = findDocumentForAsyncStep(id);
+        if (document == null) {
+            return;
+        }
+        switch (step) {
+            case SUMMARY -> processSummary(document);
+            case ENTITIES -> processEntities(document);
+            case TAGS -> processTags(document);
+            case INDEX -> processIndexing(document);
+        }
+    }
+
+    @Async
+    public void runStepAsync(UUID id, PipelineStep step) {
+        self.getObject().runStep(id, step);
     }
 
     private void processSummary(Document document) {
+        // The PENDING row was already inserted synchronously at upload/create time
+        // (or by reprocessSummary). Reset to PENDING here before calling the LLM so
+        // that reprocessSummary callers also see PENDING while generation is in progress.
+        Summary summary = document.getSummary();
+        if (summary == null) {
+            // Shouldn't happen in normal flow, but handle it defensively.
+            summary = new Summary(document);
+            summaryRepository.save(summary);
+            summaryRepository.flush();
+            document.setSummary(summary);
+        } else {
+            summary.setStatus(SummaryStatus.PENDING);
+            summary.setContent(null);
+            summary.setModelUsed(null);
+            summary.setGeneratedAt(null);
+            summary.setErrorMessage(null);
+            summaryRepository.save(summary);
+            summaryRepository.flush();
+        }
+
         try {
             SummarizeResponse response = genAiClient.summarize(document.getObjectKey());
-            Summary summary = new Summary(document, response.summary(), response.modelUsed());
+            summary.markCompleted(response.summary(), response.modelUsed());
             summaryRepository.save(summary);
-            document.setSummary(summary);
         } catch (Exception e) {
             log.warn("GenAI summarization failed for document {}: {}", document.getId(), e.getMessage());
+            summary.markFailed(e.getMessage());
+            summaryRepository.save(summary);
         }
     }
 
@@ -159,11 +226,11 @@ public class KnowledgeBaseService {
             for (ExtractedEntityDto dto : response.entities()) {
                 ExtractedEntity entity = new ExtractedEntity(document, dto.name(), dto.type(), dto.confidence());
                 extractedEntityRepository.save(entity);
-                document.getExtractedEntities().add(entity);
             }
+            documentService.updateEntitiesStatus(document.getId(), SummaryStatus.COMPLETED);
         } catch (Exception e) {
-            log.warn(
-                    "GenAI entity extraction failed for document {}: {}", document.getId(), e.getMessage());
+            log.warn("GenAI entity extraction failed for document {}: {}", document.getId(), e.getMessage());
+            documentService.updateEntitiesStatus(document.getId(), SummaryStatus.FAILED);
         }
     }
 
@@ -179,9 +246,13 @@ public class KnowledgeBaseService {
                 Tag tag = tagRepository.findByLabel(label).orElseGet(() -> tagRepository.save(new Tag(label, TagSource.AUTO)));
                 document.addTag(tag);
             }
-            documentService.save(document);
+            // document is managed inside this transaction, so the new tag associations flush on
+            // commit without a full-entity save; the status goes through a scoped update so a
+            // concurrent worker's save can't revert it.
+            documentService.updateTagsStatus(document.getId(), SummaryStatus.COMPLETED);
         } catch (Exception e) {
             log.warn("GenAI tagging failed for document {}: {}", document.getId(), e.getMessage());
+            documentService.updateTagsStatus(document.getId(), SummaryStatus.FAILED);
         }
     }
 
@@ -211,33 +282,52 @@ public class KnowledgeBaseService {
     @Transactional
     public void reprocessSummary(UUID id, String ownerSubject) {
         Document document = getDocument(id, ownerSubject);
-        Summary existing = document.getSummary();
-        if (existing != null) {
-            document.setSummary(null);
-            summaryRepository.delete(existing);
-            summaryRepository.flush();
+        Summary summary = document.getSummary();
+        if (summary == null) {
+            summary = new Summary(document);
+            document.setSummary(summary);
+        } else {
+            summary.setStatus(SummaryStatus.PENDING);
+            summary.setContent(null);
+            summary.setModelUsed(null);
+            summary.setGeneratedAt(null);
+            summary.setErrorMessage(null);
         }
-        processSummary(document);
+        summaryRepository.save(summary);
+        dispatchAfterCommit(() -> self.getObject().runStepAsync(id, PipelineStep.SUMMARY));
     }
 
     @Transactional
     public void reprocessEntities(UUID id, String ownerSubject) {
-        Document document = getDocument(id, ownerSubject);
+        getDocument(id, ownerSubject);
         extractedEntityRepository.deleteByDocumentId(id);
-        extractedEntityRepository.flush();
-        processEntities(document);
+        documentService.updateEntitiesStatus(id, SummaryStatus.PENDING);
+        dispatchAfterCommit(() -> self.getObject().runStepAsync(id, PipelineStep.ENTITIES));
     }
 
     @Transactional
     public void reprocessTags(UUID id, String ownerSubject) {
         Document document = getDocument(id, ownerSubject);
-        // only drop the auto tags, user-added tags stay
+        // only drop the auto tags, user-added tags stay; the removals flush from the managed
+        // entity on commit, the status goes through a scoped update to avoid clobbering peers
         List<Tag> autoTags = document.getTags().stream().filter(tag -> tag.getSource() == TagSource.AUTO).toList();
         for (Tag tag : autoTags) {
             document.removeTag(tag);
         }
-        documentService.save(document);
-        processTags(document);
+        documentService.updateTagsStatus(id, SummaryStatus.PENDING);
+        dispatchAfterCommit(() -> self.getObject().runStepAsync(id, PipelineStep.TAGS));
+    }
+
+    private Document findDocumentForAsyncStep(UUID id) {
+        try {
+            return documentService.findById(id);
+        } catch (DocumentNotFoundException e) {
+            // The document was deleted between the request committing and this worker running.
+            // Only that case is expected here; DB outages and the like must propagate so the
+            // async error handler sees them instead of us pretending the row simply vanished.
+            log.warn("Skipping async reprocess for missing document {}", id);
+            return null;
+        }
     }
 
     public Summary getDocumentSummary(UUID id, String ownerSubject) {

@@ -3,6 +3,7 @@ import { NavLink, Outlet } from "react-router";
 import { useAuth } from "react-oidc-context";
 import DocumentTree from "./DocumentTree";
 import $api from "../api/client";
+import { isProcessing, pollWhileProcessing } from "../utils/documentStatus";
 
 export interface MainViewContext {
   onToggleTag: (tagName: string) => void;
@@ -16,7 +17,16 @@ export default function MainView() {
     data: documents,
     isLoading: documentsLoading,
     error: documentsError,
-  } = $api.useQuery("get", "/api/v1/knowledgebase/documents");
+  } = $api.useQuery("get", "/api/v1/knowledgebase/documents", undefined, {
+    refetchInterval: (query) => {
+      const docs = query.state.data;
+      if (!docs) return false;
+      return pollWhileProcessing(
+        docs.some(isProcessing),
+        query.state.dataUpdateCount,
+      );
+    },
+  });
 
   const { data: tagsData } = $api.useQuery(
     "get",

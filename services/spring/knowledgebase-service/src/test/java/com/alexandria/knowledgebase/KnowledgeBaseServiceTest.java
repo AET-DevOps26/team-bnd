@@ -4,6 +4,7 @@ import com.alexandria.knowledgebase.document.*;
 import com.alexandria.knowledgebase.dto.DocumentRefDto;
 import com.alexandria.knowledgebase.dto.SemanticSearchResponseDto;
 import com.alexandria.knowledgebase.dto.UpdateDocumentRequest;
+import com.alexandria.knowledgebase.exception.DocumentNotFoundException;
 import com.alexandria.knowledgebase.integration.GenAiClient;
 import com.alexandria.knowledgebase.search.SearchQuery;
 import com.alexandria.knowledgebase.search.SearchQueryRepository;
@@ -295,7 +296,7 @@ class KnowledgeBaseServiceTest {
         doc.addTag(userTag);
         doc.addTag(oldAuto);
         when(documentService.findByIdAndOwner(docId, OWNER)).thenReturn(doc);
-        when(documentService.save(any(Document.class))).thenAnswer(this::recordSaved);
+        when(documentService.findById(docId)).thenReturn(doc);
         when(genAiClient.tag(anyString(), anyList())).thenReturn(new GenAiClient.TagResponse(List.of("fresh"), "model"));
         when(tagRepository.findByLabel("fresh")).thenReturn(Optional.empty());
         when(tagRepository.save(any(Tag.class))).thenAnswer(inv -> inv.getArgument(0));
@@ -428,19 +429,23 @@ class KnowledgeBaseServiceTest {
     }
 
     @Test
-    void unit_kb_reprocessSummaryDropsExistingBeforeRegenerating() {
+    void unit_kb_reprocessSummaryReusesExistingRowAndRegenerates() {
         UUID docId = UUID.randomUUID();
         Document doc = new Document(OWNER, "a.pdf", "/uploads/a.pdf", "application/pdf", 1L);
         Summary existing = new Summary(doc, "old", "model");
         doc.setSummary(existing);
         when(documentService.findByIdAndOwner(docId, OWNER)).thenReturn(doc);
+        when(documentService.findById(docId)).thenReturn(doc);
         when(genAiClient.summarize("/uploads/a.pdf")).thenReturn(new GenAiClient.SummarizeResponse("new", "model"));
         when(summaryRepository.save(any(Summary.class))).thenAnswer(inv -> inv.getArgument(0));
 
         knowledgeBaseService.reprocessSummary(docId, OWNER);
 
-        verify(summaryRepository).delete(existing);
-        assertThat(doc.getSummary().getContent()).isEqualTo("new");
+        // regenerated in place, never deleted, so the summary status stays visible during reprocess
+        verify(summaryRepository, never()).delete(any(Summary.class));
+        assertThat(doc.getSummary()).isSameAs(existing);
+        assertThat(existing.getContent()).isEqualTo("new");
+        assertThat(existing.getStatus()).isEqualTo(SummaryStatus.COMPLETED);
     }
 
     @Test
@@ -448,6 +453,7 @@ class KnowledgeBaseServiceTest {
         UUID docId = UUID.randomUUID();
         Document doc = new Document(OWNER, "a.pdf", "/uploads/a.pdf", "application/pdf", 1L);
         when(documentService.findByIdAndOwner(docId, OWNER)).thenReturn(doc);
+        when(documentService.findById(docId)).thenReturn(doc);
         when(genAiClient.extract("/uploads/a.pdf")).thenReturn(new GenAiClient.ExtractResponse(List.of(new GenAiClient.ExtractedEntityDto("Ada", EntityType.PERSON, 0.9)), "model"));
         when(extractedEntityRepository.save(any(ExtractedEntity.class))).thenAnswer(inv -> inv.getArgument(0));
 
@@ -479,12 +485,23 @@ class KnowledgeBaseServiceTest {
     }
 
     @Test
-    void unit_kb_processDocumentAsyncSkipsMissingDocument() {
+    void unit_kb_runStepSkipsDeletedDocument() {
         UUID docId = UUID.randomUUID();
-        when(documentService.findById(docId)).thenThrow(new RuntimeException("gone"));
+        when(documentService.findById(docId)).thenThrow(new DocumentNotFoundException(docId));
 
-        knowledgeBaseService.processDocumentAsync(docId);
+        knowledgeBaseService.runStep(docId, KnowledgeBaseService.PipelineStep.SUMMARY);
 
+        verifyNoInteractions(genAiClient);
+    }
+
+    @Test
+    void unit_kb_runStepPropagatesUnexpectedLookupFailure() {
+        UUID docId = UUID.randomUUID();
+        when(documentService.findById(docId)).thenThrow(new RuntimeException("db down"));
+
+        // a real outage must not be masked as a missing document; it bubbles up to the
+        // async error handler instead of silently leaving the pipeline stuck
+        assertThatThrownBy(() -> knowledgeBaseService.runStep(docId, KnowledgeBaseService.PipelineStep.SUMMARY)).isInstanceOf(RuntimeException.class).hasMessage("db down");
         verifyNoInteractions(genAiClient);
     }
 
@@ -622,6 +639,35 @@ class KnowledgeBaseServiceTest {
                 sync.afterCommit();
             }
             verify(selfProxy).processDocumentAsync(result.getId());
+        } finally {
+            TransactionSynchronizationManager.clearSynchronization();
+        }
+    }
+
+    @Test
+    void unit_kb_reprocessSummaryDefersGenAiUntilAfterCommit() {
+        UUID docId = UUID.randomUUID();
+        Document doc = new Document(OWNER, "a.pdf", "/uploads/a.pdf", "application/pdf", 1L);
+        Summary existing = new Summary(doc, "old", "model");
+        doc.setSummary(existing);
+        KnowledgeBaseService selfProxy = mock(KnowledgeBaseService.class);
+        when(self.getObject()).thenReturn(selfProxy);
+        when(documentService.findByIdAndOwner(docId, OWNER)).thenReturn(doc);
+        when(summaryRepository.save(any(Summary.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        TransactionSynchronizationManager.initSynchronization();
+        try {
+            knowledgeBaseService.reprocessSummary(docId, OWNER);
+
+            // status is reset synchronously so a poll sees PENDING right away,
+            // but the LLM call is deferred to the async worker after commit
+            assertThat(existing.getStatus()).isEqualTo(SummaryStatus.PENDING);
+            verify(selfProxy, never()).runStepAsync(any(UUID.class), any());
+
+            for (TransactionSynchronization sync : TransactionSynchronizationManager.getSynchronizations()) {
+                sync.afterCommit();
+            }
+            verify(selfProxy).runStepAsync(docId, KnowledgeBaseService.PipelineStep.SUMMARY);
         } finally {
             TransactionSynchronizationManager.clearSynchronization();
         }

@@ -19,6 +19,14 @@ public class DocumentService {
         return repository.save(document);
     }
 
+    public void updateEntitiesStatus(UUID id, SummaryStatus status) {
+        repository.updateEntitiesStatus(id, status);
+    }
+
+    public void updateTagsStatus(UUID id, SummaryStatus status) {
+        repository.updateTagsStatus(id, status);
+    }
+
     public Document findById(UUID id) {
         return repository.findById(id).orElseThrow(() -> new DocumentNotFoundException(id));
     }

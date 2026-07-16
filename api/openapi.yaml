@@ -1345,6 +1345,18 @@ components:
           items:
             $ref: '#/components/schemas/Tag'
           uniqueItems: true
+        entitiesStatus:
+          type: string
+          enum:
+            - PENDING
+            - COMPLETED
+            - FAILED
+        tagsStatus:
+          type: string
+          enum:
+            - PENDING
+            - COMPLETED
+            - FAILED
     ExtractedEntity:
       type: object
       properties:
@@ -1379,6 +1391,14 @@ components:
           type: string
           format: date-time
         modelUsed:
+          type: string
+        status:
+          type: string
+          enum:
+            - PENDING
+            - COMPLETED
+            - FAILED
+        errorMessage:
           type: string
     Tag:
       type: object
@@ -1500,6 +1520,14 @@ components:
         generatedAt:
           type: string
           format: date-time
+        status:
+          type: string
+          enum:
+            - PENDING
+            - COMPLETED
+            - FAILED
+        errorMessage:
+          type: string
     DocumentEntityDto:
       type: object
       properties:
