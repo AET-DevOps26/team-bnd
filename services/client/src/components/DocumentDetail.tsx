@@ -244,7 +244,7 @@ export default function DocumentDetail() {
                 aria-label={`Remove tag ${tag.label}`}
                 disabled={removeTagMutation.isPending}
               >
-                x
+                &#215;
               </button>
             )}
           </li>
@@ -283,7 +283,10 @@ export default function DocumentDetail() {
               onClick={() => setAddingTag(true)}
               aria-label="Add a tag"
             >
-              +
+              <span className="tag__add-icon" aria-hidden="true">
+                +
+              </span>
+              Add tag
             </button>
           )}
         </li>
