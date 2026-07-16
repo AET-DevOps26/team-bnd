@@ -216,6 +216,20 @@ grafana:
     limits:
       cpu: 200m
       memory: 256Mi
+  oauth:
+    enabled: false
+    name: Keycloak
+    clientId: grafana
+    # Public base URL Grafana is served from, no trailing slash. Required when enabled.
+    rootUrl: ""
+    # true if rootUrl serves Grafana under a subpath (e.g. .../grafana).
+    serveFromSubPath: true
+    # Browser hits authUrl; the Grafana pod hits tokenUrl/apiUrl over the cluster network.
+    authUrl: "https://alexandria.stud.k8s.aet.cit.tum.de/auth/realms/alexandria/protocol/openid-connect/auth"
+    tokenUrl: "http://alexandria-keycloak:8080/auth/realms/alexandria/protocol/openid-connect/token"
+    apiUrl: "http://alexandria-keycloak:8080/auth/realms/alexandria/protocol/openid-connect/userinfo"
+    scopes: "openid email profile"
+    roleAttributePath: "contains(roles[*], 'grafana-admin') && 'Admin' || 'Viewer'"
 
 keycloak:
   keycloak:
@@ -238,6 +252,19 @@ keycloak:
       value: "https://alexandria.stud.k8s.aet.cit.tum.de/*"
     - name: KEYCLOAK_WEB_ORIGIN
       value: "https://alexandria.stud.k8s.aet.cit.tum.de"
+    - name: GRAFANA_REDIRECT_URI
+      value: "https://alexandria.stud.k8s.aet.cit.tum.de/grafana/login/generic_oauth"
+    - name: GRAFANA_WEB_ORIGIN
+      value: "https://alexandria.stud.k8s.aet.cit.tum.de"
+    # Substituted into the grafana client secret in realm.json at import time.
+    # optional so a Keycloak start never fails if the key is absent (e.g. a
+    # hand-made existingSecret); the grafana login just stays unconfigured.
+    - name: GRAFANA_OIDC_CLIENT_SECRET
+      valueFrom:
+        secretKeyRef:
+          name: alexandria-secrets
+          key: grafana-oidc-client-secret
+          optional: true
   # CSS "alexandria" login theme for keycloak
   extraVolumes:
     - name: keycloak-theme

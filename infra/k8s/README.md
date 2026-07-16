@@ -61,14 +61,15 @@ kubectl -n bnd-alexandria-monitoring delete secret --all
 
 `alexandria-secrets`:
 
-| Key                       | Purpose                                                      |
-| ------------------------- | ------------------------------------------------------------ |
-| `db-password`             | PostgreSQL password (Spring services, Keycloak, postgres-db) |
-| `keycloak-admin-password` | Keycloak admin console                                       |
-| `grafana-admin-password`  | Grafana admin UI                                             |
-| `s3-access-key`           | SeaweedFS S3 access key                                      |
-| `s3-secret-key`           | SeaweedFS S3 secret key                                      |
-| `internal-shared-secret`  | HMAC for service-to-service /internal/** auth                |
+| Key                          | Purpose                                                      |
+| ---------------------------- | ------------------------------------------------------------ |
+| `db-password`                | PostgreSQL password (Spring services, Keycloak, postgres-db) |
+| `keycloak-admin-password`    | Keycloak admin console                                       |
+| `grafana-admin-password`     | Grafana admin UI                                             |
+| `grafana-oidc-client-secret` | Grafana OIDC client secret                                   |
+| `s3-access-key`              | SeaweedFS S3 access key                                      |
+| `s3-secret-key`              | SeaweedFS S3 secret key                                      |
+| `internal-shared-secret`     | HMAC for service-to-service /internal/** auth                |
 
 `alexandria-genai-secrets`:
 
@@ -103,6 +104,7 @@ kubectl -n bnd-alexandria create secret generic alexandria-secrets \
   --from-literal=db-password="$POSTGRES_PASSWORD" \
   --from-literal=keycloak-admin-password="$KC_ADMIN_PASSWORD" \
   --from-literal=grafana-admin-password="$GRAFANA_ADMIN_PASSWORD" \
+  --from-literal=grafana-oidc-client-secret="$GRAFANA_OIDC_CLIENT_SECRET" \
   --from-literal=s3-access-key="$S3_ACCESS_KEY" \
   --from-literal=s3-secret-key="$S3_SECRET_KEY" \
   --from-literal=internal-shared-secret="$INTERNAL_SHARED_SECRET" \

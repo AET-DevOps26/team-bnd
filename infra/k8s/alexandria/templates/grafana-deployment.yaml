@@ -1,4 +1,7 @@
 {{- if .Values.grafana.enabled }}
+{{- if and .Values.grafana.oauth.enabled (not .Values.grafana.oauth.rootUrl) }}
+{{- fail "grafana.oauth.enabled=true requires grafana.oauth.rootUrl (the public base URL Grafana is served from); without it Grafana builds a wrong OAuth redirect_uri." }}
+{{- end }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -51,6 +54,37 @@ spec:
                 secretKeyRef:
                   name: {{ include "alexandria.fullname" . }}-grafana
                   key: grafana-admin-password
+            {{- if .Values.grafana.oauth.enabled }}
+            - name: GF_SERVER_ROOT_URL
+              value: {{ .Values.grafana.oauth.rootUrl | quote }}
+            - name: GF_SERVER_SERVE_FROM_SUB_PATH
+              value: {{ .Values.grafana.oauth.serveFromSubPath | quote }}
+            - name: GF_AUTH_GENERIC_OAUTH_ENABLED
+              value: "true"
+            - name: GF_AUTH_GENERIC_OAUTH_NAME
+              value: {{ .Values.grafana.oauth.name | quote }}
+            - name: GF_AUTH_GENERIC_OAUTH_CLIENT_ID
+              value: {{ .Values.grafana.oauth.clientId | quote }}
+            - name: GF_AUTH_GENERIC_OAUTH_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "alexandria.fullname" . }}-grafana
+                  key: grafana-oidc-client-secret
+            - name: GF_AUTH_GENERIC_OAUTH_SCOPES
+              value: {{ .Values.grafana.oauth.scopes | quote }}
+            - name: GF_AUTH_GENERIC_OAUTH_AUTH_URL
+              value: {{ .Values.grafana.oauth.authUrl | quote }}
+            - name: GF_AUTH_GENERIC_OAUTH_TOKEN_URL
+              value: {{ .Values.grafana.oauth.tokenUrl | quote }}
+            - name: GF_AUTH_GENERIC_OAUTH_API_URL
+              value: {{ .Values.grafana.oauth.apiUrl | quote }}
+            - name: GF_AUTH_GENERIC_OAUTH_USE_PKCE
+              value: "true"
+            - name: GF_AUTH_GENERIC_OAUTH_LOGIN_ATTRIBUTE_PATH
+              value: "preferred_username"
+            - name: GF_AUTH_GENERIC_OAUTH_ROLE_ATTRIBUTE_PATH
+              value: {{ .Values.grafana.oauth.roleAttributePath | quote }}
+            {{- end }}
           ports:
             - name: http
               containerPort: 3000
