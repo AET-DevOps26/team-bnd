@@ -238,6 +238,20 @@ keycloak:
       value: "https://alexandria.stud.k8s.aet.cit.tum.de/*"
     - name: KEYCLOAK_WEB_ORIGIN
       value: "https://alexandria.stud.k8s.aet.cit.tum.de"
+  # CSS "alexandria" login theme for keycloak
+  extraVolumes:
+    - name: keycloak-theme
+      configMap:
+        name: '{{ .Release.Name }}-keycloak-theme'
+  extraVolumeMounts:
+    - name: keycloak-theme
+      mountPath: /opt/keycloak/themes/alexandria/login/theme.properties
+      subPath: theme.properties
+      readOnly: true
+    - name: keycloak-theme
+      mountPath: /opt/keycloak/themes/alexandria/login/resources/css/styles.css
+      subPath: styles.css
+      readOnly: true
   database:
     type: postgres
     host: "alexandria-postgres-db"
