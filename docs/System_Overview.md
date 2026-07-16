@@ -83,7 +83,7 @@ Team member responsible for this subsystem: Dominic Prinz
 
 ### Reverse Proxy / Gateway: Traefik
 
-Traefik is the single entry point for the whole system in local dev and docker-compose. It routes external requests to the right container by path: the client at `/`, the Spring APIs under `/api/v1/**`, each service's Swagger UI, Keycloak under `/auth`, and the Grafana and Prometheus UIs. The internal `/internal/**` service-to-service endpoints are deliberately not routed, so they stay in-network. On Kubernetes the cluster ingress plays this role instead of Traefik. Configuration lives in `docs/traefik.md` and the compose/ingress definitions.
+Traefik is the single entry point for the whole system in local dev and docker-compose. It routes external requests to the right container by path: the client at `/`, the Spring APIs under `/api/v1/**`, each service's Swagger UI, Keycloak under `/auth`, and the Grafana and Prometheus UIs. The internal `/internal/**` service-to-service endpoints are deliberately not routed, so they stay in-network. On Kubernetes the cluster ingress plays this role instead of Traefik. Configuration lives in `docs/Traefik.md` and the compose/ingress definitions.
 
 Team member responsible for this subsystem: Niklas Ladurner
 

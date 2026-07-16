@@ -87,7 +87,7 @@ For local development, `docker compose up` works out of the box; safe defaults a
 
 #### Troubleshooting
 
-Make sure to remove all containers _and_ docker volumes if you change to a local .env file. Otherwise, e.g., the postgres service will use the old password, leading to failed connections on the server side. This can be achieved by running `docker compose rm <container>` and `docker volume rm <volume>`.
+Make sure to remove all containers _and_ docker volumes if you change to a local .env file. Otherwise, e.g., the postgres service will use the old password, leading to failed connections on the server side. This can be achieved by running `docker compose rm <container>` and `docker volume rm <volume>`. To remove the whole stack at once, use `docker compose down -v` (Note that this deletes all volumes!).
 
 ### Server
 

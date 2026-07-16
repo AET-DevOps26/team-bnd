@@ -42,10 +42,11 @@ kubectl -n bnd-alexandria-monitoring port-forward svc/alexandria-grafana 3000:30
 
 ## Secrets
 
-All credentials live in a single Kubernetes Secret named `alexandria-secrets`. The chart
+The auto-generated credentials live in a single Kubernetes Secret named `alexandria-secrets`. The chart
 generates random values for everything on first install and preserves them across upgrades
 via `lookup`. The only credential that is never auto-generated is the LLM API key, since
-it comes from an external provider.
+it comes from an external provider; it lives in a separate `alexandria-genai-secrets` Secret,
+sourced from `genai.llmApiKey` (or an existing secret you point to via `genai.existingSecret`).
 
 Secrets are annotated with `helm.sh/resource-policy: keep`, so they survive `helm uninstall`.
 Delete them manually if you want a clean slate:
