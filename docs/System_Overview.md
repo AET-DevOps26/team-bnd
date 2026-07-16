@@ -79,6 +79,28 @@ Team member responsible for this subsystem: Dominic Prinz
 
 For monitoring the microservices, Prometheus is used to scrape metrics. These are then visualized using Grafana.
 
+Team member responsible for this subsystem: Dominic Prinz
+
+### Reverse Proxy / Gateway: Traefik
+
+Traefik is the single entry point for the whole system in local dev and docker-compose. It routes external requests to the right container by path: the client at `/`, the Spring APIs under `/api/v1/**`, each service's Swagger UI, Keycloak under `/auth`, and the Grafana and Prometheus UIs. The internal `/internal/**` service-to-service endpoints are deliberately not routed, so they stay in-network. On Kubernetes the cluster ingress plays this role instead of Traefik. Configuration lives in `docs/traefik.md` and the compose/ingress definitions.
+
+Team member responsible for this subsystem: Niklas Ladurner
+
+### Authentication: Keycloak
+
+Keycloak is the OIDC provider. The client redirects users to it for login/registration, and every Spring service validates the resulting JWT (via `OidcUserFilter` on user-service, which also creates the user record on first authenticated request). The realm is defined in `oidc/realm.json`. Tokens are passed as Bearer headers on API calls.
+
+Team member responsible for this subsystem: Niklas Ladurner
+
+### Infrastructure, Deployment and CI/CD
+
+The system is containerised (one Dockerfile per component) and runs end-to-end via `docker-compose.yml` locally. It deploys to Kubernetes through a Helm chart (`infra/k8s/`), and an Azure VM option is provisioned with Terraform + Ansible (`infra/azure/`). GitHub Actions runs CI on every PR (build, test, lint, OpenAPI checks) and deploys on merge to main.
+
+Team member responsible for Kubernetes: Bjarne Hansen
+Team member responsible for Azure: Dominic Prinz
+Team member responsible for CI: Dominic Prinz
+
 ## UML Diagrams
 
 ### Analysis Object Model

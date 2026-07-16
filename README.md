@@ -1,4 +1,4 @@
-# team-bnd
+# Alexandria (Team BND)
 
 [![CI](https://github.com/AET-DevOps26/team-bnd/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/AET-DevOps26/team-bnd/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/AET-DevOps26/team-bnd/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/AET-DevOps26/team-bnd/actions/workflows/codeql.yml)
@@ -39,7 +39,7 @@ The per-service Swagger UIs are also available locally through Traefik (see the 
 
 ### Traefik Reverse Proxy
 
-All services are accessed through Traefik as the reverse proxy. See [`docs/traefik.md`](docs/traefik.md) for architecture, routing, and configuration details.
+All services are accessed through Traefik as the reverse proxy. See [`docs/Traefik.md`](docs/Traefik.md) for architecture, routing, and configuration details.
 
 **Quick reference:**
 
@@ -87,7 +87,7 @@ For local development, `docker compose up` works out of the box; safe defaults a
 
 #### Troubleshooting
 
-- Make sure to remove all containers _and_ docker volumes if you change to a local .env file. Otherwise, e.g., the postgres service will use the old password, leading to failed connections on the server side. This can be achieved by running `docker compose rm <container>` and `docker volume rm <volume>`.
+Make sure to remove all containers _and_ docker volumes if you change to a local .env file. Otherwise, e.g., the postgres service will use the old password, leading to failed connections on the server side. This can be achieved by running `docker compose rm <container>` and `docker volume rm <volume>`.
 
 ### Server
 

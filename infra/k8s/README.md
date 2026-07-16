@@ -95,9 +95,9 @@ For CI/CD pipelines, create the secrets before running Helm so they never appear
 Helm release metadata:
 
 ```bash
-kubectl create namespace alexandria --dry-run=client -o yaml | kubectl apply -f -
+kubectl create namespace bnd-alexandria --dry-run=client -o yaml | kubectl apply -f -
 
-kubectl -n alexandria create secret generic alexandria-secrets \
+kubectl -n bnd-alexandria create secret generic alexandria-secrets \
   --from-literal=db-password="$POSTGRES_PASSWORD" \
   --from-literal=keycloak-admin-password="$KC_ADMIN_PASSWORD" \
   --from-literal=grafana-admin-password="$GRAFANA_ADMIN_PASSWORD" \
@@ -106,12 +106,12 @@ kubectl -n alexandria create secret generic alexandria-secrets \
   --from-literal=internal-shared-secret="$INTERNAL_SHARED_SECRET" \
   --dry-run=client -o yaml | kubectl apply -f -
 
-kubectl -n alexandria create secret generic alexandria-genai-secrets \
+kubectl -n bnd-alexandria create secret generic alexandria-genai-secrets \
   --from-literal=llm-api-key="$LLM_API_KEY" \
   --dry-run=client -o yaml | kubectl apply -f -
 
 helm upgrade --install alexandria infra/k8s/alexandria \
-  --namespace alexandria --create-namespace \
+  --namespace bnd-alexandria --create-namespace \
   --dependency-update \
   --set "existingSecret=alexandria-secrets" \
   --set "genai.existingSecret=alexandria-genai-secrets"
@@ -226,7 +226,7 @@ networkPolicy:
 
 With `allowFromAnywhere: false` the render fails fast if both selectors are left empty, so the default-deny can't be silently defeated.
 
-# Kubernetes Troubleshooting
+## Troubleshooting
 
 ### Spring or Keycloak fail postgres password authentication after a reinstall
 
