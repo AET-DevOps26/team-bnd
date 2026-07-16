@@ -207,6 +207,10 @@ grafana:
     tag: 13.0.2
   # Leave empty to auto-generate a random password on first install.
   adminPassword: ""
+  # Expose Grafana at <ingress.host>/grafana via its own Ingress in the monitoring
+  # namespace. Prometheus stays private (port-forward only).
+  ingress:
+    enabled: true
   persistence:
     size: 1Gi
   resources:
@@ -217,10 +221,11 @@ grafana:
       cpu: 200m
       memory: 256Mi
   oauth:
-    enabled: false
+    enabled: true
     name: Keycloak
     clientId: grafana
-    # Public base URL Grafana is served from, no trailing slash. Required when enabled.
+    # Public base URL Grafana is served from, no trailing slash. Leave empty to derive
+    # https://<ingress.host>/grafana; set it explicitly for a different external URL.
     rootUrl: ""
     # true if rootUrl serves Grafana under a subpath (e.g. .../grafana).
     serveFromSubPath: true

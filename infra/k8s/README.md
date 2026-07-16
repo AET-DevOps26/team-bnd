@@ -30,13 +30,19 @@ upgrades. The only thing you need to provide is the LLM API key.
 
 Prometheus and Grafana live in their own namespace (`bnd-alexandria-monitoring`
 by default, i.e. `<release-namespace>-monitoring`; override via
-`monitoring.namespace`) and are intentionally not exposed through the ingress.
-To reach them, port-forward:
+`monitoring.namespace`).
+
+Grafana is exposed through the ingress at `https://<ingress.host>/grafana` (its own
+Ingress in the monitoring namespace), with Keycloak login enabled by default. Turn
+it off with `--set grafana.ingress.enabled=false` or `--set grafana.oauth.enabled=false`.
+
+Prometheus stays private, port-forward to reach it:
 
 ```bash
 kubectl -n bnd-alexandria-monitoring port-forward svc/alexandria-prometheus 9090:9090
 # open http://localhost:9090/prometheus
 
+# Grafana too, if you don't want to go through the ingress:
 kubectl -n bnd-alexandria-monitoring port-forward svc/alexandria-grafana 3000:3000
 # open http://localhost:3000
 ```
