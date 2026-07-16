@@ -6,7 +6,7 @@ Alexandria uses [Traefik](https://traefik.io/) as the reverse proxy and API gate
 
 ```text
                             ┌─────────────┐
-               HTTP:80 ──▶ │   Traefik   │
+               HTTP:80 ──▶  │   Traefik   │
                             └──────┬──────┘
                                    │
         ┌────────────┬─────────────┼─────────────┬─────────────┐
@@ -17,13 +17,13 @@ Alexandria uses [Traefik](https://traefik.io/) as the reverse proxy and API gate
   │  (nginx) │  │  (API)   │  │  (OIDC)  │  │          │  │    eus   │
   └──────────┘  └────┬─────┘  └──────────┘  └──────────┘  └──────────┘
                      │
-              ┌──────┴──────┐
-              │             │
-              ▼             ▼
-        ┌──────────┐   ┌──────────┐
-        │  GenAI   │   │ Postgres │
-        │ (Python) │   │   (DB)   │
-        └──────────┘   └──────────┘
+                     │
+                     │
+                     ▼
+               ┌──────────┐
+               │  GenAI   │
+               │ (Python) │
+               └──────────┘
 ```
 
 **Public services** (accessible via Traefik):
