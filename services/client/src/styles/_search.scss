@@ -264,3 +264,12 @@
     color: $color-text-light;
     font-variant-numeric: tabular-nums;
 }
+
+// drop the fixed sidebar reservation when it no longer fits
+@media (max-width: 900px) {
+    .search-form,
+    .search-error,
+    .search-results {
+        max-width: none;
+    }
+}

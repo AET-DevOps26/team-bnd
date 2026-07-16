@@ -17,6 +17,10 @@
 .qa-history {
     width: 100%;
     max-width: calc(100% - 320px - 2rem);
+
+    @media (max-width: 900px) {
+        max-width: none;
+    }
 }
 
 // Question form

@@ -28,6 +28,11 @@
     grid-template-columns: minmax(0, 1fr) 320px;
     gap: 2rem;
     align-items: start;
+
+    // collapse to one column when the fixed 320px aside no longer fits
+    @media (max-width: 900px) {
+        grid-template-columns: minmax(0, 1fr);
+    }
 }
 
 .detail-preview {
@@ -59,7 +64,6 @@
     letter-spacing: -0.01em;
     color: $color-text;
     line-height: 1.3;
-    word-break: break-word;
     overflow-wrap: anywhere;
 }
 
@@ -193,6 +197,7 @@ $color-tag-user-bg: #dcecf8;
 
 .tag {
     @extend %pill;
+
     background: $color-tag-user-bg;
     color: $color-tag-user;
     border-color: rgba($color-tag-user, 0.28);
@@ -587,7 +592,6 @@ $color-entity-org-bg: #eae2fc;
     line-height: 1.6;
     color: $color-text-dark;
     white-space: pre-wrap;
-    word-break: break-word;
     overflow-wrap: anywhere;
     overflow-x: auto;
 }

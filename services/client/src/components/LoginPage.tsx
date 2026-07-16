@@ -36,7 +36,7 @@ export default function LoginPage() {
 
           {auth.error ? (
             <>
-              <p className="login-error">
+              <p className="login-error" role="alert">
                 Authentication error: {auth.error.message}
               </p>
               <button
