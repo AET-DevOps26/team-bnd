@@ -6,7 +6,7 @@ Alexandria uses [Traefik](https://traefik.io/) as the reverse proxy and API gate
 
 ```text
                             ┌─────────────┐
-               HTTP:80 ──▶  │   Traefik   │
+               HTTP:80 ──▶ │   Traefik   │
                             └──────┬──────┘
                                    │
         ┌────────────┬─────────────┼─────────────┬─────────────┐
