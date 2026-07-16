@@ -142,27 +142,50 @@ public class KnowledgeBaseService {
         }
     }
 
-    // Runs the GenAI pipeline off the request thread so uploads return as soon as the
-    // file is stored. Reloads the document by id because the persistence context that
-    // created it does not carry over to this thread, and the row may already be gone.
+    // Runs the GenAI pipeline off the request thread so uploads return as soon as the file is
+    // stored. Each step runs in its own transaction (via the self-proxy) so its status commits
+    // independently: the client sees each stage flip as it finishes, and a crash mid-pipeline
+    // leaves the already-finished steps committed instead of rolling the whole thing back to
+    // PENDING. This method itself is not transactional so the steps don't share one boundary.
     @Async
-    @Transactional
     public void processDocumentAsync(UUID documentId) {
-        Document document;
-        try {
-            document = documentService.findById(documentId);
-        } catch (Exception e) {
-            log.warn("Skipping async GenAI processing for missing document {}: {}", documentId, e.getMessage());
+        Document document = findDocumentForAsyncStep(documentId);
+        if (document == null) {
             return;
         }
         String textContent = document.getRawTextContent();
         if (textContent == null || textContent.isBlank()) {
             return;
         }
-        processSummary(document);
-        processEntities(document);
-        processTags(document);
-        processIndexing(document);
+        KnowledgeBaseService worker = self.getObject();
+        for (PipelineStep step : PipelineStep.values()) {
+            worker.runStep(documentId, step);
+        }
+    }
+
+    public enum PipelineStep {
+        SUMMARY, ENTITIES, TAGS, INDEX
+    }
+
+    // One transaction per step so each status commits on its own. Called directly (in sequence)
+    // by the initial pipeline and via runStepAsync for the reprocess endpoints.
+    @Transactional
+    public void runStep(UUID id, PipelineStep step) {
+        Document document = findDocumentForAsyncStep(id);
+        if (document == null) {
+            return;
+        }
+        switch (step) {
+            case SUMMARY -> processSummary(document);
+            case ENTITIES -> processEntities(document);
+            case TAGS -> processTags(document);
+            case INDEX -> processIndexing(document);
+        }
+    }
+
+    @Async
+    public void runStepAsync(UUID id, PipelineStep step) {
+        self.getObject().runStep(id, step);
     }
 
     private void processSummary(Document document) {
@@ -203,14 +226,11 @@ public class KnowledgeBaseService {
             for (ExtractedEntityDto dto : response.entities()) {
                 ExtractedEntity entity = new ExtractedEntity(document, dto.name(), dto.type(), dto.confidence());
                 extractedEntityRepository.save(entity);
-                document.getExtractedEntities().add(entity);
             }
-            document.setEntitiesStatus(SummaryStatus.COMPLETED);
-            documentService.save(document);
+            documentService.updateEntitiesStatus(document.getId(), SummaryStatus.COMPLETED);
         } catch (Exception e) {
             log.warn("GenAI entity extraction failed for document {}: {}", document.getId(), e.getMessage());
-            document.setEntitiesStatus(SummaryStatus.FAILED);
-            documentService.save(document);
+            documentService.updateEntitiesStatus(document.getId(), SummaryStatus.FAILED);
         }
     }
 
@@ -226,12 +246,13 @@ public class KnowledgeBaseService {
                 Tag tag = tagRepository.findByLabel(label).orElseGet(() -> tagRepository.save(new Tag(label, TagSource.AUTO)));
                 document.addTag(tag);
             }
-            document.setTagsStatus(SummaryStatus.COMPLETED);
-            documentService.save(document);
+            // document is managed inside this transaction, so the new tag associations flush on
+            // commit without a full-entity save; the status goes through a scoped update so a
+            // concurrent worker's save can't revert it.
+            documentService.updateTagsStatus(document.getId(), SummaryStatus.COMPLETED);
         } catch (Exception e) {
             log.warn("GenAI tagging failed for document {}: {}", document.getId(), e.getMessage());
-            document.setTagsStatus(SummaryStatus.FAILED);
-            documentService.save(document);
+            documentService.updateTagsStatus(document.getId(), SummaryStatus.FAILED);
         }
     }
 
@@ -273,56 +294,28 @@ public class KnowledgeBaseService {
             summary.setErrorMessage(null);
         }
         summaryRepository.save(summary);
-        dispatchAfterCommit(() -> self.getObject().reprocessSummaryAsync(id));
+        dispatchAfterCommit(() -> self.getObject().runStepAsync(id, PipelineStep.SUMMARY));
     }
 
     @Transactional
     public void reprocessEntities(UUID id, String ownerSubject) {
-        Document document = getDocument(id, ownerSubject);
-        document.setEntitiesStatus(SummaryStatus.PENDING);
-        documentService.save(document);
+        getDocument(id, ownerSubject);
         extractedEntityRepository.deleteByDocumentId(id);
-        dispatchAfterCommit(() -> self.getObject().reprocessEntitiesAsync(id));
+        documentService.updateEntitiesStatus(id, SummaryStatus.PENDING);
+        dispatchAfterCommit(() -> self.getObject().runStepAsync(id, PipelineStep.ENTITIES));
     }
 
     @Transactional
     public void reprocessTags(UUID id, String ownerSubject) {
         Document document = getDocument(id, ownerSubject);
-        document.setTagsStatus(SummaryStatus.PENDING);
-        // only drop the auto tags, user-added tags stay
+        // only drop the auto tags, user-added tags stay; the removals flush from the managed
+        // entity on commit, the status goes through a scoped update to avoid clobbering peers
         List<Tag> autoTags = document.getTags().stream().filter(tag -> tag.getSource() == TagSource.AUTO).toList();
         for (Tag tag : autoTags) {
             document.removeTag(tag);
         }
-        documentService.save(document);
-        dispatchAfterCommit(() -> self.getObject().reprocessTagsAsync(id));
-    }
-
-    @Async
-    @Transactional
-    public void reprocessSummaryAsync(UUID id) {
-        Document document = findDocumentForAsyncStep(id);
-        if (document != null) {
-            processSummary(document);
-        }
-    }
-
-    @Async
-    @Transactional
-    public void reprocessEntitiesAsync(UUID id) {
-        Document document = findDocumentForAsyncStep(id);
-        if (document != null) {
-            processEntities(document);
-        }
-    }
-
-    @Async
-    @Transactional
-    public void reprocessTagsAsync(UUID id) {
-        Document document = findDocumentForAsyncStep(id);
-        if (document != null) {
-            processTags(document);
-        }
+        documentService.updateTagsStatus(id, SummaryStatus.PENDING);
+        dispatchAfterCommit(() -> self.getObject().runStepAsync(id, PipelineStep.TAGS));
     }
 
     private Document findDocumentForAsyncStep(UUID id) {

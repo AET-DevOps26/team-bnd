@@ -4,6 +4,7 @@ import { useOutletContext, useParams } from "react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import $api from "../api/client";
 import { formatBytes, formatDateTime } from "../utils/format";
+import { isProcessing, pollWhileProcessing } from "../utils/documentStatus";
 import DotsLoader from "./DotsLoader";
 import type { MainViewContext } from "./MainView";
 
@@ -31,15 +32,15 @@ export default function DocumentDetail() {
     { params: { path: { id: documentId ?? "" } } },
     {
       enabled: !!documentId,
-      // Poll while any pipeline step is still in progress.
+      // Poll while any pipeline step is still in progress, with a cap so a stuck
+      // document doesn't keep us polling forever.
       refetchInterval: (query) => {
         const doc = query.state.data;
         if (!doc) return false;
-        const pending =
-          doc.summary?.status === "PENDING" ||
-          doc.entitiesStatus === "PENDING" ||
-          doc.tagsStatus === "PENDING";
-        return pending ? 3000 : false;
+        return pollWhileProcessing(
+          isProcessing(doc),
+          query.state.dataUpdateCount,
+        );
       },
     },
   );

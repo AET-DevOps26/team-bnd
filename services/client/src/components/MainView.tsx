@@ -3,6 +3,7 @@ import { NavLink, Outlet } from "react-router";
 import { useAuth } from "react-oidc-context";
 import DocumentTree from "./DocumentTree";
 import $api from "../api/client";
+import { isProcessing, pollWhileProcessing } from "../utils/documentStatus";
 
 export interface MainViewContext {
   onToggleTag: (tagName: string) => void;
@@ -20,13 +21,10 @@ export default function MainView() {
     refetchInterval: (query) => {
       const docs = query.state.data;
       if (!docs) return false;
-      const anyPending = docs.some(
-        (doc) =>
-          doc.summary?.status === "PENDING" ||
-          doc.entitiesStatus === "PENDING" ||
-          doc.tagsStatus === "PENDING",
+      return pollWhileProcessing(
+        docs.some(isProcessing),
+        query.state.dataUpdateCount,
       );
-      return anyPending ? 3000 : false;
     },
   });
 

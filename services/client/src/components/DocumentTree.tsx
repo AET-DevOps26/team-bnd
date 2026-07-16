@@ -4,19 +4,12 @@ import UploadDocument from "./UploadDocument";
 import DotsLoader from "./DotsLoader";
 import type { components } from "../api/schema";
 import { formatDate } from "../utils/format";
+import { isProcessing } from "../utils/documentStatus";
 
 type Document = components["schemas"]["Document"];
 type TagDto = components["schemas"]["TagDto"];
 
 const VISIBLE_TAG_COUNT = 5;
-
-function isProcessing(doc: Document): boolean {
-  return (
-    doc.summary?.status === "PENDING" ||
-    doc.entitiesStatus === "PENDING" ||
-    doc.tagsStatus === "PENDING"
-  );
-}
 
 interface Props {
   documents: Document[] | undefined;

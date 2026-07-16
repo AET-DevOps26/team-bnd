@@ -297,7 +297,6 @@ class KnowledgeBaseServiceTest {
         doc.addTag(oldAuto);
         when(documentService.findByIdAndOwner(docId, OWNER)).thenReturn(doc);
         when(documentService.findById(docId)).thenReturn(doc);
-        when(documentService.save(any(Document.class))).thenAnswer(this::recordSaved);
         when(genAiClient.tag(anyString(), anyList())).thenReturn(new GenAiClient.TagResponse(List.of("fresh"), "model"));
         when(tagRepository.findByLabel("fresh")).thenReturn(Optional.empty());
         when(tagRepository.save(any(Tag.class))).thenAnswer(inv -> inv.getArgument(0));
@@ -486,33 +485,23 @@ class KnowledgeBaseServiceTest {
     }
 
     @Test
-    void unit_kb_processDocumentAsyncSkipsMissingDocument() {
-        UUID docId = UUID.randomUUID();
-        when(documentService.findById(docId)).thenThrow(new RuntimeException("gone"));
-
-        knowledgeBaseService.processDocumentAsync(docId);
-
-        verifyNoInteractions(genAiClient);
-    }
-
-    @Test
-    void unit_kb_reprocessSummaryAsyncSkipsDeletedDocument() {
+    void unit_kb_runStepSkipsDeletedDocument() {
         UUID docId = UUID.randomUUID();
         when(documentService.findById(docId)).thenThrow(new DocumentNotFoundException(docId));
 
-        knowledgeBaseService.reprocessSummaryAsync(docId);
+        knowledgeBaseService.runStep(docId, KnowledgeBaseService.PipelineStep.SUMMARY);
 
         verifyNoInteractions(genAiClient);
     }
 
     @Test
-    void unit_kb_reprocessSummaryAsyncPropagatesUnexpectedLookupFailure() {
+    void unit_kb_runStepPropagatesUnexpectedLookupFailure() {
         UUID docId = UUID.randomUUID();
         when(documentService.findById(docId)).thenThrow(new RuntimeException("db down"));
 
         // a real outage must not be masked as a missing document; it bubbles up to the
         // async error handler instead of silently leaving the pipeline stuck
-        assertThatThrownBy(() -> knowledgeBaseService.reprocessSummaryAsync(docId)).isInstanceOf(RuntimeException.class).hasMessage("db down");
+        assertThatThrownBy(() -> knowledgeBaseService.runStep(docId, KnowledgeBaseService.PipelineStep.SUMMARY)).isInstanceOf(RuntimeException.class).hasMessage("db down");
         verifyNoInteractions(genAiClient);
     }
 
@@ -673,12 +662,12 @@ class KnowledgeBaseServiceTest {
             // status is reset synchronously so a poll sees PENDING right away,
             // but the LLM call is deferred to the async worker after commit
             assertThat(existing.getStatus()).isEqualTo(SummaryStatus.PENDING);
-            verify(selfProxy, never()).reprocessSummaryAsync(any(UUID.class));
+            verify(selfProxy, never()).runStepAsync(any(UUID.class), any());
 
             for (TransactionSynchronization sync : TransactionSynchronizationManager.getSynchronizations()) {
                 sync.afterCommit();
             }
-            verify(selfProxy).reprocessSummaryAsync(docId);
+            verify(selfProxy).runStepAsync(docId, KnowledgeBaseService.PipelineStep.SUMMARY);
         } finally {
             TransactionSynchronizationManager.clearSynchronization();
         }
