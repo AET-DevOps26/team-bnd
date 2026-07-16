@@ -5,6 +5,7 @@ import com.alexandria.knowledgebase.dto.DocumentRefDto;
 import com.alexandria.knowledgebase.dto.SemanticSearchResponseDto;
 import com.alexandria.knowledgebase.dto.SemanticSearchResultDto;
 import com.alexandria.knowledgebase.dto.UpdateDocumentRequest;
+import com.alexandria.knowledgebase.exception.DocumentNotFoundException;
 import com.alexandria.knowledgebase.integration.GenAiClient;
 import com.alexandria.knowledgebase.integration.GenAiClient.ExtractResponse;
 import com.alexandria.knowledgebase.integration.GenAiClient.ExtractedEntityDto;
@@ -327,8 +328,11 @@ public class KnowledgeBaseService {
     private Document findDocumentForAsyncStep(UUID id) {
         try {
             return documentService.findById(id);
-        } catch (Exception e) {
-            log.warn("Skipping async reprocess for missing document {}: {}", id, e.getMessage());
+        } catch (DocumentNotFoundException e) {
+            // The document was deleted between the request committing and this worker running.
+            // Only that case is expected here; DB outages and the like must propagate so the
+            // async error handler sees them instead of us pretending the row simply vanished.
+            log.warn("Skipping async reprocess for missing document {}", id);
             return null;
         }
     }

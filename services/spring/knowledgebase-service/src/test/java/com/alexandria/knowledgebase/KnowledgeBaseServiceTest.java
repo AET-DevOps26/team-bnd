@@ -4,6 +4,7 @@ import com.alexandria.knowledgebase.document.*;
 import com.alexandria.knowledgebase.dto.DocumentRefDto;
 import com.alexandria.knowledgebase.dto.SemanticSearchResponseDto;
 import com.alexandria.knowledgebase.dto.UpdateDocumentRequest;
+import com.alexandria.knowledgebase.exception.DocumentNotFoundException;
 import com.alexandria.knowledgebase.integration.GenAiClient;
 import com.alexandria.knowledgebase.search.SearchQuery;
 import com.alexandria.knowledgebase.search.SearchQueryRepository;
@@ -491,6 +492,27 @@ class KnowledgeBaseServiceTest {
 
         knowledgeBaseService.processDocumentAsync(docId);
 
+        verifyNoInteractions(genAiClient);
+    }
+
+    @Test
+    void unit_kb_reprocessSummaryAsyncSkipsDeletedDocument() {
+        UUID docId = UUID.randomUUID();
+        when(documentService.findById(docId)).thenThrow(new DocumentNotFoundException(docId));
+
+        knowledgeBaseService.reprocessSummaryAsync(docId);
+
+        verifyNoInteractions(genAiClient);
+    }
+
+    @Test
+    void unit_kb_reprocessSummaryAsyncPropagatesUnexpectedLookupFailure() {
+        UUID docId = UUID.randomUUID();
+        when(documentService.findById(docId)).thenThrow(new RuntimeException("db down"));
+
+        // a real outage must not be masked as a missing document; it bubbles up to the
+        // async error handler instead of silently leaving the pipeline stuck
+        assertThatThrownBy(() -> knowledgeBaseService.reprocessSummaryAsync(docId)).isInstanceOf(RuntimeException.class).hasMessage("db down");
         verifyNoInteractions(genAiClient);
     }
 
