@@ -1,9 +1,11 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
-import { useParams } from "react-router";
+import { useOutletContext, useParams } from "react-router";
+import { useQueryClient } from "@tanstack/react-query";
 import $api from "../api/client";
 import { formatBytes, formatDateTime } from "../utils/format";
 import DotsLoader from "./DotsLoader";
+import type { MainViewContext } from "./MainView";
 
 const ENTITY_TYPE_LABELS: Record<string, string> = {
   PERSON: "Person",
@@ -11,9 +13,14 @@ const ENTITY_TYPE_LABELS: Record<string, string> = {
   TOPIC: "Topic",
   ORGANIZATION: "Organization",
 };
-
 export default function DocumentDetail() {
   const { id: documentId = null } = useParams<{ id: string }>();
+  const { onToggleTag } = useOutletContext<MainViewContext>();
+  const queryClient = useQueryClient();
+  const [newTagLabel, setNewTagLabel] = useState("");
+  const [addingTag, setAddingTag] = useState(false);
+  const tagInputRef = useRef<HTMLInputElement>(null);
+
   const {
     data: document,
     isLoading,
@@ -36,6 +43,17 @@ export default function DocumentDetail() {
       },
     },
   );
+
+  const addTagMutation = $api.useMutation(
+    "post",
+    "/api/v1/knowledgebase/documents/{id}/tags",
+  );
+
+  const removeTagMutation = $api.useMutation(
+    "delete",
+    "/api/v1/knowledgebase/documents/{documentId}/tags/{tagId}",
+  );
+
   const fileType = (document?.fileType ?? "").split(";")[0];
   const isPdf = fileType === "application/pdf";
   const isMarkdown = fileType === "text/markdown";
@@ -86,6 +104,73 @@ export default function DocumentDetail() {
     };
   }, [pdfData]);
 
+  function invalidateAfterTagChange() {
+    // Refetch both the document detail and the documents list + tags list
+    void queryClient.invalidateQueries({
+      queryKey: ["get", "/api/v1/knowledgebase/documents/{id}"],
+    });
+    void queryClient.invalidateQueries({
+      queryKey: ["get", "/api/v1/knowledgebase/documents"],
+    });
+    void queryClient.invalidateQueries({
+      queryKey: ["get", "/api/v1/knowledgebase/tags"],
+    });
+  }
+
+  function closeAddTag() {
+    setNewTagLabel("");
+    setAddingTag(false);
+    addTagMutation.reset();
+  }
+
+  function handleAddTag() {
+    const label = newTagLabel.trim();
+    if (!label || !documentId) return;
+    addTagMutation.mutate(
+      {
+        params: { path: { id: documentId } },
+        body: { label },
+      },
+      {
+        onSuccess: () => {
+          closeAddTag();
+          invalidateAfterTagChange();
+        },
+      },
+    );
+  }
+
+  function handleTagInputKeyDown(e: React.KeyboardEvent) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      handleAddTag();
+    } else if (e.key === "Escape") {
+      closeAddTag();
+    }
+  }
+
+  function handleTagInputBlur() {
+    if (newTagLabel.trim()) {
+      handleAddTag();
+    } else {
+      closeAddTag();
+    }
+  }
+
+  function handleRemoveTag(tagId: string) {
+    if (!documentId) return;
+    removeTagMutation.mutate(
+      {
+        params: { path: { documentId, tagId } },
+      },
+      {
+        onSuccess: () => {
+          invalidateAfterTagChange();
+        },
+      },
+    );
+  }
+
   if (!documentId) {
     return (
       <div className="document-detail document-detail--empty">
@@ -119,7 +204,10 @@ export default function DocumentDetail() {
 
   if (!document) return null;
 
-  const tags = document.tags ?? [];
+  // Sort tags alphabetically to keep a consistent display order (#301)
+  const tags = [...(document.tags ?? [])].sort((a, b) =>
+    (a.label ?? "").localeCompare(b.label ?? ""),
+  );
   const entities = document.extractedEntities ?? [];
   const summary = document.summary;
   const entitiesStatus = document.entitiesStatus;
@@ -139,31 +227,88 @@ export default function DocumentDetail() {
         </dl>
       </header>
 
-      {(tagsStatus || tags.length > 0) && (
-        <section className="detail-section">
-          <h3>Tags</h3>
-          {tagsStatus === "PENDING" && <DotsLoader />}
-          {tagsStatus === "FAILED" && tags.length === 0 && (
-            <p className="detail-tags-status detail-tags-status--error">
-              Tag generation failed.
-            </p>
-          )}
-          {tags.length > 0 && (
-            <ul className="tag-list" aria-label="Document tags">
-              {tags.map((tag) => (
-                <li
-                  key={tag.id}
-                  className={`tag tag--${tag.source?.toLowerCase() ?? "user"}`}
+      <section className="detail-section">
+        <h3>Tags</h3>
+        {tagsStatus === "PENDING" && <DotsLoader />}
+        {tagsStatus === "FAILED" && tags.length === 0 && (
+          <p className="detail-tags-status detail-tags-status--error">
+            Tag generation failed.
+          </p>
+        )}
+        <ul className="tag-list" aria-label="Document tags">
+          {tags.map((tag) => (
+            <li
+              key={tag.id}
+              className={`tag tag--${tag.source?.toLowerCase() ?? "user"}`}
+            >
+              <button
+                type="button"
+                className="tag__label tag__label--clickable"
+                onClick={() => onToggleTag(tag.label ?? "")}
+                title={`Filter by "${tag.label}"`}
+              >
+                {tag.label}
+              </button>
+              {tag.source === "USER" && (
+                <button
+                  type="button"
+                  className="tag__remove"
+                  onClick={() => handleRemoveTag(tag.id ?? "")}
+                  aria-label={`Remove tag ${tag.label}`}
+                  disabled={removeTagMutation.isPending}
                 >
-                  {tag.label}
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-      )}
+                  x
+                </button>
+              )}
+            </li>
+          ))}
+          <li className="tag tag--add">
+            {addingTag ? (
+              <span className="tag__input-wrapper">
+                <input
+                  ref={tagInputRef}
+                  type="text"
+                  className="tag__input"
+                  value={newTagLabel}
+                  onChange={(e) => setNewTagLabel(e.target.value)}
+                  onKeyDown={handleTagInputKeyDown}
+                  onBlur={handleTagInputBlur}
+                  placeholder="tag name"
+                  aria-label="New tag name"
+                  maxLength={50}
+                  autoFocus
+                />
+                <button
+                  type="button"
+                  className="tag__confirm"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={handleAddTag}
+                  aria-label="Confirm new tag"
+                  disabled={!newTagLabel.trim() || addTagMutation.isPending}
+                >
+                  &#10003;
+                </button>
+              </span>
+            ) : (
+              <button
+                type="button"
+                className="tag__add-button"
+                onClick={() => setAddingTag(true)}
+                aria-label="Add a tag"
+              >
+                +
+              </button>
+            )}
+          </li>
+        </ul>
+        {addingTag && addTagMutation.isError && (
+          <p className="tag-add-error">Failed to add tag.</p>
+        )}
+      </section>
 
-      {(entitiesStatus || entities.length > 0) && (
+      {(entitiesStatus === "PENDING" ||
+        entitiesStatus === "FAILED" ||
+        entities.length > 0) && (
         <section className="detail-section">
           <h3>Extracted Entities</h3>
           {entitiesStatus === "PENDING" && <DotsLoader />}

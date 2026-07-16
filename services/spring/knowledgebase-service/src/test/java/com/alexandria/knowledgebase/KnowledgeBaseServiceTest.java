@@ -428,7 +428,7 @@ class KnowledgeBaseServiceTest {
     }
 
     @Test
-    void unit_kb_reprocessSummaryDropsExistingBeforeRegenerating() {
+    void unit_kb_reprocessSummaryReusesExistingRowAndRegenerates() {
         UUID docId = UUID.randomUUID();
         Document doc = new Document(OWNER, "a.pdf", "/uploads/a.pdf", "application/pdf", 1L);
         Summary existing = new Summary(doc, "old", "model");
@@ -439,8 +439,11 @@ class KnowledgeBaseServiceTest {
 
         knowledgeBaseService.reprocessSummary(docId, OWNER);
 
-        verify(summaryRepository).delete(existing);
-        assertThat(doc.getSummary().getContent()).isEqualTo("new");
+        // regenerated in place, never deleted, so the summary status stays visible during reprocess
+        verify(summaryRepository, never()).delete(any(Summary.class));
+        assertThat(doc.getSummary()).isSameAs(existing);
+        assertThat(existing.getContent()).isEqualTo("new");
+        assertThat(existing.getStatus()).isEqualTo(SummaryStatus.COMPLETED);
     }
 
     @Test

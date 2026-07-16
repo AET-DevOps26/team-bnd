@@ -1301,4 +1301,580 @@ test.describe("Alexandria client", () => {
       await expect(error).toHaveText("Authentication error. Retrying login...");
     });
   });
+
+  test.describe("Tag display and filtering", () => {
+    const mockDocuments = [
+      {
+        id: "doc-1",
+        fileName: "report.pdf",
+        fileType: "application/pdf",
+        fileSize: 2048,
+        createdAt: "2026-06-01T10:00:00Z",
+        tags: [
+          { id: "t1", label: "finance", source: "AUTO" },
+          { id: "t2", label: "quarterly", source: "USER" },
+        ],
+        extractedEntities: [],
+        summary: null,
+      },
+      {
+        id: "doc-2",
+        fileName: "notes.txt",
+        fileType: "text/plain",
+        fileSize: 512,
+        createdAt: "2026-06-02T10:00:00Z",
+        tags: [{ id: "t3", label: "meeting", source: "AUTO" }],
+        extractedEntities: [],
+        summary: null,
+      },
+      {
+        id: "doc-3",
+        fileName: "summary.md",
+        fileType: "text/markdown",
+        fileSize: 1024,
+        createdAt: "2026-06-03T10:00:00Z",
+        tags: [
+          { id: "t4", label: "finance", source: "AUTO" },
+          { id: "t5", label: "meeting", source: "USER" },
+        ],
+        extractedEntities: [],
+        summary: null,
+      },
+    ];
+
+    const mockTagList = {
+      tags: [
+        { name: "finance", documentCount: 2 },
+        { name: "meeting", documentCount: 2 },
+        { name: "quarterly", documentCount: 1 },
+      ],
+    };
+
+    test.beforeEach(async ({ page }) => {
+      await page.route("/api/v1/knowledgebase/documents", (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify(mockDocuments),
+        }),
+      );
+      await page.route("/api/v1/knowledgebase/tags", (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify(mockTagList),
+        }),
+      );
+    });
+
+    test("renders the tag filter chips", async ({ page }) => {
+      await page.goto("/documents");
+
+      const filterSection = page.locator(".tag-filter");
+      await expect(filterSection).toBeVisible({ timeout: 5000 });
+
+      const chips = filterSection.locator(".tag-filter__chip");
+      await expect(chips).toHaveCount(3);
+    });
+
+    test("clicking a tag filter chip filters the document list", async ({
+      page,
+    }) => {
+      await page.goto("/documents");
+
+      // Initially 3 documents
+      await expect(page.locator(".tree-item")).toHaveCount(3, {
+        timeout: 5000,
+      });
+
+      // Click "quarterly" filter
+      await page
+        .locator(".tag-filter__chip", { hasText: "quarterly" })
+        .click();
+
+      // Only report.pdf has "quarterly"
+      await expect(page.locator(".tree-item")).toHaveCount(1);
+      await expect(page.locator(".tree-item").first()).toContainText(
+        "report.pdf",
+      );
+    });
+
+    test("selecting multiple tags narrows results (AND logic)", async ({
+      page,
+    }) => {
+      await page.goto("/documents");
+      await expect(page.locator(".tree-item")).toHaveCount(3, {
+        timeout: 5000,
+      });
+
+      // Select "finance" (2 docs) then "meeting" (overlap is summary.md only)
+      await page.locator(".tag-filter__chip", { hasText: "finance" }).click();
+      await expect(page.locator(".tree-item")).toHaveCount(2);
+
+      await page.locator(".tag-filter__chip", { hasText: "meeting" }).click();
+      await expect(page.locator(".tree-item")).toHaveCount(1);
+      await expect(page.locator(".tree-item").first()).toContainText(
+        "summary.md",
+      );
+    });
+
+    test("clear button removes all active filters", async ({ page }) => {
+      await page.goto("/documents");
+      await expect(page.locator(".tree-item")).toHaveCount(3, {
+        timeout: 5000,
+      });
+
+      await page.locator(".tag-filter__chip", { hasText: "quarterly" }).click();
+      await expect(page.locator(".tree-item")).toHaveCount(1);
+
+      await page.locator(".tag-filter__clear").click();
+      await expect(page.locator(".tree-item")).toHaveCount(3);
+    });
+
+    test("shows empty message when no documents match filter", async ({
+      page,
+    }) => {
+      // Override with a doc that has no tags
+      await page.unroute("/api/v1/knowledgebase/documents");
+      await page.route("/api/v1/knowledgebase/documents", (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify([
+            {
+              id: "doc-x",
+              fileName: "untagged.txt",
+              fileType: "text/plain",
+              fileSize: 100,
+              createdAt: "2026-06-01T10:00:00Z",
+              tags: [],
+              extractedEntities: [],
+              summary: null,
+            },
+          ]),
+        }),
+      );
+
+      await page.goto("/documents");
+      await expect(page.locator(".tree-item")).toHaveCount(1, {
+        timeout: 5000,
+      });
+
+      // Filter by "finance" -- untagged doc should not match
+      await page.locator(".tag-filter__chip", { hasText: "finance" }).click();
+      await expect(page.locator(".tree-item")).toHaveCount(0);
+      await expect(page.locator(".tree-status")).toContainText(
+        "No documents match the selected tags",
+      );
+    });
+  });
+
+  test.describe("Tag management in detail view", () => {
+    test.beforeEach(async ({ page }) => {
+      await page.route("/api/v1/knowledgebase/documents", (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify([
+            {
+              id: "doc-tag-1",
+              fileName: "taggable.pdf",
+              fileType: "application/pdf",
+              fileSize: 4096,
+              createdAt: "2026-06-10T10:00:00Z",
+              tags: [
+                { id: "t-b", label: "beta", source: "USER" },
+                { id: "t-a", label: "alpha", source: "AUTO" },
+              ],
+              extractedEntities: [],
+              summary: null,
+            },
+          ]),
+        }),
+      );
+      await page.route("/api/v1/knowledgebase/tags", (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({ tags: [] }),
+        }),
+      );
+      await page.route(
+        "/api/v1/knowledgebase/documents/doc-tag-1",
+        (route) =>
+          route.fulfill({
+            status: 200,
+            contentType: "application/json",
+            body: JSON.stringify({
+              id: "doc-tag-1",
+              fileName: "taggable.pdf",
+              fileType: "application/pdf",
+              fileSize: 4096,
+              createdAt: "2026-06-10T10:00:00Z",
+              tags: [
+                { id: "t-b", label: "beta", source: "USER" },
+                { id: "t-a", label: "alpha", source: "AUTO" },
+              ],
+              extractedEntities: [],
+              summary: null,
+            }),
+          }),
+      );
+    });
+
+    test("tags are displayed in alphabetical order (fixes #301)", async ({
+      page,
+    }) => {
+      await page.goto("/documents/doc-tag-1");
+
+      const tagList = page.locator('[aria-label="Document tags"]');
+      await expect(tagList).toBeVisible({ timeout: 5000 });
+
+      const tags = tagList.locator(".tag:not(.tag--add)");
+      await expect(tags).toHaveCount(2);
+      // "alpha" should come before "beta" regardless of API order
+      await expect(tags.first().locator(".tag__label")).toHaveText("alpha");
+      await expect(tags.nth(1).locator(".tag__label")).toHaveText("beta");
+    });
+
+    test("USER tags have a remove button, AUTO tags do not", async ({
+      page,
+    }) => {
+      await page.goto("/documents/doc-tag-1");
+
+      const tagList = page.locator('[aria-label="Document tags"]');
+      await expect(tagList).toBeVisible({ timeout: 5000 });
+
+      const tags = tagList.locator(".tag:not(.tag--add)");
+      const alphaTag = tags.first();
+      await expect(alphaTag.locator(".tag__remove")).toHaveCount(0);
+
+      // beta is USER -- has remove button
+      const betaTag = tags.nth(1);
+      await expect(betaTag.locator(".tag__remove")).toHaveCount(1);
+    });
+
+    test("add tag form submits to the API", async ({ page }) => {
+      let addTagCalled = false;
+      await page.route(
+        "/api/v1/knowledgebase/documents/doc-tag-1/tags",
+        (route, request) => {
+          if (request.method() === "POST") {
+            addTagCalled = true;
+            route.fulfill({ status: 204 });
+          } else {
+            route.continue();
+          }
+        },
+      );
+
+      await page.goto("/documents/doc-tag-1");
+
+      // Click the "+" button to open the inline input
+      const addBtn = page.locator('[aria-label="Add a tag"]');
+      await expect(addBtn).toBeVisible({ timeout: 5000 });
+      await addBtn.click();
+
+      const input = page.locator('[aria-label="New tag name"]');
+      await expect(input).toBeVisible();
+      await input.fill("new-tag");
+      await input.press("Enter");
+
+      // Give the mutation a moment to fire
+      await page.waitForTimeout(500);
+      expect(addTagCalled).toBe(true);
+    });
+
+    test("remove tag button calls the delete endpoint", async ({ page }) => {
+      let removeTagCalled = false;
+      await page.route(
+        /\/api\/v1\/knowledgebase\/documents\/doc-tag-1\/tags\/t-b/,
+        (route, request) => {
+          if (request.method() === "DELETE") {
+            removeTagCalled = true;
+            route.fulfill({ status: 204 });
+          } else {
+            route.continue();
+          }
+        },
+      );
+
+      await page.goto("/documents/doc-tag-1");
+
+      const tagList = page.locator('[aria-label="Document tags"]');
+      await expect(tagList).toBeVisible({ timeout: 5000 });
+
+      // beta is USER, second in sorted order
+      const tags = tagList.locator(".tag:not(.tag--add)");
+      const removeButton = tags.nth(1).locator(".tag__remove");
+      await removeButton.click();
+
+      await page.waitForTimeout(500);
+      expect(removeTagCalled).toBe(true);
+    });
+
+    test("plus button opens an inline input for adding tags", async ({
+      page,
+    }) => {
+      await page.goto("/documents/doc-tag-1");
+
+      const addBtn = page.locator('[aria-label="Add a tag"]');
+      await expect(addBtn).toBeVisible({ timeout: 5000 });
+
+      // Input should not be visible yet
+      await expect(page.locator('[aria-label="New tag name"]')).toHaveCount(0);
+
+      await addBtn.click();
+
+      // Now the input should appear and the "+" button should be gone
+      await expect(page.locator('[aria-label="New tag name"]')).toBeVisible();
+      await expect(addBtn).toHaveCount(0);
+    });
+
+    test("clicking the whole tag chip activates the sidebar filter", async ({
+      page,
+    }) => {
+      await page.unroute("/api/v1/knowledgebase/documents");
+      await page.unroute("/api/v1/knowledgebase/tags");
+      await page.route("/api/v1/knowledgebase/documents", (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify([
+            {
+              id: "doc-tag-1",
+              fileName: "taggable.pdf",
+              fileType: "application/pdf",
+              fileSize: 4096,
+              createdAt: "2026-06-10T10:00:00Z",
+              tags: [
+                { id: "t-a", label: "alpha", source: "AUTO" },
+                { id: "t-b", label: "beta", source: "USER" },
+              ],
+              extractedEntities: [],
+              summary: null,
+            },
+            {
+              id: "doc-tag-2",
+              fileName: "other.txt",
+              fileType: "text/plain",
+              fileSize: 100,
+              createdAt: "2026-06-11T10:00:00Z",
+              tags: [{ id: "t-c", label: "gamma", source: "AUTO" }],
+              extractedEntities: [],
+              summary: null,
+            },
+          ]),
+        }),
+      );
+      await page.route("/api/v1/knowledgebase/tags", (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            tags: [
+              { name: "alpha", documentCount: 1 },
+              { name: "beta", documentCount: 1 },
+              { name: "gamma", documentCount: 1 },
+            ],
+          }),
+        }),
+      );
+
+      await page.goto("/documents/doc-tag-1");
+
+      const tagList = page.locator('[aria-label="Document tags"]');
+      await expect(tagList).toBeVisible({ timeout: 5000 });
+
+      // Click the whole "alpha" tag chip (not just text)
+      const alphaChip = tagList.locator(".tag__label--clickable").first();
+      await alphaChip.click();
+
+      // Sidebar should now filter: only doc-tag-1 has "alpha"
+      await expect(page.locator(".tree-item")).toHaveCount(1);
+      await expect(page.locator(".tree-item").first()).toContainText(
+        "taggable.pdf",
+      );
+
+      // The sidebar filter chip for "alpha" should be active
+      const sidebarChip = page.locator(".tag-filter__chip", {
+        hasText: "alpha",
+      });
+      await expect(sidebarChip).toHaveClass(/tag-filter__chip--active/);
+    });
+
+    test("shows empty state when search returns no results", async ({
+      page,
+    }) => {
+      await page.route("/api/v1/knowledgebase/search/semantic*", (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({ results: [], fallbackUsed: false }),
+        }),
+      );
+
+      await page.goto("/search");
+      await page.locator(".search-input").fill("nothing matches this");
+      await page.locator(".search-submit").click();
+
+      const empty = page.locator(".search-empty");
+      await expect(empty).toBeVisible({ timeout: 5000 });
+      await expect(empty).toContainText("No documents matched");
+    });
+
+    test("shows an error message when the search endpoint returns 500", async ({
+      page,
+    }) => {
+      await page.route("/api/v1/knowledgebase/search/semantic*", (route) =>
+        route.fulfill({ status: 500, body: "Internal Server Error" }),
+      );
+
+      await page.goto("/search");
+      await page.locator(".search-input").fill("error trigger");
+      await page.locator(".search-submit").click();
+
+      const error = page.locator(".search-error");
+      await expect(error).toBeVisible({ timeout: 15000 });
+      await expect(error).toContainText("Search failed");
+    });
+
+    test("shows authentication error when the search endpoint returns 401", async ({
+      page,
+    }) => {
+      await page.route("**/protocol/openid-connect/token", (route) =>
+        route.fulfill({ status: 401, body: "Unauthorized" }),
+      );
+      await page.route("/api/v1/knowledgebase/search/semantic*", (route) =>
+        route.fulfill({ status: 401, body: "Unauthorized" }),
+      );
+
+      await page.goto("/search");
+      await page.locator(".search-input").fill("auth check");
+      await page.locator(".search-submit").click();
+
+      const error = page.locator(".search-error");
+      await expect(error).toBeVisible({ timeout: 15000 });
+      await expect(error).toHaveText("Authentication error. Retrying login...");
+    });
+
+    test("confirm button submits the new tag", async ({ page }) => {
+      let addTagCalled = false;
+      await page.route(
+        "/api/v1/knowledgebase/documents/doc-tag-1/tags",
+        (route, request) => {
+          if (request.method() === "POST") {
+            addTagCalled = true;
+            route.fulfill({ status: 204 });
+          } else {
+            route.continue();
+          }
+        },
+      );
+
+      await page.goto("/documents/doc-tag-1");
+
+      const addBtn = page.locator('[aria-label="Add a tag"]');
+      await expect(addBtn).toBeVisible({ timeout: 5000 });
+      await addBtn.click();
+
+      const input = page.locator('[aria-label="New tag name"]');
+      await input.fill("new-tag");
+
+      // Click the checkmark confirm button
+      const confirmBtn = page.locator('[aria-label="Confirm new tag"]');
+      await expect(confirmBtn).toBeVisible();
+      await confirmBtn.click();
+
+      await page.waitForTimeout(500);
+      expect(addTagCalled).toBe(true);
+    });
+  });
+
+  test.describe("Tag filter auto-expand", () => {
+    test("sidebar expands when a selected tag is beyond the visible 5", async ({
+      page,
+    }) => {
+      // Set up 7 tags so only 5 are shown initially
+      const mockTagList = {
+        tags: [
+          { name: "aaa", documentCount: 1 },
+          { name: "bbb", documentCount: 1 },
+          { name: "ccc", documentCount: 1 },
+          { name: "ddd", documentCount: 1 },
+          { name: "eee", documentCount: 1 },
+          { name: "fff", documentCount: 1 },
+          { name: "ggg", documentCount: 1 },
+        ],
+      };
+
+      await page.route("/api/v1/knowledgebase/documents", (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify([
+            {
+              id: "doc-expand-1",
+              fileName: "expand-test.pdf",
+              fileType: "application/pdf",
+              fileSize: 1024,
+              createdAt: "2026-06-10T10:00:00Z",
+              tags: [{ id: "t-g", label: "ggg", source: "AUTO" }],
+              extractedEntities: [],
+              summary: null,
+            },
+          ]),
+        }),
+      );
+      await page.route("/api/v1/knowledgebase/tags", (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify(mockTagList),
+        }),
+      );
+      await page.route(
+        "/api/v1/knowledgebase/documents/doc-expand-1",
+        (route) =>
+          route.fulfill({
+            status: 200,
+            contentType: "application/json",
+            body: JSON.stringify({
+              id: "doc-expand-1",
+              fileName: "expand-test.pdf",
+              fileType: "application/pdf",
+              fileSize: 1024,
+              createdAt: "2026-06-10T10:00:00Z",
+              tags: [{ id: "t-g", label: "ggg", source: "AUTO" }],
+              extractedEntities: [],
+              summary: null,
+            }),
+          }),
+      );
+
+      await page.goto("/documents/doc-expand-1");
+
+      // Initially only 5 chips should be visible
+      const chips = page.locator(".tag-filter__chip");
+      await expect(chips).toHaveCount(5, { timeout: 5000 });
+
+      // "ggg" should not be visible yet
+      await expect(
+        page.locator(".tag-filter__chip", { hasText: "ggg" }),
+      ).toHaveCount(0);
+
+      // Click the "ggg" tag in the detail view
+      const tagList = page.locator('[aria-label="Document tags"]');
+      await expect(tagList).toBeVisible({ timeout: 5000 });
+      await tagList.locator(".tag__label--clickable").first().click();
+
+      // Now all 7 chips should be visible (auto-expanded)
+      await expect(chips).toHaveCount(7);
+
+      // "ggg" chip should now be active
+      const gggChip = page.locator(".tag-filter__chip", { hasText: "ggg" });
+      await expect(gggChip).toBeVisible();
+      await expect(gggChip).toHaveClass(/tag-filter__chip--active/);
+    });
+  });
 });

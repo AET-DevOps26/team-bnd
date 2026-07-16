@@ -106,14 +106,17 @@ public class KnowledgeBaseService {
         document = documentService.save(document);
         objectStorageService.upload(objectKey, file);
 
-        // Same as createDocument: write all three pipeline states as PENDING before dispatching.
-        Summary pending = new Summary(document);
-        summaryRepository.save(pending);
-        document.setSummary(pending);
-        document.setEntitiesStatus(SummaryStatus.PENDING);
-        document.setTagsStatus(SummaryStatus.PENDING);
-        documentService.save(document);
-        scheduleAsyncProcessing(document.getId());
+        if (textContent != null && !textContent.isBlank()) {
+            // Same as createDocument: write all three pipeline states as PENDING before dispatching,
+            // but only when there is text to process, so empty uploads don't get stuck in PENDING.
+            Summary pending = new Summary(document);
+            summaryRepository.save(pending);
+            document.setSummary(pending);
+            document.setEntitiesStatus(SummaryStatus.PENDING);
+            document.setTagsStatus(SummaryStatus.PENDING);
+            documentService.save(document);
+            scheduleAsyncProcessing(document.getId());
+        }
 
         return document;
     }
