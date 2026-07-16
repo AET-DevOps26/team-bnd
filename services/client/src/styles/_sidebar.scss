@@ -103,14 +103,14 @@
 
 // Tag filter in the sidebar
 .tag-filter {
-    padding: 0.5rem 1rem;
+    padding: 0.7rem 1.15rem;
     border-bottom: 1px solid $color-border-light;
 
     &__header {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        margin-bottom: 0.4rem;
+        margin-bottom: 0.5rem;
     }
 
     &__label {
@@ -148,23 +148,31 @@
         display: inline-flex;
         align-items: center;
         gap: 0.25rem;
-        padding: 0.15rem 0.5rem;
-        border-radius: 999px;
+        padding: 0.18rem 0.55rem;
+        border-radius: $radius-pill;
         font-size: 0.72rem;
         font-weight: 500;
         border: 1px solid $color-border;
         background: $color-bg-white;
         color: $color-text-body;
         cursor: pointer;
-        transition: background 0.1s, border-color 0.1s;
+        transition:
+            background 0.12s $ease-out,
+            border-color 0.12s $ease-out,
+            color 0.12s $ease-out;
 
         &:hover {
             background: $color-bg-hover;
             border-color: $color-primary;
         }
 
+        &:focus-visible {
+            outline: 2px solid $color-primary;
+            outline-offset: 1px;
+        }
+
         &--active {
-            background: $color-bg-active;
+            background: $color-primary-tint;
             border-color: $color-primary;
             color: $color-primary;
             font-weight: 600;
