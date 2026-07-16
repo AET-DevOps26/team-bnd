@@ -49,6 +49,7 @@ export default function QAPanel() {
   const queryClient = useQueryClient();
   const [question, setQuestion] = useState("");
   const [interactions, setInteractions] = useState<QAInteraction[]>([]);
+  const [expandedId, setExpandedId] = useState<string | number | null>(null);
   const historyLoaded = useRef(false);
 
   const { data: documents = [] } = $api.useQuery(
@@ -70,10 +71,25 @@ export default function QAPanel() {
       historyLoaded.current = true;
       setInteractions((prev) => {
         const seen = new Set(prev.map((i) => i.id));
-        return [...prev, ...historyData.filter((i) => !seen.has(i.id))];
+        const merged = [...prev, ...historyData.filter((i) => !seen.has(i.id))];
+        setExpandedId((current) => current ?? merged[0]?.id ?? null);
+        return merged;
       });
     }
   }, [historyData]);
+
+  // Hide the shown answer when clicking anywhere that isn't the answer card or
+  // the recent-questions list (e.g. empty panel space to the side or below).
+  useEffect(() => {
+    function handlePointerDown(e: MouseEvent) {
+      const target = e.target as HTMLElement;
+      if (!target.closest(".qa-interaction, .qa-recent")) {
+        setExpandedId(null);
+      }
+    }
+    document.addEventListener("mousedown", handlePointerDown);
+    return () => document.removeEventListener("mousedown", handlePointerDown);
+  }, []);
 
   const {
     mutate: askQuestion,
@@ -103,6 +119,7 @@ export default function QAPanel() {
       {
         onSuccess(data) {
           setInteractions((prev) => [data, ...prev]);
+          setExpandedId(data.id ?? null);
           setQuestion("");
         },
       },
@@ -120,6 +137,13 @@ export default function QAPanel() {
       submitQuestion();
     }
   }
+
+  // Only the explicitly selected interaction is shown; a null selection (e.g.
+  // after clicking outside) hides the answer entirely.
+  const activeInteraction =
+    expandedId == null
+      ? undefined
+      : interactions.find((i) => (i.id ?? null) === expandedId);
 
   const askErrorMessage = askError
     ? errorMessage(askError, {
@@ -161,8 +185,11 @@ export default function QAPanel() {
 
       {askErrorMessage && <p className="qa-error">{askErrorMessage}</p>}
 
-      <div className="qa-history">
-        {historyLoading && <p className="qa-status">Loading history…</p>}
+      <div className="qa-answer-area">
+        <div className="qa-current">
+        {historyLoading && interactions.length === 0 && (
+          <p className="qa-status">Loading history…</p>
+        )}
 
         {historyError && !historyLoading && interactions.length === 0 && (
           <p className="qa-status qa-status--error">
@@ -178,77 +205,95 @@ export default function QAPanel() {
           <p className="qa-empty">No questions yet. Ask something above.</p>
         )}
 
-        {interactions.map((interaction, index) => (
-          <article key={interaction.id ?? index} className="qa-interaction">
-            <p className="qa-question">{interaction.question}</p>
-
-            <div className="qa-answer">
-              <ReactMarkdown>{interaction.answer ?? ""}</ReactMarkdown>
+        {activeInteraction && (
+          <article className="qa-interaction">
+            <div className="qa-interaction__head">
+              <p className="qa-question">{activeInteraction.question}</p>
+              <button
+                type="button"
+                className="qa-hide"
+                onClick={() => setExpandedId(null)}
+              >
+                Hide
+              </button>
             </div>
 
-            {interaction.citations && interaction.citations.length > 0 && (
-              <section className="qa-sources">
-                <h4>Sources</h4>
-                <ul className="qa-source-list">
-                  {interaction.citations.map((citation, citationIndex) => {
-                    const key = citation.objectKey;
-                    const doc = key
-                      ? findDocumentByKey(documents, key)
-                      : undefined;
-                    const docId = citation.documentId ?? doc?.id;
-                    const name =
-                      citation.fileName ??
-                      doc?.fileName ??
-                      (key ? sourceKeyToName(key) : "Unknown source");
-                    return (
-                      <li
-                        key={citation.marker ?? key ?? citationIndex}
-                        className="qa-source-item"
-                      >
-                        {docId ? (
-                          <Link
-                            to={`/documents/${docId}`}
-                            className="qa-source-link"
-                            title={citation.snippet ?? key}
-                          >
-                            {name}
-                          </Link>
-                        ) : (
-                          <span
-                            className="qa-source-link qa-source-link--unresolved"
-                            title={citation.snippet ?? key}
-                          >
-                            {name}
-                          </span>
-                        )}
-                      </li>
-                    );
-                  })}
-                </ul>
-              </section>
-            )}
 
-            {(interaction.timestamp || interaction.modelUsed) && (
+            <div className="qa-answer">
+              <ReactMarkdown>{activeInteraction.answer ?? ""}</ReactMarkdown>
+            </div>
+
+            {activeInteraction.citations &&
+              activeInteraction.citations.length > 0 && (
+                <section className="qa-sources">
+                  <h4>Sources</h4>
+                  <ul className="qa-source-list">
+                    {activeInteraction.citations.map(
+                      (citation, citationIndex) => {
+                        const objectKey = citation.objectKey;
+                        const doc = objectKey
+                          ? findDocumentByKey(documents, objectKey)
+                          : undefined;
+                        const docId = citation.documentId ?? doc?.id;
+                        const name =
+                          citation.fileName ??
+                          doc?.fileName ??
+                          (objectKey
+                            ? sourceKeyToName(objectKey)
+                            : "Unknown source");
+                        return (
+                          <li
+                            key={citation.marker ?? objectKey ?? citationIndex}
+                            className="qa-source-item"
+                          >
+                            {docId ? (
+                              <Link
+                                to={`/documents/${docId}`}
+                                className="qa-source-link"
+                                title={citation.snippet ?? objectKey}
+                              >
+                                {name}
+                              </Link>
+                            ) : (
+                              <span
+                                className="qa-source-link qa-source-link--unresolved"
+                                title={citation.snippet ?? objectKey}
+                              >
+                                {name}
+                              </span>
+                            )}
+                          </li>
+                        );
+                      },
+                    )}
+                  </ul>
+                </section>
+              )}
+
+            {(activeInteraction.timestamp || activeInteraction.modelUsed) && (
               <p className="qa-meta">
-                {interaction.timestamp && (
-                  <span>{formatDateTime(interaction.timestamp)}</span>
+                {activeInteraction.timestamp && (
+                  <span>{formatDateTime(activeInteraction.timestamp)}</span>
                 )}
-                {interaction.timestamp && interaction.modelUsed && (
+                {activeInteraction.timestamp && activeInteraction.modelUsed && (
                   <span className="qa-meta-sep"> · </span>
                 )}
-                {interaction.modelUsed && (
-                  <span>Model: {interaction.modelUsed}</span>
+                {activeInteraction.modelUsed && (
+                  <span>Model: {activeInteraction.modelUsed}</span>
                 )}
               </p>
             )}
           </article>
-        ))}
+        )}
+      </div>
 
-        {interactions.length > 0 && (
-          <div className="qa-clear">
+      {interactions.length > 0 && (
+        <div className="qa-recent">
+          <div className="qa-recent__head">
+            <span className="qa-recent__label">Recent questions</span>
             <button
               type="button"
-              className="qa-clear-button"
+              className="qa-recent__clear"
               disabled={isClearing}
               onClick={() => {
                 if (!confirm("Clear all Q&A history? This cannot be undone."))
@@ -258,15 +303,40 @@ export default function QAPanel() {
                   {
                     onSuccess() {
                       setInteractions([]);
+                      setExpandedId(null);
                     },
                   },
                 );
               }}
             >
-              {isClearing ? "Clearing…" : "Clear history"}
+              {isClearing ? "Clearing…" : "Clear"}
             </button>
           </div>
-        )}
+          <ul className="qa-recent__list">
+            {interactions.map((interaction, index) => {
+              const key = interaction.id ?? index;
+              const active = expandedId === key;
+              return (
+                <li key={key} className="qa-recent__item">
+                  <button
+                    type="button"
+                    className={`qa-recent__query${active ? " qa-recent__query--active" : ""}`}
+                    onClick={() => setExpandedId(key)}
+                    title={interaction.question}
+                  >
+                    {interaction.question}
+                  </button>
+                  {interaction.timestamp && (
+                    <span className="qa-recent__meta">
+                      {formatDateTime(interaction.timestamp)}
+                    </span>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
       </div>
     </section>
   );

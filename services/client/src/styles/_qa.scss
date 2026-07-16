@@ -14,12 +14,102 @@
 
 // match the document preview pane width (minus the 320px sidebar + gap)
 .qa-form,
-.qa-history {
+.qa-current,
+.qa-recent {
     width: 100%;
     max-width: calc(100% - 320px - 2rem);
 
     @media (max-width: 900px) {
         max-width: none;
+    }
+}
+
+// Recent questions list, pinned to the bottom like search history
+.qa-recent {
+    flex-shrink: 0;
+    margin-top: 1.25rem;
+    padding-top: 1rem;
+    border-top: 1px solid $color-border-light;
+
+    &__head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 0.5rem;
+    }
+
+    &__label {
+        font-size: 0.72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.07em;
+        color: $color-text-muted;
+    }
+
+    &__clear {
+        border: none;
+        background: none;
+        color: $color-primary;
+        font-size: 0.72rem;
+        font-weight: 600;
+        cursor: pointer;
+        padding: 0;
+
+        &:hover:not(:disabled) {
+            text-decoration: underline;
+        }
+
+        &:disabled {
+            color: $color-text-light;
+            cursor: not-allowed;
+        }
+    }
+
+    &__list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 0.15rem;
+    }
+
+    &__item {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 0.6rem;
+        padding: 0.25rem 0;
+    }
+
+    &__query {
+        min-width: 0;
+        border: none;
+        background: none;
+        padding: 0;
+        font-family: $font-family;
+        font-size: 0.85rem;
+        color: $color-primary;
+        text-align: left;
+        cursor: pointer;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+
+        &:hover {
+            text-decoration: underline;
+        }
+
+        &--active {
+            font-weight: 700;
+        }
+    }
+
+    &__meta {
+        flex-shrink: 0;
+        font-size: 0.72rem;
+        color: $color-text-muted;
+        font-variant-numeric: tabular-nums;
     }
 }
 
@@ -160,17 +250,22 @@
     font-style: italic;
 }
 
-// History list
-
-.qa-history {
+// Wraps the answer + recent list so an outside click can hide the answer
+.qa-answer-area {
     flex: 1;
-    overflow-y: auto;
+    min-height: 0;
     display: flex;
     flex-direction: column;
-    gap: 1.25rem;
 }
 
-// Individual interaction
+// Current answer area (grows to fill; recent list sits below it)
+
+.qa-current {
+    flex: 1;
+    overflow-y: auto;
+}
+
+// Selected interaction
 
 .qa-interaction {
     padding: 1.15rem 1.35rem;
@@ -178,12 +273,21 @@
     border: 1px solid $color-border-subtle;
     border-radius: $radius-md;
     box-shadow: $shadow-xs;
+
+    &__head {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-bottom: 0.85rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 1px solid $color-border-light;
+    }
 }
 
 .qa-question {
-    margin: 0 0 0.85rem;
-    padding-bottom: 0.75rem;
-    border-bottom: 1px solid $color-border-light;
+    margin: 0;
+    min-width: 0;
     font-size: 0.95rem;
     font-weight: 600;
     color: $color-text-dark;
@@ -191,6 +295,22 @@
     &::before {
         content: "Q: ";
         color: $color-primary;
+    }
+}
+
+.qa-hide {
+    flex-shrink: 0;
+    border: none;
+    background: none;
+    color: $color-text-muted;
+    font-size: 0.72rem;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 0;
+
+    &:hover {
+        color: $color-primary;
+        text-decoration: underline;
     }
 }
 
@@ -317,44 +437,4 @@
 
 .qa-meta-sep {
     color: $color-text-faint;
-}
-
-// Clear history
-
-.qa-clear {
-    display: flex;
-    justify-content: center;
-    padding-top: 0.5rem;
-}
-
-.qa-clear-button {
-    padding: 0.3rem 0.8rem;
-    font-family: $font-family;
-    font-size: 0.8rem;
-    font-weight: 500;
-    color: $color-text-secondary;
-    background: none;
-    border: 1px solid transparent;
-    border-radius: $radius-sm;
-    cursor: pointer;
-    transition:
-        background 0.12s $ease-out,
-        border-color 0.12s $ease-out,
-        color 0.12s $ease-out;
-
-    &:hover:not(:disabled) {
-        color: $color-text-dark;
-        background: $color-bg-neutral;
-        border-color: $color-border;
-    }
-
-    &:focus-visible {
-        outline: 2px solid $color-primary;
-        outline-offset: 2px;
-    }
-
-    &:disabled {
-        color: $color-text-light;
-        cursor: not-allowed;
-    }
 }

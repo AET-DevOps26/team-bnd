@@ -8,15 +8,20 @@ This directory contains a Vite + React client for the Alexandria project.
 
 Upload, browse, and view documents. Each document shows its AI-generated
 summary, extracted entities, and tags. PDF and Markdown files include a live
-preview.
+preview. Documents can be renamed inline from the detail header and deleted
+either from the detail header or via the hover action on each sidebar entry.
+The summary, tags, and entities each have a "Regenerate" action that re-runs
+that step of the GenAI pipeline, a loading indicator shows actions in progress.
 
-### Tagging
+### Tagging and filtering
 
-Documents can be tagged automatically (via AI processing) or manually by the
+Documents can be tagged automatically (via GenAI processing) or manually by the
 user. The sidebar displays available global tags as filter chips and lets users
-narrow the document list by one or more tags (AND logic). In the detail view,
+narrow the document list by one or more tags. In the detail view,
 users can add new tags or remove their own user-created tags. Tags are always
-sorted alphabetically for consistent display.
+sorted alphabetically for consistent display. The sidebar also offers entity
+filters grouped by type (people, organizations, topics, dates). Note that
+tag and entity filters combine with AND logic.
 
 ### Q&A (Ask)
 
@@ -50,10 +55,10 @@ or via a `.env` file in this directory (see the [Vite env docs](https://vite.dev
 The **Search** tab lets users find documents by meaning (semantic) or
 keyword matches (text). Semantic search ranks results by relevance and shows
 the matching text snippet from each document alongside a relevance score.
-Keyword search matches against filenames and document content. Both modes use
-the knowledgebase-service endpoints introduced in the semantic search work.
+Keyword search matches against filenames and document content.
 If the vector index is unavailable, semantic mode falls back to keyword search
-and shows a notice.
+and shows a notice. Recent searches are listed below the results and the whole
+history can be cleared.
 
 ## Production
 

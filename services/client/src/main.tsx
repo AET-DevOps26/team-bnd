@@ -10,9 +10,13 @@ import "./styles/index.scss";
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      // Do not retry if we encounter an authentication or permission failure.
+      // Don't retry on client errors that won't change on a retry (permission
+      // denied or a resource that no longer exists).
       retry: (failureCount, error) => {
-        if (error instanceof Error && error.message === "FORBIDDEN") {
+        if (
+          error instanceof Error &&
+          (error.message === "FORBIDDEN" || error.message === "NOT_FOUND")
+        ) {
           return false;
         }
         return failureCount < 3;

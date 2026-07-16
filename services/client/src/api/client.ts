@@ -33,7 +33,9 @@ fetchClient.use({
       throw new Error(
         response.status === 403
           ? "FORBIDDEN"
-          : `Request failed: ${response.status} ${response.statusText}`,
+          : response.status === 404
+            ? "NOT_FOUND"
+            : `Request failed: ${response.status} ${response.statusText}`,
       );
     }
     return undefined;

@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router";
+import { useQueryClient } from "@tanstack/react-query";
 import $api from "../api/client";
 import type { components } from "../api/schema";
-import { formatBytes } from "../utils/format";
+import { formatBytes, formatDateTime } from "../utils/format";
 
 type SemanticSearchResultDto = components["schemas"]["SemanticSearchResultDto"];
 type DocumentRefDto = components["schemas"]["DocumentRefDto"];
@@ -148,6 +149,7 @@ function isSearchMode(value: string | null): value is SearchMode {
 
 export default function SearchPanel() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const queryClient = useQueryClient();
 
   const urlQuery = searchParams.get("q") ?? "";
   const urlModeRaw = searchParams.get("mode");
@@ -171,6 +173,12 @@ export default function SearchPanel() {
   function commitSearch(query: string, nextMode: SearchMode) {
     const trimmed = query.trim();
     setSearchParams({ q: trimmed, mode: nextMode }, { replace: false });
+  }
+
+  function refreshHistory() {
+    void queryClient.invalidateQueries({
+      queryKey: ["get", "/api/v1/knowledgebase/history/search"],
+    });
   }
 
   function handleSubmit(e: React.FormEvent) {
@@ -220,6 +228,35 @@ export default function SearchPanel() {
 
   const isLoading = mode === "semantic" ? semanticLoading : textLoading;
   const error = mode === "semantic" ? semanticError : textError;
+
+  const { data: historyData } = $api.useQuery(
+    "get",
+    "/api/v1/knowledgebase/history/search",
+  );
+
+  // collapse repeats of the same query so a term searched several times
+  // only shows its most recent entry.
+  const history = useMemo(() => {
+    const seen = new Set<string>();
+    return (historyData ?? []).filter((entry) => {
+      const key = entry.queryText ?? "";
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }, [historyData]);
+
+  const { mutate: clearHistory, isPending: isClearing } = $api.useMutation(
+    "delete",
+    "/api/v1/knowledgebase/history/search",
+    { onSuccess: refreshHistory },
+  );
+
+  const settled = !isLoading && !error && submittedQuery.length > 0;
+  useEffect(() => {
+    if (settled) refreshHistory();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [settled, semanticData, textData]);
 
   const errorMsg = error
     ? errorMessage(error, {
@@ -306,6 +343,46 @@ export default function SearchPanel() {
           </>
         )}
       </div>
+
+      {history.length > 0 && (
+        <div className="search-history">
+          <div className="search-history__head">
+            <span className="search-history__label">Recent searches</span>
+            <button
+              type="button"
+              className="search-history__clear"
+              disabled={isClearing}
+              onClick={() => {
+                if (!confirm("Clear search history?")) return;
+                clearHistory({});
+              }}
+            >
+              {isClearing ? "Clearing..." : "Clear"}
+            </button>
+          </div>
+          <ul className="search-history__list">
+            {history.map((entry) => (
+              <li key={entry.id} className="search-history__item">
+                <button
+                  type="button"
+                  className="search-history__query"
+                  onClick={() => {
+                    setInputValue(entry.queryText ?? "");
+                    commitSearch(entry.queryText ?? "", mode);
+                  }}
+                  title={entry.queryText}
+                >
+                  {entry.queryText}
+                </button>
+                <span className="search-history__meta">
+                  {entry.resultCount ?? 0} results
+                  {entry.timestamp && ` · ${formatDateTime(entry.timestamp)}`}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </section>
   );
 }
