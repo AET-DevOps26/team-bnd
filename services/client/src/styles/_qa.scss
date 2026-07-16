@@ -1,16 +1,25 @@
 @use "variables" as *;
 
-// ── Panel shell ──────────────────────────────────────────────
+// Panel shell
 
 .qa-panel {
     display: flex;
     flex-direction: column;
-    padding: 1.5rem 2rem;
+    padding: 1.75rem 2rem;
+    width: 100%;
+    max-width: none;
     height: 100%;
     box-sizing: border-box;
 }
 
-// ── Question form ────────────────────────────────────────────
+// match the document preview pane width (minus the 320px sidebar + gap)
+.qa-form,
+.qa-history {
+    width: 100%;
+    max-width: calc(100% - 320px - 2rem);
+}
+
+// Question form
 
 .qa-form {
     flex-shrink: 0;
@@ -20,36 +29,40 @@
 .qa-form-label {
     display: block;
     margin-bottom: 0.5rem;
-    font-size: 0.85rem;
+    font-size: 0.72rem;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.07em;
     color: $color-text-muted;
 }
 
 .qa-input-row {
     display: flex;
-    gap: 0.5rem;
-    align-items: flex-start;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.6rem;
 }
 
 .qa-input {
-    flex: 1;
+    width: 100%;
+    min-width: 0;
     resize: vertical;
-    padding: 0.6rem 0.75rem;
+    padding: 0.65rem 0.8rem;
     font-family: $font-family;
     font-size: 0.9rem;
     line-height: 1.5;
     color: $color-text-dark;
     background: $color-bg-white;
     border: 1px solid $color-border-input;
-    border-radius: 6px;
-    transition: border-color 0.15s;
+    border-radius: $radius-sm;
+    transition:
+        border-color 0.15s $ease-out,
+        box-shadow 0.15s $ease-out;
 
     &:focus {
         outline: none;
         border-color: $color-primary;
-        box-shadow: 0 0 0 2px rgba($color-primary, 0.15);
+        box-shadow: $shadow-focus;
     }
 
     &:disabled {
@@ -65,24 +78,39 @@
 
 .qa-submit {
     flex-shrink: 0;
-    padding: 0.55rem 1.1rem;
+    min-width: 10rem;
+    padding: 0.6rem 2rem;
     font-family: $font-family;
     font-size: 0.875rem;
     font-weight: 600;
     color: $color-bg-white;
     background: $color-primary;
     border: none;
-    border-radius: 6px;
+    border-radius: $radius-sm;
+    box-shadow: $shadow-xs;
     cursor: pointer;
-    transition: background 0.15s;
+    transition:
+        background 0.15s $ease-out,
+        box-shadow 0.15s $ease-out;
     white-space: nowrap;
 
     &:hover:not(:disabled) {
         background: $color-primary-dark;
+        box-shadow: $shadow-sm;
+    }
+
+    &:focus-visible {
+        outline: none;
+        box-shadow: $shadow-focus;
+    }
+
+    &:active:not(:disabled) {
+        box-shadow: $shadow-xs;
     }
 
     &:disabled {
         background: $color-text-light;
+        box-shadow: none;
         cursor: not-allowed;
     }
 }
@@ -93,16 +121,16 @@
     color: $color-text-faint;
 }
 
-// ── Error / status messages ──────────────────────────────────
+// Error / status messages
 
 .qa-error {
     margin: 0 0 1rem;
-    padding: 0.5rem 0.75rem;
+    padding: 0.6rem 0.85rem;
     font-size: 0.85rem;
     color: $color-error;
     background: lighten($color-error, 48%);
     border: 1px solid lighten($color-error, 38%);
-    border-radius: 6px;
+    border-radius: $radius-sm;
 }
 
 .qa-status {
@@ -122,7 +150,7 @@
     font-style: italic;
 }
 
-// ── History list ─────────────────────────────────────────────
+// History list
 
 .qa-history {
     flex: 1;
@@ -132,17 +160,20 @@
     gap: 1.25rem;
 }
 
-// ── Individual interaction ───────────────────────────────────
+// Individual interaction
 
 .qa-interaction {
-    padding: 1rem 1.25rem;
+    padding: 1.15rem 1.35rem;
     background: $color-bg-white;
     border: 1px solid $color-border-subtle;
-    border-radius: 8px;
+    border-radius: $radius-md;
+    box-shadow: $shadow-xs;
 }
 
 .qa-question {
-    margin: 0 0 0.75rem;
+    margin: 0 0 0.85rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid $color-border-light;
     font-size: 0.95rem;
     font-weight: 600;
     color: $color-text-dark;
@@ -159,7 +190,6 @@
     line-height: 1.6;
     color: $color-text-dark;
 
-    // Prose resets — mirrors .markdown-body conventions
     p {
         margin: 0 0 0.6em;
 
@@ -179,17 +209,17 @@
     }
 
     code {
-        font-family: monospace;
+        font-family: $font-mono;
         font-size: 0.85em;
         background: $color-bg-neutral;
         padding: 0.1em 0.3em;
-        border-radius: 3px;
+        border-radius: 4px;
     }
 
     pre {
         background: $color-bg-neutral;
         border: 1px solid $color-border-light;
-        border-radius: 4px;
+        border-radius: $radius-sm;
         padding: 0.6rem 0.9rem;
         overflow-x: auto;
         margin: 0 0 0.6em;
@@ -205,17 +235,17 @@
     }
 }
 
-// ── Source references ────────────────────────────────────────
+// Source references
 
 .qa-sources {
     margin-bottom: 0.75rem;
 
     h4 {
         margin: 0 0 0.4rem;
-        font-size: 0.75rem;
+        font-size: 0.72rem;
         font-weight: 700;
         text-transform: uppercase;
-        letter-spacing: 0.06em;
+        letter-spacing: 0.07em;
         color: $color-text-muted;
     }
 }
@@ -235,23 +265,28 @@
 
 .qa-source-link {
     display: inline-block;
-    padding: 0.18rem 0.6rem;
+    padding: 0.2rem 0.65rem;
     font-family: $font-family;
     font-size: 0.8rem;
     font-weight: 500;
     color: $color-primary;
     background: $color-bg-tag-user;
     border: 1px solid rgba($color-primary, 0.25);
-    border-radius: 999px;
+    border-radius: $radius-pill;
     cursor: pointer;
     text-decoration: none;
     transition:
-        background 0.12s,
-        border-color 0.12s;
+        background 0.12s $ease-out,
+        border-color 0.12s $ease-out;
 
     &:hover:not(.qa-source-link--unresolved) {
         background: $color-bg-hover;
         border-color: rgba($color-primary, 0.5);
+    }
+
+    &:focus-visible {
+        outline: 2px solid $color-primary;
+        outline-offset: 2px;
     }
 
     &--unresolved {
@@ -262,7 +297,7 @@
     }
 }
 
-// ── Interaction meta ─────────────────────────────────────────
+// Interaction meta
 
 .qa-meta {
     margin: 0;
@@ -274,7 +309,7 @@
     color: $color-text-faint;
 }
 
-// ── Clear history ────────────────────────────────────────────
+// Clear history
 
 .qa-clear {
     display: flex;
@@ -283,24 +318,29 @@
 }
 
 .qa-clear-button {
-    padding: 0.3rem 0.75rem;
+    padding: 0.3rem 0.8rem;
     font-family: $font-family;
     font-size: 0.8rem;
     font-weight: 500;
     color: $color-text-secondary;
     background: none;
     border: 1px solid transparent;
-    border-radius: 6px;
+    border-radius: $radius-sm;
     cursor: pointer;
     transition:
-        background 0.12s,
-        border-color 0.12s,
-        color 0.12s;
+        background 0.12s $ease-out,
+        border-color 0.12s $ease-out,
+        color 0.12s $ease-out;
 
     &:hover:not(:disabled) {
         color: $color-text-dark;
         background: $color-bg-neutral;
         border-color: $color-border;
+    }
+
+    &:focus-visible {
+        outline: 2px solid $color-primary;
+        outline-offset: 2px;
     }
 
     &:disabled {

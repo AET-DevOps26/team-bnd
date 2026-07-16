@@ -301,6 +301,8 @@ services:
       # The realm persists in the keycloak postgres db, so edits to realm.json are
       # not re-imported until the postgres data is wiped (docker compose down -v).
       - ./infra/oidc/realm.json:/opt/keycloak/data/import/realm.json:ro
+      # custom login theme (css-only, selected via realm loginTheme)
+      - ./infra/keycloak/themes/alexandria:/opt/keycloak/themes/alexandria:ro
     depends_on:
       postgres-db:
         condition: service_healthy

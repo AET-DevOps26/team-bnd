@@ -1,0 +1,235 @@
+/* Alexandria login theme, layered on keycloak.v2 */
+
+:root {
+  --alx-primary: #0b6394;
+  --alx-primary-dark: #084b6f;
+  --alx-ink: #0a2942;
+  --alx-ink-deep: #061c30;
+  --alx-text: #14181d;
+  --alx-text-muted: #545c66;
+  --alx-border: #cbd2da;
+  --alx-radius: 8px;
+  --alx-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+}
+
+html {
+  min-height: 100%;
+}
+
+/* right half: ink gradient canvas */
+body,
+.login-pf body,
+.pf-v5-c-background-image {
+  min-height: 100vh;
+  font-family: var(--alx-font);
+  background-color: var(--alx-ink-deep);
+  background-image: radial-gradient(
+      120% 90% at 82% 12%,
+      #2a86bd 0%,
+      transparent 55%
+    ),
+    radial-gradient(90% 70% at 15% 92%, var(--alx-primary) 0%, transparent 60%),
+    linear-gradient(160deg, var(--alx-ink) 0%, var(--alx-ink-deep) 100%);
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  background-size: cover;
+}
+
+/* grid over the right canvas */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  left: 50%;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  background-size: 46px 46px;
+  mask-image: radial-gradient(80% 80% at 50% 45%, #000 40%, transparent 100%);
+}
+
+/* left half: white panel holding the login card */
+.pf-v5-c-login {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+  width: 50%;
+  margin: 0;
+  padding: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+}
+
+.pf-v5-c-login__container {
+  width: 100%;
+  max-width: 26rem;
+  margin: 0;
+}
+
+/* card blends into the white left panel */
+.card-pf,
+.login-pf-page .card-pf,
+.pf-v5-c-login__main {
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+  padding: 0;
+}
+
+/* hide realm name */
+#kc-header,
+#kc-header-wrapper {
+  display: none;
+}
+
+#kc-page-title,
+.pf-v5-c-login__main-header-title {
+  font-family: var(--alx-font);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--alx-text);
+}
+
+/* labels + inputs */
+label,
+.pf-v5-c-form__label-text {
+  color: var(--alx-text-muted);
+  font-family: var(--alx-font);
+  font-weight: 600;
+}
+
+.pf-v5-c-form-control {
+  --pf-v5-c-form-control--BackgroundColor: #fff;
+  --pf-v5-c-form-control--Color: var(--alx-text);
+  background: #fff;
+  color: var(--alx-text);
+  border: 1px solid var(--alx-border);
+  border-radius: var(--alx-radius);
+  font-family: var(--alx-font);
+  box-shadow: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+/* drop PatternFly's focus underline pseudo-element */
+.pf-v5-c-form-control::after,
+.pf-v5-c-form-control::before {
+  content: none;
+  border: none;
+}
+
+.pf-v5-c-form-control > input,
+.pf-v5-c-form-control > select,
+.pf-v5-c-form-control > textarea {
+  background: transparent;
+  color: var(--alx-text);
+  border: none;
+  box-shadow: none;
+  font-family: var(--alx-font);
+}
+
+/* bare inputs */
+input[type="text"],
+input[type="password"],
+input[type="email"] {
+  background: #fff;
+  color: var(--alx-text);
+  border: 1px solid var(--alx-border);
+  border-radius: var(--alx-radius);
+  font-family: var(--alx-font);
+}
+
+.pf-v5-c-form-control:focus-within,
+input[type="text"]:focus,
+input[type="password"]:focus,
+input[type="email"]:focus {
+  border-color: var(--alx-primary);
+  box-shadow: 0 0 0 3px rgba(11, 99, 148, 0.18);
+  outline: none;
+}
+
+.pf-v5-c-form-control > input:focus {
+  box-shadow: none;
+  outline: none;
+}
+
+/* password reveal button sits beside the control */
+.pf-v5-c-button.pf-m-control,
+button[aria-label="Show password"],
+button[aria-label="Hide password"] {
+  background: #fff;
+  color: var(--alx-text-muted);
+  border: 1px solid var(--alx-border);
+  border-radius: var(--alx-radius);
+}
+
+/* primary button */
+input[type="submit"].pf-v5-c-button.pf-m-primary,
+.pf-v5-c-button.pf-m-primary,
+input[type="submit"].btn-primary,
+.btn-primary {
+  background: var(--alx-primary);
+  border-color: var(--alx-primary);
+  border-radius: var(--alx-radius);
+  font-family: var(--alx-font);
+  font-weight: 600;
+  transition: background 0.15s ease, box-shadow 0.15s ease;
+}
+
+input[type="submit"].pf-v5-c-button.pf-m-primary:hover,
+.pf-v5-c-button.pf-m-primary:hover,
+.btn-primary:hover {
+  background: var(--alx-primary-dark);
+  border-color: var(--alx-primary-dark);
+  box-shadow: 0 4px 12px rgba(15, 42, 66, 0.18);
+}
+
+/* links */
+a,
+#kc-registration a,
+.pf-v5-c-login__main-footer-band a {
+  color: var(--alx-primary);
+}
+
+a:hover {
+  color: var(--alx-primary-dark);
+}
+
+.pf-v5-c-login__main-footer,
+#kc-info,
+#kc-info-wrapper,
+#kc-registration,
+#kc-registration-container,
+.pf-v5-c-login__main-footer-band,
+.pf-v5-c-login__main-footer-band-item {
+  display: block;
+  width: 100%;
+  align-self: stretch;
+  margin-inline: 0;
+  padding-inline: 0;
+  text-align: center;
+}
+
+/* keep "New user?" text visible */
+#kc-registration,
+#kc-registration span {
+  display: block;
+  width: 100%;
+  text-align: center;
+  color: var(--alx-text-muted);
+}
+
+/* collapse to a single white column on narrow viewports */
+@media (max-width: 860px) {
+  .pf-v5-c-login {
+    width: 100%;
+  }
+
+  body::before {
+    display: none;
+  }
+}
