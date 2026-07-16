@@ -1222,6 +1222,86 @@ test.describe("Alexandria client", () => {
                 fileSize: 2048,
                 createdAt: "2026-07-01T00:00:00Z",
               },
+            ],
+          }),
+        }),
+      );
+
+      await page.goto("/search");
+
+      // Switch to keyword mode
+      const keywordBtn = page
+        .locator(".search-mode-btn")
+        .filter({ hasText: "Keyword" });
+      await keywordBtn.click();
+      await expect(keywordBtn).toHaveClass(/search-mode-btn--active/);
+
+      await page.locator(".search-input").fill("keyword");
+      await page.locator(".search-submit").click();
+
+      await expect(page).toHaveURL(/[?&]mode=text/);
+
+      const resultList = page.locator(".search-result-list");
+      await expect(resultList).toBeVisible({ timeout: 5000 });
+      await expect(resultList).toContainText("keyword-match.pdf");
+    });
+
+    test("shows empty state when search returns no results", async ({
+      page,
+    }) => {
+      await page.route("/api/v1/knowledgebase/search/semantic*", (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({ results: [], fallbackUsed: false }),
+        }),
+      );
+
+      await page.goto("/search");
+      await page.locator(".search-input").fill("nothing matches this");
+      await page.locator(".search-submit").click();
+
+      const empty = page.locator(".search-empty");
+      await expect(empty).toBeVisible({ timeout: 5000 });
+      await expect(empty).toContainText("No documents matched");
+    });
+
+    test("shows an error message when the search endpoint returns 500", async ({
+      page,
+    }) => {
+      await page.route("/api/v1/knowledgebase/search/semantic*", (route) =>
+        route.fulfill({ status: 500, body: "Internal Server Error" }),
+      );
+
+      await page.goto("/search");
+      await page.locator(".search-input").fill("error trigger");
+      await page.locator(".search-submit").click();
+
+      const error = page.locator(".search-error");
+      await expect(error).toBeVisible({ timeout: 15000 });
+      await expect(error).toContainText("Search failed");
+    });
+
+    test("shows authentication error when the search endpoint returns 401", async ({
+      page,
+    }) => {
+      await page.route("**/protocol/openid-connect/token", (route) =>
+        route.fulfill({ status: 401, body: "Unauthorized" }),
+      );
+      await page.route("/api/v1/knowledgebase/search/semantic*", (route) =>
+        route.fulfill({ status: 401, body: "Unauthorized" }),
+      );
+
+      await page.goto("/search");
+      await page.locator(".search-input").fill("auth check");
+      await page.locator(".search-submit").click();
+
+      const error = page.locator(".search-error");
+      await expect(error).toBeVisible({ timeout: 15000 });
+      await expect(error).toHaveText("Authentication error. Retrying login...");
+    });
+  });
+
   test.describe("Tag display and filtering", () => {
     const mockDocuments = [
       {
@@ -1450,7 +1530,7 @@ test.describe("Alexandria client", () => {
       const tagList = page.locator('[aria-label="Document tags"]');
       await expect(tagList).toBeVisible({ timeout: 5000 });
 
-      const tags = tagList.locator('.tag[role="button"]');
+      const tags = tagList.locator(".tag:not(.tag--add)");
       await expect(tags).toHaveCount(2);
       // "alpha" should come before "beta" regardless of API order
       await expect(tags.first().locator(".tag__label")).toHaveText("alpha");
@@ -1465,9 +1545,7 @@ test.describe("Alexandria client", () => {
       const tagList = page.locator('[aria-label="Document tags"]');
       await expect(tagList).toBeVisible({ timeout: 5000 });
 
-      const tags = tagList.locator('.tag[role="button"]');
-
-      // alpha is AUTO -- no remove button
+      const tags = tagList.locator(".tag:not(.tag--add)");
       const alphaTag = tags.first();
       await expect(alphaTag.locator(".tag__remove")).toHaveCount(0);
 
@@ -1500,14 +1578,10 @@ test.describe("Alexandria client", () => {
       const input = page.locator('[aria-label="New tag name"]');
       await expect(input).toBeVisible();
       await input.fill("new-tag");
-
-      const addRequest = page.waitForRequest(
-        (req) =>
-          req.url().includes("/api/v1/knowledgebase/documents/doc-tag-1/tags") &&
-          req.method() === "POST",
-      );
       await input.press("Enter");
-      await addRequest;
+
+      // Give the mutation a moment to fire
+      await page.waitForTimeout(500);
       expect(addTagCalled).toBe(true);
     });
 
@@ -1531,17 +1605,11 @@ test.describe("Alexandria client", () => {
       await expect(tagList).toBeVisible({ timeout: 5000 });
 
       // beta is USER, second in sorted order
-      const tags = tagList.locator('.tag[role="button"]');
+      const tags = tagList.locator(".tag:not(.tag--add)");
       const removeButton = tags.nth(1).locator(".tag__remove");
-
-      const deleteRequest = page.waitForRequest(
-        (req) =>
-          /\/api\/v1\/knowledgebase\/documents\/doc-tag-1\/tags\/t-b/.test(
-            req.url(),
-          ) && req.method() === "DELETE",
-      );
       await removeButton.click();
-      await deleteRequest;
+
+      await page.waitForTimeout(500);
       expect(removeTagCalled).toBe(true);
     });
 
@@ -1613,23 +1681,26 @@ test.describe("Alexandria client", () => {
         }),
       );
 
-      await page.goto("/search");
+      await page.goto("/documents/doc-tag-1");
 
-      // Switch to keyword mode
-      const keywordBtn = page
-        .locator(".search-mode-btn")
-        .filter({ hasText: "Keyword" });
-      await keywordBtn.click();
-      await expect(keywordBtn).toHaveClass(/search-mode-btn--active/);
+      const tagList = page.locator('[aria-label="Document tags"]');
+      await expect(tagList).toBeVisible({ timeout: 5000 });
 
-      await page.locator(".search-input").fill("keyword");
-      await page.locator(".search-submit").click();
+      // Click the whole "alpha" tag chip (not just text)
+      const alphaChip = tagList.locator(".tag__label--clickable").first();
+      await alphaChip.click();
 
-      await expect(page).toHaveURL(/[?&]mode=text/);
+      // Sidebar should now filter: only doc-tag-1 has "alpha"
+      await expect(page.locator(".tree-item")).toHaveCount(1);
+      await expect(page.locator(".tree-item").first()).toContainText(
+        "taggable.pdf",
+      );
 
-      const resultList = page.locator(".search-result-list");
-      await expect(resultList).toBeVisible({ timeout: 5000 });
-      await expect(resultList).toContainText("keyword-match.pdf");
+      // The sidebar filter chip for "alpha" should be active
+      const sidebarChip = page.locator(".tag-filter__chip", {
+        hasText: "alpha",
+      });
+      await expect(sidebarChip).toHaveClass(/tag-filter__chip--active/);
     });
 
     test("shows empty state when search returns no results", async ({
@@ -1685,26 +1756,6 @@ test.describe("Alexandria client", () => {
       const error = page.locator(".search-error");
       await expect(error).toBeVisible({ timeout: 15000 });
       await expect(error).toHaveText("Authentication error. Retrying login...");
-      await page.goto("/documents/doc-tag-1");
-
-      const tagList = page.locator('[aria-label="Document tags"]');
-      await expect(tagList).toBeVisible({ timeout: 5000 });
-
-      // Click the whole "alpha" tag chip (not just text)
-      const alphaChip = tagList.locator('.tag[role="button"]').first();
-      await alphaChip.click();
-
-      // Sidebar should now filter: only doc-tag-1 has "alpha"
-      await expect(page.locator(".tree-item")).toHaveCount(1);
-      await expect(page.locator(".tree-item").first()).toContainText(
-        "taggable.pdf",
-      );
-
-      // The sidebar filter chip for "alpha" should be active
-      const sidebarChip = page.locator(".tag-filter__chip", {
-        hasText: "alpha",
-      });
-      await expect(sidebarChip).toHaveClass(/tag-filter__chip--active/);
     });
 
     test("confirm button submits the new tag", async ({ page }) => {
@@ -1815,7 +1866,7 @@ test.describe("Alexandria client", () => {
       // Click the "ggg" tag in the detail view
       const tagList = page.locator('[aria-label="Document tags"]');
       await expect(tagList).toBeVisible({ timeout: 5000 });
-      await tagList.locator('.tag[role="button"]').first().click();
+      await tagList.locator(".tag__label--clickable").first().click();
 
       // Now all 7 chips should be visible (auto-expanded)
       await expect(chips).toHaveCount(7);

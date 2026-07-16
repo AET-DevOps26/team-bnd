@@ -104,6 +104,12 @@ export default function DocumentDetail() {
     });
   }
 
+  function closeAddTag() {
+    setNewTagLabel("");
+    setAddingTag(false);
+    addTagMutation.reset();
+  }
+
   function handleAddTag() {
     const label = newTagLabel.trim();
     if (!label || !documentId) return;
@@ -114,8 +120,7 @@ export default function DocumentDetail() {
       },
       {
         onSuccess: () => {
-          setNewTagLabel("");
-          setAddingTag(false);
+          closeAddTag();
           invalidateAfterTagChange();
         },
       },
@@ -127,8 +132,7 @@ export default function DocumentDetail() {
       e.preventDefault();
       handleAddTag();
     } else if (e.key === "Escape") {
-      setNewTagLabel("");
-      setAddingTag(false);
+      closeAddTag();
     }
   }
 
@@ -136,7 +140,7 @@ export default function DocumentDetail() {
     if (newTagLabel.trim()) {
       handleAddTag();
     } else {
-      setAddingTag(false);
+      closeAddTag();
     }
   }
 
@@ -214,27 +218,21 @@ export default function DocumentDetail() {
           {tags.map((tag) => (
             <li
               key={tag.id}
-              className={`tag tag--${tag.source?.toLowerCase() ?? "user"} tag--clickable`}
-              onClick={() => onToggleTag(tag.label ?? "")}
-              title={`Filter by "${tag.label}"`}
-              role="button"
-              tabIndex={0}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  onToggleTag(tag.label ?? "");
-                }
-              }}
+              className={`tag tag--${tag.source?.toLowerCase() ?? "user"}`}
             >
-              <span className="tag__label">{tag.label}</span>
+              <button
+                type="button"
+                className="tag__label tag__label--clickable"
+                onClick={() => onToggleTag(tag.label ?? "")}
+                title={`Filter by "${tag.label}"`}
+              >
+                {tag.label}
+              </button>
               {tag.source === "USER" && (
                 <button
                   type="button"
                   className="tag__remove"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleRemoveTag(tag.id ?? "");
-                  }}
+                  onClick={() => handleRemoveTag(tag.id ?? "")}
                   aria-label={`Remove tag ${tag.label}`}
                   disabled={removeTagMutation.isPending}
                 >
@@ -282,7 +280,7 @@ export default function DocumentDetail() {
             )}
           </li>
         </ul>
-        {addTagMutation.isError && (
+        {addingTag && addTagMutation.isError && (
           <p className="tag-add-error">Failed to add tag.</p>
         )}
       </section>
