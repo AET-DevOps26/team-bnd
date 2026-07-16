@@ -1,55 +1,338 @@
 @use "variables" as *;
 
-.login-view {
+.login-page {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    height: 100vh;
+    background: $color-bg-white;
+}
+
+// Left: sign-in panel
+
+.login-panel {
     display: flex;
-    flex-direction: column;
     align-items: center;
     justify-content: center;
-    flex: 1;
-    padding: 2rem;
-    text-align: center;
+    padding: 3rem 2.5rem;
+    overflow-y: auto;
+}
 
-    h1 {
-        margin: 0 0 0.5rem;
-        color: $color-primary;
-        font-size: 1.6rem;
-    }
+.login-content {
+    width: 100%;
+    max-width: 30rem;
+    animation: login-rise 0.6s $ease-out both;
+}
 
-    p {
-        margin: 0 0 1.5rem;
-        max-width: 480px;
-        font-size: 0.95rem;
-        color: $color-text-secondary;
-        line-height: 1.5;
-    }
+.login-loading {
+    color: $color-text-muted;
+    font-size: 0.95rem;
+}
+
+.login-brand {
+    display: inline-block;
+    margin-bottom: 0.75rem;
+    padding: 0.25rem 0.7rem;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: $color-primary;
+    background: $color-primary-tint;
+    border-radius: $radius-pill;
+}
+
+.login-title {
+    margin: 0 0 1rem;
+    font-size: clamp(1.9rem, 3.4vw, 2.6rem);
+    font-weight: 700;
+    line-height: 1.12;
+    letter-spacing: -0.02em;
+    color: $color-text;
+    text-wrap: balance;
+    overflow-wrap: anywhere;
+}
+
+.login-lede {
+    margin: 0 0 2rem;
+    font-size: 1rem;
+    line-height: 1.65;
+    color: $color-text-secondary;
 }
 
 .login-error {
+    margin: 0 0 1rem;
     color: $color-error;
+    font-size: 0.9rem;
 }
 
 .login-button {
-    padding: 0.6rem 1.5rem;
+    padding: 0.8rem 1.75rem;
     border: none;
-    border-radius: 4px;
+    border-radius: $radius-sm;
     background: $color-primary;
     color: $color-bg-white;
-    font-size: 0.95rem;
+    font-size: 0.98rem;
     font-weight: 600;
+    box-shadow: $shadow-sm;
     cursor: pointer;
-    transition: background 0.15s;
+    transition:
+        background 0.18s $ease-out,
+        box-shadow 0.18s $ease-out,
+        transform 0.18s $ease-out;
 
     &:hover {
         background: $color-primary-dark;
+        box-shadow: $shadow-md;
+        transform: translateY(-1px);
     }
 
-    &:focus {
+    &:focus-visible {
         outline: 2px solid $color-primary;
-        outline-offset: 2px;
+        outline-offset: 3px;
+    }
+
+    &:active {
+        transform: translateY(0);
+        box-shadow: $shadow-xs;
     }
 }
 
-// User info (header)
+.login-highlights {
+    margin: 2.5rem 0 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+
+    li {
+        display: flex;
+        align-items: center;
+        gap: 0.7rem;
+        font-size: 0.9rem;
+        line-height: 1.4;
+        color: $color-text-body;
+    }
+
+    &__mark {
+        flex-shrink: 0;
+        width: 1.15rem;
+        height: 1.15rem;
+        border-radius: $radius-pill;
+        background: $color-primary-tint;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        &::after {
+            content: "";
+            width: 0.3rem;
+            height: 0.55rem;
+            margin-top: -0.1rem;
+            border: solid $color-primary;
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
+        }
+    }
+}
+
+// Right: knowledge graphic
+
+.login-stage {
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    background:
+        radial-gradient(
+            120% 90% at 82% 12%,
+            $color-primary-light 0%,
+            transparent 55%
+        ),
+        radial-gradient(
+            90% 70% at 15% 92%,
+            $color-primary 0%,
+            transparent 60%
+        ),
+        linear-gradient(160deg, $color-ink 0%, $color-ink-deep 100%);
+
+    // Grid
+    &::before {
+        content: "";
+        position: absolute;
+        inset: -2px;
+        background-image:
+            linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+        background-size: 46px 46px;
+        mask-image: radial-gradient(80% 80% at 50% 45%, #000 40%, transparent 100%);
+        animation: archive-drift 26s $ease-in-out infinite alternate;
+    }
+}
+
+.archive-scene {
+    position: relative;
+    width: min(88%, 30rem);
+    height: auto;
+    animation: login-fade 0.9s $ease-out 0.15s both;
+}
+
+// Raw document stack
+.archive-doc {
+    fill: $color-parchment;
+    stroke: $color-parchment-line;
+    stroke-width: 1.5;
+
+    &--2 {
+        opacity: 0.72;
+    }
+    &--3 {
+        opacity: 0.5;
+    }
+}
+
+.archive-doc-top {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: archive-float 9s $ease-in-out infinite alternate;
+}
+
+.archive-line {
+    stroke: $color-ink;
+    stroke-width: 4;
+    stroke-linecap: round;
+    opacity: 0.55;
+
+    &--faint {
+        opacity: 0.25;
+    }
+}
+
+// Distillation flow
+.archive-flow__path {
+    fill: none;
+    stroke: rgba(255, 255, 255, 0.55);
+    stroke-width: 2;
+    stroke-dasharray: 5 6;
+    stroke-linecap: round;
+    animation: archive-flow 1.4s linear infinite;
+
+    &--2 {
+        animation-delay: 0.35s;
+    }
+    &--3 {
+        animation-delay: 0.7s;
+    }
+}
+
+// Knowledge cards
+.archive-card {
+    > rect:not(.archive-pill) {
+        fill: rgba(255, 255, 255, 0.97);
+        filter: drop-shadow(0 12px 26px rgba(0, 0, 0, 0.28));
+    }
+
+    &--summary {
+        animation: card-in 0.6s $ease-out 0.45s both;
+    }
+    &--entities {
+        animation: card-in 0.6s $ease-out 0.6s both;
+    }
+    &--tags {
+        animation: card-in 0.6s $ease-out 0.75s both;
+    }
+}
+
+.archive-card__tag {
+    fill: $color-text-muted;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    font-family: $font-family;
+}
+
+.archive-line--card {
+    stroke: $color-border;
+    stroke-width: 5;
+    stroke-linecap: round;
+
+    &--accent {
+        stroke: $color-primary-tint;
+    }
+}
+
+.archive-pill {
+    &--a {
+        fill: $color-primary-tint;
+    }
+    &--b {
+        fill: $color-bg-tag-auto;
+    }
+    &--c {
+        fill: #fef3c7;
+    }
+}
+
+// Motion
+
+@keyframes login-rise {
+    from {
+        opacity: 0;
+        transform: translateY(14px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes login-fade {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes card-in {
+    from {
+        opacity: 0;
+        transform: translateX(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes archive-float {
+    from {
+        transform: translateY(2px);
+    }
+    to {
+        transform: translateY(-2px);
+    }
+}
+
+@keyframes archive-flow {
+    to {
+        stroke-dashoffset: -22;
+    }
+}
+
+@keyframes archive-drift {
+    from {
+        transform: translate(0, 0);
+    }
+    to {
+        transform: translate(-24px, -16px);
+    }
+}
+
+// Header user chrome
 
 .user-info {
     display: flex;
@@ -59,30 +342,83 @@
 }
 
 .user-name {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
     font-size: 0.85rem;
     color: $color-text-meta;
     font-weight: 500;
+
+    &::before {
+        $icon-user: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2'/%3E%3Ccircle cx='12' cy='7' r='4'/%3E%3C/svg%3E");
+
+        content: "";
+        width: 1rem;
+        height: 1rem;
+        flex-shrink: 0;
+        background: $color-primary;
+        mask-repeat: no-repeat;
+        mask-position: center;
+        mask-size: contain;
+        mask-image: $icon-user;
+        -webkit-mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        -webkit-mask-size: contain;
+        -webkit-mask-image: $icon-user;
+    }
 }
 
 .logout-button {
-    padding: 0.3rem 0.75rem;
+    padding: 0.35rem 0.8rem;
     border: 1px solid $color-border-input;
-    border-radius: 4px;
+    border-radius: $radius-sm;
     background: $color-bg-white;
     color: $color-text-secondary;
     font-size: 0.8rem;
+    font-weight: 500;
     cursor: pointer;
     transition:
-        background 0.15s,
-        border-color 0.15s;
+        background 0.15s $ease-out,
+        border-color 0.15s $ease-out,
+        color 0.15s $ease-out;
 
     &:hover {
-        background: #f5f5f5;
-        border-color: #999;
+        background: $color-bg-neutral;
+        border-color: $color-text-light;
+        color: $color-text-dark;
     }
 
-    &:focus {
+    &:focus-visible {
         outline: 2px solid $color-primary;
         outline-offset: 2px;
+    }
+}
+
+// Stack on narrow viewports
+
+@media (max-width: 860px) {
+    .login-page {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .login-stage {
+        display: none;
+    }
+
+    .login-panel {
+        padding: 2.5rem 1.5rem;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .login-content,
+    .archive-scene,
+    .archive-doc-top,
+    .archive-flow__path,
+    .archive-card--summary,
+    .archive-card--entities,
+    .archive-card--tags,
+    .login-stage::before {
+        animation: none;
     }
 }
