@@ -26,6 +26,24 @@ function isSupportedFile(file: File): boolean {
   return ACCEPTED_EXTENSIONS.some((ext) => name.endsWith(ext));
 }
 
+// Browsers report .md/.markdown (and sometimes .txt) as application/octet-stream,
+// which the backend then stores verbatim and the viewer can't recognise. Derive
+// the real type from the extension when the browser type isn't already correct.
+const EXTENSION_MIME_TYPES: Record<string, string> = {
+  ".md": "text/markdown",
+  ".markdown": "text/markdown",
+  ".txt": "text/plain",
+  ".pdf": "application/pdf",
+};
+
+function normalizeType(file: File): File {
+  if (ACCEPTED_MIME_TYPES.has(file.type)) return file;
+  const name = file.name.toLowerCase();
+  const ext = Object.keys(EXTENSION_MIME_TYPES).find((e) => name.endsWith(e));
+  if (!ext) return file;
+  return new File([file], file.name, { type: EXTENSION_MIME_TYPES[ext] });
+}
+
 export default function UploadDocument({ onUploaded }: Props) {
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -43,8 +61,9 @@ export default function UploadDocument({ onUploaded }: Props) {
     setState("uploading");
     setErrorMessage("");
 
+    const normalized = normalizeType(file);
     const formData = new FormData();
-    formData.append("file", file);
+    formData.append("file", normalized);
 
     try {
       const { data, error } = await fetchClient.POST(
@@ -52,7 +71,7 @@ export default function UploadDocument({ onUploaded }: Props) {
         {
           // The generated type models the binary file field as string, but the
           // actual payload is the File, built by hand into FormData below.
-          body: { file: file as unknown as string },
+          body: { file: normalized as unknown as string },
           bodySerializer: () => formData,
         },
       );
