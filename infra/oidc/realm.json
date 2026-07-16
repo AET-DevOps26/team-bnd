@@ -1,6 +1,7 @@
 {
   "id": "1d7956b6-0827-4d34-83ab-40cd47565f4b",
   "realm": "alexandria",
+  "loginTheme": "alexandria",
   "notBefore": 0,
   "defaultSignatureAlgorithm": "RS256",
   "revokeRefreshToken": false,

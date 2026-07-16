@@ -212,152 +212,165 @@ export default function DocumentDetail() {
   const summary = document.summary;
   const entitiesStatus = document.entitiesStatus;
   const tagsStatus = document.tagsStatus;
+  const hasPreview = isPdf || isMarkdown || isPlainText;
 
-  return (
-    <article className="document-detail">
-      <header className="detail-header">
-        <h2 className="detail-title">{document.fileName}</h2>
-        <dl className="detail-meta">
-          <dt>Type</dt>
-          <dd>{document.fileType || "—"}</dd>
-          <dt>Size</dt>
-          <dd>{formatBytes(document.fileSize, "\u2014")}</dd>
-          <dt>Uploaded</dt>
-          <dd>{formatDateTime(document.createdAt, "—")}</dd>
-        </dl>
-      </header>
+  const header = (
+    <header className="detail-header">
+      <h2 className="detail-title">{document.fileName}</h2>
+    </header>
+  );
 
-      <section className="detail-section">
-        <h3>Tags</h3>
-        {tagsStatus === "PENDING" && <DotsLoader />}
-        {tagsStatus === "FAILED" && tags.length === 0 && (
-          <p className="detail-tags-status detail-tags-status--error">
-            Tag generation failed.
-          </p>
-        )}
-        <ul className="tag-list" aria-label="Document tags">
-          {tags.map((tag) => (
-            <li
-              key={tag.id}
-              className={`tag tag--${tag.source?.toLowerCase() ?? "user"}`}
+  const infoSection = (
+    <section className="detail-section">
+      <h3>File info</h3>
+      <dl className="detail-meta">
+        <dt>Type</dt>
+        <dd>{document.fileType || "—"}</dd>
+        <dt>Size</dt>
+        <dd>{formatBytes(document.fileSize, "\u2014")}</dd>
+        <dt>Uploaded</dt>
+        <dd>{formatDateTime(document.createdAt, "—")}</dd>
+      </dl>
+    </section>
+  );
+
+  const tagsSection = (
+    <section className="detail-section">
+      <h3>Tags</h3>
+      {tagsStatus === "PENDING" && <DotsLoader />}
+      {tagsStatus === "FAILED" && tags.length === 0 && (
+        <p className="detail-tags-status detail-tags-status--error">
+          Tag generation failed.
+        </p>
+      )}
+      <ul className="tag-list" aria-label="Document tags">
+        {tags.map((tag) => (
+          <li
+            key={tag.id}
+            className={`tag tag--${tag.source?.toLowerCase() ?? "user"}`}
+          >
+            <button
+              type="button"
+              className="tag__label tag__label--clickable"
+              onClick={() => onToggleTag(tag.label ?? "")}
+              title={`Filter by "${tag.label}"`}
             >
+              {tag.label}
+            </button>
+            {tag.source === "USER" && (
               <button
                 type="button"
-                className="tag__label tag__label--clickable"
-                onClick={() => onToggleTag(tag.label ?? "")}
-                title={`Filter by "${tag.label}"`}
+                className="tag__remove"
+                onClick={() => handleRemoveTag(tag.id ?? "")}
+                aria-label={`Remove tag ${tag.label}`}
+                disabled={removeTagMutation.isPending}
               >
-                {tag.label}
-              </button>
-              {tag.source === "USER" && (
-                <button
-                  type="button"
-                  className="tag__remove"
-                  onClick={() => handleRemoveTag(tag.id ?? "")}
-                  aria-label={`Remove tag ${tag.label}`}
-                  disabled={removeTagMutation.isPending}
-                >
-                  x
-                </button>
-              )}
-            </li>
-          ))}
-          <li className="tag tag--add">
-            {addingTag ? (
-              <span className="tag__input-wrapper">
-                <input
-                  ref={tagInputRef}
-                  type="text"
-                  className="tag__input"
-                  value={newTagLabel}
-                  onChange={(e) => setNewTagLabel(e.target.value)}
-                  onKeyDown={handleTagInputKeyDown}
-                  onBlur={handleTagInputBlur}
-                  placeholder="tag name"
-                  aria-label="New tag name"
-                  maxLength={50}
-                  autoFocus
-                />
-                <button
-                  type="button"
-                  className="tag__confirm"
-                  onMouseDown={(e) => e.preventDefault()}
-                  onClick={handleAddTag}
-                  aria-label="Confirm new tag"
-                  disabled={!newTagLabel.trim() || addTagMutation.isPending}
-                >
-                  &#10003;
-                </button>
-              </span>
-            ) : (
-              <button
-                type="button"
-                className="tag__add-button"
-                onClick={() => setAddingTag(true)}
-                aria-label="Add a tag"
-              >
-                +
+                &#215;
               </button>
             )}
           </li>
+        ))}
+        <li className="tag tag--add">
+          {addingTag ? (
+            <span className="tag__input-wrapper">
+              <input
+                ref={tagInputRef}
+                type="text"
+                className="tag__input"
+                value={newTagLabel}
+                onChange={(e) => setNewTagLabel(e.target.value)}
+                onKeyDown={handleTagInputKeyDown}
+                onBlur={handleTagInputBlur}
+                placeholder="tag name"
+                aria-label="New tag name"
+                maxLength={50}
+                autoFocus
+              />
+              <button
+                type="button"
+                className="tag__confirm"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={handleAddTag}
+                aria-label="Confirm new tag"
+                disabled={!newTagLabel.trim() || addTagMutation.isPending}
+              >
+                &#10003;
+              </button>
+            </span>
+          ) : (
+            <button
+              type="button"
+              className="tag__add-button"
+              onClick={() => setAddingTag(true)}
+              aria-label="Add a tag"
+            >
+              <span className="tag__add-icon" aria-hidden="true">
+                +
+              </span>
+              Add tag
+            </button>
+          )}
+        </li>
+      </ul>
+      {addingTag && addTagMutation.isError && (
+        <p className="tag-add-error">Failed to add tag.</p>
+      )}
+    </section>
+  );
+
+  const entitiesSection = (entitiesStatus === "PENDING" ||
+    entitiesStatus === "FAILED" ||
+    entities.length > 0) && (
+    <section className="detail-section">
+      <h3>Extracted Entities</h3>
+      {entitiesStatus === "PENDING" && <DotsLoader />}
+      {entitiesStatus === "FAILED" && entities.length === 0 && (
+        <p className="detail-entities-status detail-entities-status--error">
+          Entity extraction failed.
+        </p>
+      )}
+      {entities.length > 0 && (
+        <ul className="entity-list" aria-label="Extracted entities">
+          {entities.map((entity) => (
+            <li
+              key={entity.id}
+              className={`entity-item entity-item--${entity.type?.toLowerCase() ?? "unknown"}`}
+            >
+              <span className="entity-name">{entity.name}</span>
+              <span className="entity-type">
+                {(entity.type && ENTITY_TYPE_LABELS[entity.type]) ?? entity.type}
+              </span>
+            </li>
+          ))}
         </ul>
-        {addingTag && addTagMutation.isError && (
-          <p className="tag-add-error">Failed to add tag.</p>
-        )}
-      </section>
-
-      {(entitiesStatus === "PENDING" ||
-        entitiesStatus === "FAILED" ||
-        entities.length > 0) && (
-        <section className="detail-section">
-          <h3>Extracted Entities</h3>
-          {entitiesStatus === "PENDING" && <DotsLoader />}
-          {entitiesStatus === "FAILED" && entities.length === 0 && (
-            <p className="detail-entities-status detail-entities-status--error">
-              Entity extraction failed.
-            </p>
-          )}
-          {entities.length > 0 && (
-            <ul className="entity-list" aria-label="Extracted entities">
-              {entities.map((entity) => (
-                <li
-                  key={entity.id}
-                  className={`entity-item entity-item--${entity.type?.toLowerCase() ?? "unknown"}`}
-                >
-                  <span className="entity-name">{entity.name}</span>
-                  <span className="entity-type">
-                    {(entity.type && ENTITY_TYPE_LABELS[entity.type]) ??
-                      entity.type}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
       )}
+    </section>
+  );
 
-      {summary && (
-        <section className="detail-section">
-          <h3>Summary</h3>
-          {summary.status === "PENDING" && <DotsLoader />}
-          {summary.status === "FAILED" && (
-            <p className="detail-summary detail-summary--error">
-              Summary generation failed. You can try again via reprocess.
-            </p>
-          )}
-          {summary.status === "COMPLETED" && (
-            <>
-              <p className="detail-summary">{summary.content}</p>
-              {summary.modelUsed && (
-                <p className="detail-meta-small">Model: {summary.modelUsed}</p>
-              )}
-            </>
-          )}
-        </section>
+  const summarySection = summary && (
+    <section className="detail-section">
+      <h3>Summary</h3>
+      {summary.status === "PENDING" && <DotsLoader />}
+      {summary.status === "FAILED" && (
+        <p className="detail-summary detail-summary--error">
+          Summary generation failed. You can try again via reprocess.
+        </p>
       )}
+      {summary.status === "COMPLETED" && (
+        <>
+          <p className="detail-summary">{summary.content}</p>
+          {summary.modelUsed && (
+            <p className="detail-meta-small">Model: {summary.modelUsed}</p>
+          )}
+        </>
+      )}
+    </section>
+  );
 
+  const preview = (
+    <>
       {isPdf && (
-        <section className="detail-section">
+        <section className="detail-section detail-section--preview">
           <h3>Document Preview</h3>
           {pdfLoading && <p className="pdf-embed-status">Loading preview…</p>}
           {pdfError && (
@@ -376,7 +389,7 @@ export default function DocumentDetail() {
       )}
 
       {isMarkdown && (
-        <section className="detail-section">
+        <section className="detail-section detail-section--preview">
           <h3>Document Preview</h3>
           {textLoading && <p className="markdown-status">Loading preview…</p>}
           {textError && (
@@ -393,7 +406,7 @@ export default function DocumentDetail() {
       )}
 
       {isPlainText && (
-        <section className="detail-section">
+        <section className="detail-section detail-section--preview">
           <h3>Document Preview</h3>
           {textLoading && <p className="plaintext-status">Loading preview…</p>}
           {textError && (
@@ -404,6 +417,35 @@ export default function DocumentDetail() {
           {textData != null && <pre className="plaintext-body">{textData}</pre>}
         </section>
       )}
+    </>
+  );
+
+  if (hasPreview) {
+    return (
+      <article className="document-detail document-detail--split">
+        {header}
+        <div className="detail-split">
+          <div className="detail-preview">
+            {summarySection}
+            {preview}
+          </div>
+          <aside className="detail-aside">
+            {infoSection}
+            {tagsSection}
+            {entitiesSection}
+          </aside>
+        </div>
+      </article>
+    );
+  }
+
+  return (
+    <article className="document-detail">
+      {header}
+      {infoSection}
+      {tagsSection}
+      {entitiesSection}
+      {summarySection}
     </article>
   );
 }

@@ -8,11 +8,15 @@
 
 :root {
     font-family: $font-family;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizelegibility;
 }
 
 body {
     margin: 0;
 }
+
 .app {
     display: flex;
     flex-direction: column;
@@ -23,14 +27,18 @@ body {
 
 .app-header {
     padding: 0.75rem 1.5rem;
-    border-bottom: 1px solid $color-border;
+    border-bottom: 2px solid $color-primary;
     background: $color-bg-white;
+    box-shadow: $shadow-xs;
     flex-shrink: 0;
+    z-index: 1;
 
     h1 {
         margin: 0;
         color: $color-primary;
-        font-size: 1.4rem;
+        font-size: 1.35rem;
+        font-weight: 700;
+        letter-spacing: -0.015em;
     }
 
     p {
@@ -54,30 +62,30 @@ body {
 
 .app-tab {
     display: grid;
-    padding: 0.3rem 0.75rem;
+    padding: 0.35rem 0.85rem;
     font-family: $font-family;
     font-size: 0.875rem;
     color: $color-text-secondary;
     background: none;
     border: none;
+    border-radius: $radius-sm;
     cursor: pointer;
     text-decoration: none;
-    transition: color 0.12s;
+    transition:
+        color 0.15s $ease-out,
+        background 0.15s $ease-out;
 
-    // Both spans sit in the same grid cell so the button is always as wide
-    // as its bold label — preventing layout shift when switching tabs.
     &__label,
     &__sizer {
         grid-area: 1 / 1;
     }
 
     &__label {
-        font-weight: 400;
+        font-weight: 500;
     }
 
-    // Hidden bold copy that reserves the bold width at all times
     &__sizer {
-        font-weight: 700;
+        font-weight: 600;
         visibility: hidden;
         user-select: none;
         pointer-events: none;
@@ -85,13 +93,20 @@ body {
 
     &:hover:not(.app-tab--active) {
         color: $color-text-dark;
+        background: $color-bg-neutral;
+    }
+
+    &:focus-visible {
+        outline: 2px solid $color-primary;
+        outline-offset: 2px;
     }
 
     &--active {
-        color: $color-text-dark;
+        color: $color-primary;
+        background: $color-primary-tint;
 
         .app-tab__label {
-            font-weight: 700;
+            font-weight: 600;
         }
     }
 }
@@ -111,5 +126,6 @@ body {
     display: flex;
     flex-direction: column;
     flex: 1;
-    overflow: hidden;
+    min-width: 0;
+    overflow-y: auto;
 }

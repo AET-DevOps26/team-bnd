@@ -107,3 +107,4 @@ npm run test:e2e
 - The production image is based on `nginxinc/nginx-unprivileged` and serves the built files on port 8080 inside the container (Traefik in docker-compose routes to it via the internal network, no host port published by default).
 - When starting the development server, `--build --renew-anon-volumes` has to be specified.
 - The TypeScript types of `useQuery` calls (via `openapi-react-query`) are verified by the pre-commit hook, which runs `tsc --noEmit` before every commit.
+- The client is currently designed for desktop/laptop screens. There's no mobile layout yet, support for it may be implemented at a later time.

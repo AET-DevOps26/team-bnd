@@ -88,12 +88,28 @@ export default function UploadDocument({ onUploaded }: Props) {
     setDragOver(false);
   }
 
+  function openFilePicker() {
+    if (state !== "uploading") {
+      fileInputRef.current?.click();
+    }
+  }
+
   return (
     <div
       className={`upload-area${dragOver ? " upload-area--drag-over" : ""}`}
       onDrop={handleDrop}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
+      onClick={openFilePicker}
+      role="button"
+      tabIndex={0}
+      aria-label="Upload a document by clicking or dropping a file here"
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          openFilePicker();
+        }
+      }}
     >
       <input
         ref={fileInputRef}
@@ -119,7 +135,10 @@ export default function UploadDocument({ onUploaded }: Props) {
         <button
           type="button"
           className="upload-button"
-          onClick={() => fileInputRef.current?.click()}
+          onClick={(e) => {
+            e.stopPropagation();
+            openFilePicker();
+          }}
         >
           Upload Document
         </button>

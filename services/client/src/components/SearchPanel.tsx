@@ -276,6 +276,11 @@ export default function SearchPanel() {
             Keyword
           </button>
         </div>
+        <p className="search-mode-hint">
+          {mode === "semantic"
+            ? "Semantic search finds documents by meaning, so related results surface even when they don't share your exact words."
+            : "Keyword search matches your exact words against filenames and document text."}
+        </p>
       </form>
 
       {errorMsg && <p className="search-error">{errorMsg}</p>}
