@@ -121,19 +121,23 @@ public class KnowledgeBaseService {
         return document;
     }
 
-    // Only dispatch the async pipeline once the surrounding transaction has committed;
-    // otherwise processDocumentAsync's own transaction could run first and fail to find
-    // the not-yet-visible row. With no active transaction (e.g. tests) dispatch directly.
     private void scheduleAsyncProcessing(UUID documentId) {
+        dispatchAfterCommit(() -> self.getObject().processDocumentAsync(documentId));
+    }
+
+    // Only run the async worker once the surrounding transaction has committed; otherwise the
+    // worker's own transaction could run first and either miss the not-yet-visible row or the
+    // PENDING status the caller just wrote. With no active transaction (e.g. tests) run directly.
+    private void dispatchAfterCommit(Runnable worker) {
         if (TransactionSynchronizationManager.isSynchronizationActive()) {
             TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
                 @Override
                 public void afterCommit() {
-                    self.getObject().processDocumentAsync(documentId);
+                    worker.run();
                 }
             });
         } else {
-            self.getObject().processDocumentAsync(documentId);
+            worker.run();
         }
     }
 
@@ -256,9 +260,19 @@ public class KnowledgeBaseService {
     @Transactional
     public void reprocessSummary(UUID id, String ownerSubject) {
         Document document = getDocument(id, ownerSubject);
-        // processSummary will reuse or create the summary row and write PENDING
-        // before touching the LLM, so there is no gap in visibility.
-        processSummary(document);
+        Summary summary = document.getSummary();
+        if (summary == null) {
+            summary = new Summary(document);
+            document.setSummary(summary);
+        } else {
+            summary.setStatus(SummaryStatus.PENDING);
+            summary.setContent(null);
+            summary.setModelUsed(null);
+            summary.setGeneratedAt(null);
+            summary.setErrorMessage(null);
+        }
+        summaryRepository.save(summary);
+        dispatchAfterCommit(() -> self.getObject().reprocessSummaryAsync(id));
     }
 
     @Transactional
@@ -267,8 +281,7 @@ public class KnowledgeBaseService {
         document.setEntitiesStatus(SummaryStatus.PENDING);
         documentService.save(document);
         extractedEntityRepository.deleteByDocumentId(id);
-        extractedEntityRepository.flush();
-        processEntities(document);
+        dispatchAfterCommit(() -> self.getObject().reprocessEntitiesAsync(id));
     }
 
     @Transactional
@@ -281,7 +294,43 @@ public class KnowledgeBaseService {
             document.removeTag(tag);
         }
         documentService.save(document);
-        processTags(document);
+        dispatchAfterCommit(() -> self.getObject().reprocessTagsAsync(id));
+    }
+
+    @Async
+    @Transactional
+    public void reprocessSummaryAsync(UUID id) {
+        Document document = findDocumentForAsyncStep(id);
+        if (document != null) {
+            processSummary(document);
+        }
+    }
+
+    @Async
+    @Transactional
+    public void reprocessEntitiesAsync(UUID id) {
+        Document document = findDocumentForAsyncStep(id);
+        if (document != null) {
+            processEntities(document);
+        }
+    }
+
+    @Async
+    @Transactional
+    public void reprocessTagsAsync(UUID id) {
+        Document document = findDocumentForAsyncStep(id);
+        if (document != null) {
+            processTags(document);
+        }
+    }
+
+    private Document findDocumentForAsyncStep(UUID id) {
+        try {
+            return documentService.findById(id);
+        } catch (Exception e) {
+            log.warn("Skipping async reprocess for missing document {}: {}", id, e.getMessage());
+            return null;
+        }
     }
 
     public Summary getDocumentSummary(UUID id, String ownerSubject) {

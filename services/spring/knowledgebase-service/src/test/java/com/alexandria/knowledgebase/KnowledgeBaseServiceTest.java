@@ -295,6 +295,7 @@ class KnowledgeBaseServiceTest {
         doc.addTag(userTag);
         doc.addTag(oldAuto);
         when(documentService.findByIdAndOwner(docId, OWNER)).thenReturn(doc);
+        when(documentService.findById(docId)).thenReturn(doc);
         when(documentService.save(any(Document.class))).thenAnswer(this::recordSaved);
         when(genAiClient.tag(anyString(), anyList())).thenReturn(new GenAiClient.TagResponse(List.of("fresh"), "model"));
         when(tagRepository.findByLabel("fresh")).thenReturn(Optional.empty());
@@ -434,6 +435,7 @@ class KnowledgeBaseServiceTest {
         Summary existing = new Summary(doc, "old", "model");
         doc.setSummary(existing);
         when(documentService.findByIdAndOwner(docId, OWNER)).thenReturn(doc);
+        when(documentService.findById(docId)).thenReturn(doc);
         when(genAiClient.summarize("/uploads/a.pdf")).thenReturn(new GenAiClient.SummarizeResponse("new", "model"));
         when(summaryRepository.save(any(Summary.class))).thenAnswer(inv -> inv.getArgument(0));
 
@@ -451,6 +453,7 @@ class KnowledgeBaseServiceTest {
         UUID docId = UUID.randomUUID();
         Document doc = new Document(OWNER, "a.pdf", "/uploads/a.pdf", "application/pdf", 1L);
         when(documentService.findByIdAndOwner(docId, OWNER)).thenReturn(doc);
+        when(documentService.findById(docId)).thenReturn(doc);
         when(genAiClient.extract("/uploads/a.pdf")).thenReturn(new GenAiClient.ExtractResponse(List.of(new GenAiClient.ExtractedEntityDto("Ada", EntityType.PERSON, 0.9)), "model"));
         when(extractedEntityRepository.save(any(ExtractedEntity.class))).thenAnswer(inv -> inv.getArgument(0));
 
@@ -625,6 +628,35 @@ class KnowledgeBaseServiceTest {
                 sync.afterCommit();
             }
             verify(selfProxy).processDocumentAsync(result.getId());
+        } finally {
+            TransactionSynchronizationManager.clearSynchronization();
+        }
+    }
+
+    @Test
+    void unit_kb_reprocessSummaryDefersGenAiUntilAfterCommit() {
+        UUID docId = UUID.randomUUID();
+        Document doc = new Document(OWNER, "a.pdf", "/uploads/a.pdf", "application/pdf", 1L);
+        Summary existing = new Summary(doc, "old", "model");
+        doc.setSummary(existing);
+        KnowledgeBaseService selfProxy = mock(KnowledgeBaseService.class);
+        when(self.getObject()).thenReturn(selfProxy);
+        when(documentService.findByIdAndOwner(docId, OWNER)).thenReturn(doc);
+        when(summaryRepository.save(any(Summary.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        TransactionSynchronizationManager.initSynchronization();
+        try {
+            knowledgeBaseService.reprocessSummary(docId, OWNER);
+
+            // status is reset synchronously so a poll sees PENDING right away,
+            // but the LLM call is deferred to the async worker after commit
+            assertThat(existing.getStatus()).isEqualTo(SummaryStatus.PENDING);
+            verify(selfProxy, never()).reprocessSummaryAsync(any(UUID.class));
+
+            for (TransactionSynchronization sync : TransactionSynchronizationManager.getSynchronizations()) {
+                sync.afterCommit();
+            }
+            verify(selfProxy).reprocessSummaryAsync(docId);
         } finally {
             TransactionSynchronizationManager.clearSynchronization();
         }
