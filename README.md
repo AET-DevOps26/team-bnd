@@ -27,6 +27,27 @@ Alexandria consists of three main subsystems orchestrated via Docker Compose and
 | Spring qa-service            | ![qa-service coverage](https://img.shields.io/badge/dynamic/xml?url=https%3A%2F%2Fgist.githubusercontent.com%2FDoPri%2F81deec5c116cb700b4445f9d9fe1706a%2Fraw%2Fteam-bnd-qa-service-coverage.xml&query=round%28100%20%2A%20number%28%2Freport%2Fcounter%5B%40type%3D%27LINE%27%5D%2F%40covered%29%20div%20%28number%28%2Freport%2Fcounter%5B%40type%3D%27LINE%27%5D%2F%40covered%29%20%2B%20number%28%2Freport%2Fcounter%5B%40type%3D%27LINE%27%5D%2F%40missed%29%29%29&label=coverage&suffix=%25&color=228B22)                       |
 | Python GenAI                 | ![genai coverage](https://img.shields.io/badge/dynamic/xml?url=https%3A%2F%2Fgist.githubusercontent.com%2FDoPri%2F81deec5c116cb700b4445f9d9fe1706a%2Fraw%2Fteam-bnd-genai-coverage.xml&query=round%28100%20%2A%20number%28%2Fcoverage%2F%40line-rate%29%29&label=coverage&suffix=%25&color=228B22)                                                                                                                                                                                                                                    |
 
+## Local Quickstart
+
+Our `docker-compose.yml` includes both pre-built image references and local build contexts. You can choose to pull images for instant startup or build them locally.
+
+**Pull and Run (Fastest):**
+
+1. `docker compose pull && docker compose up -d`
+2. Open http://localhost/ to view the site.
+3. A test user is provided for quick access to the main page: username `testuser`, password `testpassword`.
+
+**Build and Run (For Development):**
+To build the images from your local source: `docker compose up --build --force-recreate`
+
+### Environment Files
+
+For local development, `docker compose up` works out of the box; safe defaults are embedded in `docker-compose.yml`. For production or CI, copy `.env.example` to `.env` and set the values as needed.
+
+#### Troubleshooting
+
+- Make sure to remove all containers _and_ docker volumes if you change to a local .env file. Otherwise, e.g., the postgres service will use the old password, leading to failed connections on the server side. This can be achieved by running `docker compose rm <container>` and `docker volume rm <volume>`.
+
 ## Setup
 
 ### API Documentation
@@ -68,26 +89,6 @@ On every `git commit`, these checks run automatically. For a full list of enforc
 
 To run the full hook set manually:
 `pre-commit run --all-files`
-
-### Local Quickstart
-
-Our `docker-compose.yml` includes both pre-built image references and local build contexts. You can choose to pull images for instant startup or build them locally.
-
-**Pull and Run (Fastest):**
-
-1. `docker compose pull && docker compose up -d`
-2. Open http://localhost/ to view the site.
-
-**Build and Run (For Development):**
-To build the images from your local source: `docker compose up --build --force-recreate`
-
-### Environment Files
-
-For local development, `docker compose up` works out of the box; safe defaults are embedded in `docker-compose.yml`. For production or CI, copy `.env.example` to `.env` and set the values as needed.
-
-#### Troubleshooting
-
-Make sure to remove all containers _and_ docker volumes if you change to a local .env file. Otherwise, e.g., the postgres service will use the old password, leading to failed connections on the server side. This can be achieved by running `docker compose rm <container>` and `docker volume rm <volume>`. To remove the whole stack at once, use `docker compose down -v` (Note that this deletes all volumes!).
 
 ### Server
 

@@ -52,57 +52,63 @@ export default function DocumentTree({
       <UploadDocument onUploaded={(id) => void navigate(`/documents/${id}`)} />
 
       {/* Tag filter section */}
-      {allTags.length > 0 && (
-        <div className="tag-filter" aria-label="Filter by tags">
-          <div className="tag-filter__header">
-            <span className="tag-filter__label">Filter by tag</span>
-            <button
-              className="tag-filter__clear"
-              onClick={onClearTags}
-              type="button"
-              style={{
-                visibility: selectedTags.length > 0 ? "visible" : "hidden",
-              }}
-            >
-              Clear
-            </button>
-          </div>
-          <ul className="tag-filter__list">
-            {visibleTags.map((tag) => {
-              const name = tag.name ?? "";
-              const active = selectedTags.includes(name);
-              return (
-                <li key={name}>
-                  <button
-                    type="button"
-                    className={`tag-filter__chip${active ? " tag-filter__chip--active" : ""}`}
-                    onClick={() => onToggleTag(name)}
-                    aria-pressed={active}
-                  >
-                    {name}
-                    {tag.documentCount != null && (
-                      <span className="tag-filter__count">
-                        {tag.documentCount}
-                      </span>
-                    )}
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-          {hasHiddenTags && !hasSelectedHiddenTag && (
-            <button
-              type="button"
-              className="tag-filter__toggle"
-              onClick={() => setTagsExpanded((v) => !v)}
-            >
-              {tagsExpanded
-                ? "Show less"
-                : `+${allTags.length - VISIBLE_TAG_COUNT} more`}
-            </button>
-          )}
+      <div className="tag-filter" aria-label="Filter by tags">
+        <div className="tag-filter__header">
+          <span className="tag-filter__label">Filter by tag</span>
+          <button
+            className="tag-filter__clear"
+            onClick={onClearTags}
+            type="button"
+            style={{
+              visibility: selectedTags.length > 0 ? "visible" : "hidden",
+            }}
+          >
+            Clear
+          </button>
         </div>
-      )}
+        {allTags.length === 0 ? (
+          <p className="tag-filter__empty">
+            Tag filtering becomes available once tags are generated or added.
+          </p>
+        ) : (
+          <>
+            <ul className="tag-filter__list">
+              {visibleTags.map((tag) => {
+                const name = tag.name ?? "";
+                const active = selectedTags.includes(name);
+                return (
+                  <li key={name}>
+                    <button
+                      type="button"
+                      className={`tag-filter__chip${active ? " tag-filter__chip--active" : ""}`}
+                      onClick={() => onToggleTag(name)}
+                      aria-pressed={active}
+                    >
+                      {name}
+                      {tag.documentCount != null && (
+                        <span className="tag-filter__count">
+                          {tag.documentCount}
+                        </span>
+                      )}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+            {hasHiddenTags && !hasSelectedHiddenTag && (
+              <button
+                type="button"
+                className="tag-filter__toggle"
+                onClick={() => setTagsExpanded((v) => !v)}
+              >
+                {tagsExpanded
+                  ? "Show less"
+                  : `+${allTags.length - VISIBLE_TAG_COUNT} more`}
+              </button>
+            )}
+          </>
+        )}
+      </div>
 
       {isLoading && <p className="tree-status">Loading…</p>}
       {!!error && (

@@ -146,15 +146,17 @@ export default function QAPanel() {
             rows={3}
             disabled={isPending}
           />
-          <button
-            type="submit"
-            className="qa-submit"
-            disabled={historyLoading || isPending || !question.trim()}
-          >
-            {isPending ? "Asking…" : "Ask"}
-          </button>
+          <div className="qa-submit-row">
+            <p className="qa-input-hint">Press Ctrl+Enter to submit</p>
+            <button
+              type="submit"
+              className="qa-submit"
+              disabled={historyLoading || isPending || !question.trim()}
+            >
+              {isPending ? "Asking…" : "Ask"}
+            </button>
+          </div>
         </div>
-        <p className="qa-input-hint">Press Ctrl+Enter to submit</p>
       </form>
 
       {askErrorMessage && <p className="qa-error">{askErrorMessage}</p>}

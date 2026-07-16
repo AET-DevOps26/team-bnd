@@ -12,11 +12,11 @@
 
 .tree-heading {
     margin: 0;
-    padding: 0.85rem 1rem 0.6rem;
-    font-size: 0.8rem;
+    padding: 0.9rem 1.15rem 0.65rem;
+    font-size: 0.72rem;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.07em;
     color: $color-text-muted;
     border-bottom: 1px solid $color-border-light;
     flex-shrink: 0;
@@ -24,7 +24,7 @@
 
 .tree-status {
     margin: 0;
-    padding: 0.75rem 1rem;
+    padding: 0.75rem 1.15rem;
     font-size: 0.875rem;
     color: $color-text-body;
 
@@ -40,23 +40,29 @@
 .tree-list {
     list-style: none;
     margin: 0;
-    padding: 0.25rem 0;
+    padding: 0.4rem 0.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
 }
 
 .tree-item {
     display: flex;
     flex-direction: column;
     gap: 0.15rem;
-    padding: 0.6rem 1rem;
+    padding: 0.55rem 0.7rem;
+    border-radius: $radius-sm;
     cursor: pointer;
     border-left: 3px solid transparent;
-    transition: background 0.1s;
+    transition:
+        background 0.12s $ease-out,
+        border-color 0.12s $ease-out;
 
     &:hover {
         background: $color-bg-hover;
     }
 
-    &:focus {
+    &:focus-within {
         outline: 2px solid $color-primary;
         outline-offset: -2px;
     }
@@ -64,6 +70,10 @@
     &--active {
         background: $color-bg-active;
         border-left-color: $color-primary;
+
+        .tree-item__name {
+            color: $color-primary;
+        }
     }
 
     &__link {
@@ -72,30 +82,34 @@
         gap: 0.15rem;
         text-decoration: none;
         color: inherit;
+        outline: none;
     }
 
     &__name {
         font-size: 0.9rem;
         font-weight: 500;
-        word-break: break-all;
+        color: $color-text-dark;
+        line-height: 1.35;
+        overflow-wrap: anywhere;
     }
 
     &__date {
         font-size: 0.75rem;
         color: $color-text-muted;
+        font-variant-numeric: tabular-nums;
     }
 }
 
 // Tag filter in the sidebar
 .tag-filter {
-    padding: 0.5rem 1rem;
+    padding: 0.7rem 1.15rem;
     border-bottom: 1px solid $color-border-light;
 
     &__header {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        margin-bottom: 0.4rem;
+        margin-bottom: 0.5rem;
     }
 
     &__label {
@@ -133,27 +147,43 @@
         display: inline-flex;
         align-items: center;
         gap: 0.25rem;
-        padding: 0.15rem 0.5rem;
-        border-radius: 999px;
+        padding: 0.18rem 0.55rem;
+        border-radius: $radius-pill;
         font-size: 0.72rem;
         font-weight: 500;
         border: 1px solid $color-border;
         background: $color-bg-white;
         color: $color-text-body;
         cursor: pointer;
-        transition: background 0.1s, border-color 0.1s;
+        transition:
+            background 0.12s $ease-out,
+            border-color 0.12s $ease-out,
+            color 0.12s $ease-out;
 
         &:hover {
             background: $color-bg-hover;
             border-color: $color-primary;
         }
 
+        &:focus-visible {
+            outline: 2px solid $color-primary;
+            outline-offset: 1px;
+        }
+
         &--active {
-            background: $color-bg-active;
+            background: $color-primary-tint;
             border-color: $color-primary;
             color: $color-primary;
             font-weight: 600;
         }
+    }
+
+    &__empty {
+        margin: 0;
+        font-size: 0.72rem;
+        line-height: 1.4;
+        color: $color-text-muted;
+        font-style: italic;
     }
 
     &__count {
