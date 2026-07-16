@@ -1,4 +1,25 @@
 {{- if .Values.grafana.enabled }}
+{{- $grafanaRootUrl := .Values.grafana.oauth.rootUrl }}
+{{- if and (not $grafanaRootUrl) .Values.ingress.host }}
+{{- $grafanaRootUrl = printf "https://%s/grafana" .Values.ingress.host }}
+{{- end }}
+{{- if and .Values.grafana.oauth.enabled (not $grafanaRootUrl) }}
+{{- fail "grafana.oauth.enabled=true requires grafana.oauth.rootUrl, or ingress.host set so it can be derived." }}
+{{- end }}
+{{- if and .Values.grafana.oauth.enabled (not .Values.grafana.oauth.authUrl) (not .Values.ingress.host) }}
+{{- fail "grafana.oauth.enabled=true requires grafana.oauth.authUrl, or ingress.host set so it can be derived." }}
+{{- end }}
+{{- $kcRealm := .Values.grafana.oauth.realm }}
+{{- /* Grafana runs in the monitoring namespace, so the backchannel token/userinfo URLs must
+       point at the namespace-qualified keycloak service in the release namespace, not a bare
+       service name (which only resolves inside the app namespace). authUrl is browser-facing. */}}
+{{- $kcInternal := printf "http://%s-keycloak.%s:8080/auth/realms/%s/protocol/openid-connect" (include "alexandria.fullname" .) .Release.Namespace $kcRealm }}
+{{- $oauthAuthUrl := .Values.grafana.oauth.authUrl | default (printf "https://%s/auth/realms/%s/protocol/openid-connect/auth" .Values.ingress.host $kcRealm) }}
+{{- $oauthTokenUrl := .Values.grafana.oauth.tokenUrl | default (printf "%s/token" $kcInternal) }}
+{{- $oauthApiUrl := .Values.grafana.oauth.apiUrl | default (printf "%s/userinfo" $kcInternal) }}
+{{- /* Grafana is reached under /grafana whenever its Ingress is on, so it has to serve from the
+       subpath and the health probes move under /grafana too, independent of whether OAuth is on. */}}
+{{- $grafanaSubPath := and .Values.grafana.ingress.enabled .Values.grafana.oauth.serveFromSubPath }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -51,6 +72,39 @@ spec:
                 secretKeyRef:
                   name: {{ include "alexandria.fullname" . }}-grafana
                   key: grafana-admin-password
+            {{- if or $grafanaSubPath .Values.grafana.oauth.enabled }}
+            - name: GF_SERVER_ROOT_URL
+              value: {{ $grafanaRootUrl | quote }}
+            - name: GF_SERVER_SERVE_FROM_SUB_PATH
+              value: {{ $grafanaSubPath | quote }}
+            {{- end }}
+            {{- if .Values.grafana.oauth.enabled }}
+            - name: GF_AUTH_GENERIC_OAUTH_ENABLED
+              value: "true"
+            - name: GF_AUTH_GENERIC_OAUTH_NAME
+              value: {{ .Values.grafana.oauth.name | quote }}
+            - name: GF_AUTH_GENERIC_OAUTH_CLIENT_ID
+              value: {{ .Values.grafana.oauth.clientId | quote }}
+            - name: GF_AUTH_GENERIC_OAUTH_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "alexandria.fullname" . }}-grafana
+                  key: grafana-oidc-client-secret
+            - name: GF_AUTH_GENERIC_OAUTH_SCOPES
+              value: {{ .Values.grafana.oauth.scopes | quote }}
+            - name: GF_AUTH_GENERIC_OAUTH_AUTH_URL
+              value: {{ $oauthAuthUrl | quote }}
+            - name: GF_AUTH_GENERIC_OAUTH_TOKEN_URL
+              value: {{ $oauthTokenUrl | quote }}
+            - name: GF_AUTH_GENERIC_OAUTH_API_URL
+              value: {{ $oauthApiUrl | quote }}
+            - name: GF_AUTH_GENERIC_OAUTH_USE_PKCE
+              value: "true"
+            - name: GF_AUTH_GENERIC_OAUTH_LOGIN_ATTRIBUTE_PATH
+              value: "preferred_username"
+            - name: GF_AUTH_GENERIC_OAUTH_ROLE_ATTRIBUTE_PATH
+              value: {{ .Values.grafana.oauth.roleAttributePath | quote }}
+            {{- end }}
           ports:
             - name: http
               containerPort: 3000
@@ -73,7 +127,7 @@ spec:
             {{- toYaml .Values.grafana.resources | nindent 12 }}
           livenessProbe:
             httpGet:
-              path: /api/health
+              path: {{ if $grafanaSubPath }}/grafana/api/health{{ else }}/api/health{{ end }}
               port: http
             initialDelaySeconds: 30
             periodSeconds: 30
@@ -81,7 +135,7 @@ spec:
             failureThreshold: 3
           readinessProbe:
             httpGet:
-              path: /api/health
+              path: {{ if $grafanaSubPath }}/grafana/api/health{{ else }}/api/health{{ end }}
               port: http
             initialDelaySeconds: 10
             periodSeconds: 10

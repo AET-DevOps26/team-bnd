@@ -109,8 +109,10 @@ For local Python dev, see [`services/genai/README.md`](services/genai/README.md)
 
 Prometheus scrapes metrics from each Spring service (`/actuator/prometheus`, one job per service), GenAI (`/genai/metrics`), Traefik, and the SeaweedFS object storage (`s3-storage:9091/metrics`), and Grafana visualizes them. Both run as part of `docker compose up`.
 
-- Grafana: http://localhost/grafana/ (default login `admin` / `admin`, override with `GRAFANA_ADMIN_PASSWORD`)
+- Grafana: http://localhost/grafana/ (built-in admin login `admin` / `admin`, override with `GRAFANA_ADMIN_PASSWORD`; or "Sign in with Keycloak" using a realm user)
 - Prometheus: http://localhost/prometheus/
+
+Grafana login goes through Keycloak via OpenID Connect (generic OAuth against the `grafana` client in the `alexandria` realm). Realm users with the `grafana-admin` role land as Grafana Admins, everyone else as Viewers. The built-in admin login stays available as a fallback.
 
 Dashboards are provisioned automatically under the "Alexandria" folder: an overview (request rate, errors, latency across services), an aggregate Spring dashboard plus one per Spring service (JVM, GC, threads, DB pool), a GenAI dashboard (request rate, latency, process memory), and an object storage dashboard (S3 request rate and latency, in-flight requests, disk usage). Dashboard JSON and the Prometheus scrape and alert config live under [`infra/prometheus`](infra/prometheus) and [`infra/grafana`](infra/grafana).
 

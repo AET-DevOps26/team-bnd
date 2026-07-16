@@ -87,6 +87,15 @@
         "clientRole": false,
         "containerId": "1d7956b6-0827-4d34-83ab-40cd47565f4b",
         "attributes": {}
+      },
+      {
+        "id": "d2c4f9a1-3e6b-4c88-9b1a-7f0c5e21ab34",
+        "name": "grafana-admin",
+        "description": "Grants Grafana org Admin via OIDC login. Users without it get Viewer.",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "1d7956b6-0827-4d34-83ab-40cd47565f4b",
+        "attributes": {}
       }
     ],
     "client": {
@@ -665,6 +674,80 @@
       "authenticationFlowBindingOverrides": {},
       "fullScopeAllowed": true,
       "nodeReRegistrationTimeout": -1,
+      "defaultClientScopes": [
+        "web-origins",
+        "acr",
+        "profile",
+        "roles",
+        "basic",
+        "email"
+      ],
+      "optionalClientScopes": [
+        "address",
+        "phone",
+        "offline_access",
+        "organization",
+        "microprofile-jwt"
+      ]
+    },
+    {
+      "id": "b7f3d2c9-8a41-4e5f-9c02-1a2b3c4d5e6f",
+      "clientId": "grafana",
+      "name": "Grafana",
+      "description": "Grafana OIDC login via generic OAuth.",
+      "rootUrl": "",
+      "adminUrl": "",
+      "baseUrl": "",
+      "surrogateAuthRequired": false,
+      "enabled": true,
+      "alwaysDisplayInConsole": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "${GRAFANA_OIDC_CLIENT_SECRET}",
+      "redirectUris": ["${GRAFANA_REDIRECT_URI}"],
+      "webOrigins": ["${GRAFANA_WEB_ORIGIN}"],
+      "notBefore": 0,
+      "bearerOnly": false,
+      "consentRequired": false,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "publicClient": false,
+      "frontchannelLogout": true,
+      "protocol": "openid-connect",
+      "attributes": {
+        "realm_client": "false",
+        "oidc.ciba.grant.enabled": "false",
+        "backchannel.logout.session.required": "true",
+        "post.logout.redirect.uris": "${GRAFANA_REDIRECT_URI}",
+        "pkce.code.challenge.method": "S256",
+        "standard.token.exchange.enabled": "false",
+        "oauth2.jwt.authorization.grant.enabled": "false",
+        "oauth2.device.authorization.grant.enabled": "false",
+        "backchannel.logout.revoke.offline.tokens": "false",
+        "dpop.bound.access.tokens": "false"
+      },
+      "authenticationFlowBindingOverrides": {},
+      "fullScopeAllowed": true,
+      "nodeReRegistrationTimeout": -1,
+      "protocolMappers": [
+        {
+          "id": "c1e2f3a4-b5c6-47d8-9e0f-1a2b3c4d5e60",
+          "name": "grafana realm roles",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "consentRequired": false,
+          "config": {
+            "introspection.token.claim": "true",
+            "multivalued": "true",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "roles",
+            "jsonType.label": "String"
+          }
+        }
+      ],
       "defaultClientScopes": [
         "web-origins",
         "acr",

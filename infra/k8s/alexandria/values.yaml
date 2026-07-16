@@ -43,8 +43,8 @@ spring:
 
 # Resource limits are sized to stay under the stud cluster ResourceQuota
 # `default-h2d5c` (3250m CPU / 5144Mi memory in the alexandria namespace).
-# Prometheus + Grafana live in alexandria-monitoring with its own 750m/1000Mi
-# quota, sized independently below.
+# Prometheus + Grafana live in alexandria-monitoring with its own 750m CPU /
+# 4096Mi memory quota, sized independently below.
 # Autoscaling is off by default.
 userService:
   resources:
@@ -207,15 +207,41 @@ grafana:
     tag: 13.0.2
   # Leave empty to auto-generate a random password on first install.
   adminPassword: ""
+  # Expose Grafana at <ingress.host>/grafana via its own Ingress in the monitoring
+  # namespace. Prometheus stays private (port-forward only).
+  ingress:
+    enabled: true
   persistence:
     size: 1Gi
+  # Generous memory for dashboard rendering and query buffering, plus extra CPU so the
+  # liveness probe isn't starved under load. With Prometheus (300m/512Mi) this stays inside
+  # the alexandria-monitoring quota (750m CPU / 4096Mi memory).
   resources:
     requests:
-      cpu: 50m
-      memory: 128Mi
+      cpu: 100m
+      memory: 512Mi
     limits:
-      cpu: 200m
-      memory: 256Mi
+      cpu: 400m
+      memory: 2048Mi
+  oauth:
+    enabled: true
+    name: Keycloak
+    clientId: grafana
+    # Public base URL Grafana is served from, no trailing slash. Leave empty to derive
+    # https://<ingress.host>/grafana; set it explicitly for a different external URL.
+    rootUrl: ""
+    # true if rootUrl serves Grafana under a subpath (e.g. .../grafana).
+    serveFromSubPath: true
+    # Keycloak realm holding the grafana client.
+    realm: alexandria
+    # Leave these empty to derive them: authUrl (browser-facing) from ingress.host, and
+    # token/api (backchannel from the Grafana pod) from the keycloak service in the release
+    # namespace. Override only for an external Keycloak.
+    authUrl: ""
+    tokenUrl: ""
+    apiUrl: ""
+    scopes: "openid email profile"
+    roleAttributePath: "contains(roles[*], 'grafana-admin') && 'Admin' || 'Viewer'"
 
 keycloak:
   keycloak:
@@ -238,6 +264,19 @@ keycloak:
       value: "https://alexandria.stud.k8s.aet.cit.tum.de/*"
     - name: KEYCLOAK_WEB_ORIGIN
       value: "https://alexandria.stud.k8s.aet.cit.tum.de"
+    - name: GRAFANA_REDIRECT_URI
+      value: "https://alexandria.stud.k8s.aet.cit.tum.de/grafana/login/generic_oauth"
+    - name: GRAFANA_WEB_ORIGIN
+      value: "https://alexandria.stud.k8s.aet.cit.tum.de"
+    # Substituted into the grafana client secret in realm.json at import time.
+    # optional so a Keycloak start never fails if the key is absent (e.g. a
+    # hand-made existingSecret); the grafana login just stays unconfigured.
+    - name: GRAFANA_OIDC_CLIENT_SECRET
+      valueFrom:
+        secretKeyRef:
+          name: alexandria-secrets
+          key: grafana-oidc-client-secret
+          optional: true
   # CSS "alexandria" login theme for keycloak
   extraVolumes:
     - name: keycloak-theme
