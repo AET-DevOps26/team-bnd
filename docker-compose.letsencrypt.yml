@@ -1,0 +1,35 @@
+# Needs PUBLIC_DOMAIN (the bare hostname the cert is issued for) and ACME_EMAIL.
+# Set PUBLIC_BASE_URL=https://<PUBLIC_DOMAIN> in the same .env so the app URLs match.
+services:
+  traefik:
+    command:
+      - "--api.dashboard=true"
+      - "--api.insecure=false"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:443"
+      - "--entrypoints.web.http.tls=true"
+      - "--entrypoints.web.http.tls.certresolver=le"
+      - "--entrypoints.web.http.tls.domains[0].main=${PUBLIC_DOMAIN:?set PUBLIC_DOMAIN to your public hostname for the letsencrypt overlay}"
+      - "--entrypoints.http.address=:80"
+      - "--entrypoints.http.http.redirections.entrypoint.to=web"
+      - "--entrypoints.http.http.redirections.entrypoint.scheme=https"
+      - "--certificatesresolvers.le.acme.email=${ACME_EMAIL:?set ACME_EMAIL for letsencrypt certificate registration}"
+      - "--certificatesresolvers.le.acme.storage=/letsencrypt/acme.json"
+      - "--certificatesresolvers.le.acme.httpchallenge=true"
+      - "--certificatesresolvers.le.acme.httpchallenge.entrypoint=http"
+      - "--entrypoints.metrics.address=:8082"
+      - "--metrics.prometheus=true"
+      - "--metrics.prometheus.entrypoint=metrics"
+      - "--metrics.prometheus.addentrypointslabels=true"
+      - "--metrics.prometheus.addserviceslabels=true"
+      - "--ping=true"
+    # Base already publishes 80 and mounts the docker socket; add 443 and the
+    # letsencrypt volume (compose appends these to the base lists).
+    ports:
+      - "443:443"
+    volumes:
+      - letsencrypt:/letsencrypt
+
+volumes:
+  letsencrypt:
