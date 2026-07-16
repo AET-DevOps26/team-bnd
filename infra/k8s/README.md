@@ -28,9 +28,10 @@ All credentials (postgres password, S3 keys, Keycloak admin password, Grafana ad
 internal HMAC secret) are randomly generated on first install and preserved on subsequent
 upgrades. The only thing you need to provide is the LLM API key.
 
-Prometheus and Grafana live in their own namespace (`alexandria-monitoring` by
-default, override via `monitoring.namespace`) and are intentionally not exposed
-through the ingress. To reach them, port-forward:
+Prometheus and Grafana live in their own namespace (`bnd-alexandria-monitoring`
+by default, i.e. `<release-namespace>-monitoring`; override via
+`monitoring.namespace`) and are intentionally not exposed through the ingress.
+To reach them, port-forward:
 
 ```bash
 kubectl -n bnd-alexandria-monitoring port-forward svc/alexandria-prometheus 9090:9090

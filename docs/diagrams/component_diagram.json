@@ -1,6 +1,6 @@
 {
   "id": "d1bd5046-2caf-4461-bcd1-95379abe0308",
-  "version": "4.0.0",
+  "version": "4.1.0",
   "title": "Component Diagram",
   "type": "ComponentDiagram",
   "nodes": [
@@ -489,6 +489,114 @@
         "width": 30,
         "height": 30
       }
+    },
+    {
+      "id": "b1f7a0c2-3d4e-4a5b-9c6d-7e8f90a1b2c3",
+      "width": 240,
+      "height": 200,
+      "type": "componentSubsystem",
+      "position": {
+        "x": -285,
+        "y": -10
+      },
+      "data": {
+        "name": "Gateway",
+        "isComponentSubsystemHeaderShown": true
+      },
+      "measured": {
+        "width": 240,
+        "height": 200
+      }
+    },
+    {
+      "id": "c2e8b1d3-4f5a-4b6c-8d7e-9f0a1b2c3d4e",
+      "width": 180,
+      "height": 120,
+      "type": "component",
+      "position": {
+        "x": 35,
+        "y": 60
+      },
+      "parentId": "b1f7a0c2-3d4e-4a5b-9c6d-7e8f90a1b2c3",
+      "data": {
+        "name": "Traefik",
+        "isComponentHeaderShown": true
+      },
+      "measured": {
+        "width": 180,
+        "height": 120
+      }
+    },
+    {
+      "id": "d3f9c2e4-5a6b-4c7d-9e8f-0a1b2c3d4e5f",
+      "width": 240,
+      "height": 230,
+      "type": "componentSubsystem",
+      "position": {
+        "x": -285,
+        "y": 310
+      },
+      "data": {
+        "name": "Authentication",
+        "isComponentSubsystemHeaderShown": true
+      },
+      "measured": {
+        "width": 240,
+        "height": 230
+      }
+    },
+    {
+      "id": "e4a0d3f5-6b7c-4d8e-8f9a-1b2c3d4e5f60",
+      "width": 180,
+      "height": 120,
+      "type": "component",
+      "position": {
+        "x": 30,
+        "y": 70
+      },
+      "parentId": "d3f9c2e4-5a6b-4c7d-9e8f-0a1b2c3d4e5f",
+      "data": {
+        "name": "Keycloak (OIDC)",
+        "isComponentHeaderShown": true
+      },
+      "measured": {
+        "width": 180,
+        "height": 120
+      }
+    },
+    {
+      "id": "f5b1e4a6-7c8d-4e9f-9a0b-2c3d4e5f6071",
+      "width": 20,
+      "height": 20,
+      "type": "componentInterface",
+      "position": {
+        "x": 450,
+        "y": 60
+      },
+      "data": {
+        "name": "HTTP :80"
+      },
+      "measured": {
+        "width": 20,
+        "height": 20
+      }
+    },
+    {
+      "id": "0a4b8dcb-c48f-4617-95ef-c2e48a54ac75",
+      "width": 30,
+      "height": 30,
+      "type": "componentInterface",
+      "position": {
+        "x": 10,
+        "y": 435
+      },
+      "data": {
+        "name": "OIDC"
+      },
+      "measured": {
+        "width": 30,
+        "height": 30
+      }
     }
   ],
   "edges": [
@@ -843,6 +951,39 @@
       "type": "ComponentProvidedInterface",
       "sourceHandle": "bottom",
       "targetHandle": "top-between-mid-left-center",
+      "data": {
+        "points": []
+      }
+    },
+    {
+      "id": "9c5cd07d-cd78-48f4-8f0f-3ab1e3c9dd75",
+      "source": "b1f7a0c2-3d4e-4a5b-9c6d-7e8f90a1b2c3",
+      "target": "50d26229-396b-4c21-89a3-2a9a2d258c6b",
+      "type": "ComponentProvidedInterface",
+      "sourceHandle": "right",
+      "targetHandle": "left",
+      "data": {
+        "points": []
+      }
+    },
+    {
+      "id": "1a924727-d623-40d7-8049-d35f9e8957b7",
+      "source": "4b3283b2-bd39-4c9b-8b3c-894a23326012",
+      "target": "0a4b8dcb-c48f-4617-95ef-c2e48a54ac75",
+      "type": "ComponentRequiredInterface",
+      "sourceHandle": "left",
+      "targetHandle": "right",
+      "data": {
+        "points": []
+      }
+    },
+    {
+      "id": "21561e11-1ee0-43ea-8b22-aca659050926",
+      "source": "e4a0d3f5-6b7c-4d8e-8f9a-1b2c3d4e5f60",
+      "target": "0a4b8dcb-c48f-4617-95ef-c2e48a54ac75",
+      "type": "ComponentProvidedInterface",
+      "sourceHandle": "right",
+      "targetHandle": "left",
       "data": {
         "points": []
       }
