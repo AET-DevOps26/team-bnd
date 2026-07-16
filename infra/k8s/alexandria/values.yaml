@@ -229,10 +229,14 @@ grafana:
     rootUrl: ""
     # true if rootUrl serves Grafana under a subpath (e.g. .../grafana).
     serveFromSubPath: true
-    # Browser hits authUrl; the Grafana pod hits tokenUrl/apiUrl over the cluster network.
-    authUrl: "https://alexandria.stud.k8s.aet.cit.tum.de/auth/realms/alexandria/protocol/openid-connect/auth"
-    tokenUrl: "http://alexandria-keycloak:8080/auth/realms/alexandria/protocol/openid-connect/token"
-    apiUrl: "http://alexandria-keycloak:8080/auth/realms/alexandria/protocol/openid-connect/userinfo"
+    # Keycloak realm holding the grafana client.
+    realm: alexandria
+    # Leave these empty to derive them: authUrl (browser-facing) from ingress.host, and
+    # token/api (backchannel from the Grafana pod) from the keycloak service in the release
+    # namespace. Override only for an external Keycloak.
+    authUrl: ""
+    tokenUrl: ""
+    apiUrl: ""
     scopes: "openid email profile"
     roleAttributePath: "contains(roles[*], 'grafana-admin') && 'Admin' || 'Viewer'"
 

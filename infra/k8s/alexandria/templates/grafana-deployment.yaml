@@ -6,6 +6,14 @@
 {{- if and .Values.grafana.oauth.enabled (not $grafanaRootUrl) }}
 {{- fail "grafana.oauth.enabled=true requires grafana.oauth.rootUrl, or ingress.host set so it can be derived." }}
 {{- end }}
+{{- $kcRealm := .Values.grafana.oauth.realm }}
+{{- /* Grafana runs in the monitoring namespace, so the backchannel token/userinfo URLs must
+       point at the namespace-qualified keycloak service in the release namespace, not a bare
+       service name (which only resolves inside the app namespace). authUrl is browser-facing. */}}
+{{- $kcInternal := printf "http://%s-keycloak.%s:8080/auth/realms/%s/protocol/openid-connect" (include "alexandria.fullname" .) .Release.Namespace $kcRealm }}
+{{- $oauthAuthUrl := .Values.grafana.oauth.authUrl | default (printf "https://%s/auth/realms/%s/protocol/openid-connect/auth" .Values.ingress.host $kcRealm) }}
+{{- $oauthTokenUrl := .Values.grafana.oauth.tokenUrl | default (printf "%s/token" $kcInternal) }}
+{{- $oauthApiUrl := .Values.grafana.oauth.apiUrl | default (printf "%s/userinfo" $kcInternal) }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -77,11 +85,11 @@ spec:
             - name: GF_AUTH_GENERIC_OAUTH_SCOPES
               value: {{ .Values.grafana.oauth.scopes | quote }}
             - name: GF_AUTH_GENERIC_OAUTH_AUTH_URL
-              value: {{ .Values.grafana.oauth.authUrl | quote }}
+              value: {{ $oauthAuthUrl | quote }}
             - name: GF_AUTH_GENERIC_OAUTH_TOKEN_URL
-              value: {{ .Values.grafana.oauth.tokenUrl | quote }}
+              value: {{ $oauthTokenUrl | quote }}
             - name: GF_AUTH_GENERIC_OAUTH_API_URL
-              value: {{ .Values.grafana.oauth.apiUrl | quote }}
+              value: {{ $oauthApiUrl | quote }}
             - name: GF_AUTH_GENERIC_OAUTH_USE_PKCE
               value: "true"
             - name: GF_AUTH_GENERIC_OAUTH_LOGIN_ATTRIBUTE_PATH
