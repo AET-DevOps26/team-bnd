@@ -6,6 +6,9 @@
 {{- if and .Values.grafana.oauth.enabled (not $grafanaRootUrl) }}
 {{- fail "grafana.oauth.enabled=true requires grafana.oauth.rootUrl, or ingress.host set so it can be derived." }}
 {{- end }}
+{{- if and .Values.grafana.oauth.enabled (not .Values.grafana.oauth.authUrl) (not .Values.ingress.host) }}
+{{- fail "grafana.oauth.enabled=true requires grafana.oauth.authUrl, or ingress.host set so it can be derived." }}
+{{- end }}
 {{- $kcRealm := .Values.grafana.oauth.realm }}
 {{- /* Grafana runs in the monitoring namespace, so the backchannel token/userinfo URLs must
        point at the namespace-qualified keycloak service in the release namespace, not a bare
