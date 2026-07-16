@@ -1124,43 +1124,6 @@ test.describe("Alexandria client", () => {
       await expect(activeQuery).toContainText("Active question?");
     });
 
-    test("clicking outside the answer area hides the shown answer", async ({
-      page,
-    }) => {
-      await page.unroute("/api/v1/qa/history");
-      await page.route("/api/v1/qa/history", (route) =>
-        route.fulfill({
-          status: 200,
-          contentType: "application/json",
-          body: JSON.stringify([
-            {
-              id: "aaaaaaaa-0000-0000-0000-00000000000f",
-              question: "Dismiss me?",
-              answer: "Dismissable answer.",
-              citations: [],
-              timestamp: "2026-07-06T08:00:00Z",
-              modelUsed: "gpt-4o",
-            },
-          ]),
-        }),
-      );
-
-      await page.goto("/ask");
-
-      // The answer is shown by default
-      await expect(page.locator(".qa-interaction")).toBeVisible({
-        timeout: 5000,
-      });
-
-      // Clicking the form label (outside the answer/recent area) hides it
-      await page.locator(".qa-form-label").click();
-      await expect(page.locator(".qa-interaction")).toHaveCount(0);
-
-      // The recent list stays, so it can be reopened
-      await page.locator(".qa-recent__query").first().click();
-      await expect(page.locator(".qa-interaction")).toBeVisible();
-    });
-
     test("the Hide button dismisses the shown answer", async ({ page }) => {
       await page.unroute("/api/v1/qa/history");
       await page.route("/api/v1/qa/history", (route) =>

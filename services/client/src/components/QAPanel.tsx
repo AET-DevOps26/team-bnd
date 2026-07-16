@@ -67,29 +67,15 @@ export default function QAPanel() {
   // an answer that was asked while history was still loading isn't dropped when
   // the history request finally resolves.
   useEffect(() => {
-    if (historyData && !historyLoaded.current) {
-      historyLoaded.current = true;
-      setInteractions((prev) => {
-        const seen = new Set(prev.map((i) => i.id));
-        const merged = [...prev, ...historyData.filter((i) => !seen.has(i.id))];
-        setExpandedId((current) => current ?? merged[0]?.id ?? null);
-        return merged;
-      });
-    }
+    if (!historyData || historyLoaded.current) return;
+    historyLoaded.current = true;
+    setInteractions((prev) => {
+      const seen = new Set(prev.map((i) => i.id));
+      return [...prev, ...historyData.filter((i) => !seen.has(i.id))];
+    });
+    // Default the shown answer to the newest entry unless one is already open.
+    setExpandedId((current) => current ?? historyData[0]?.id ?? null);
   }, [historyData]);
-
-  // Hide the shown answer when clicking anywhere that isn't the answer card or
-  // the recent-questions list (e.g. empty panel space to the side or below).
-  useEffect(() => {
-    function handlePointerDown(e: MouseEvent) {
-      const target = e.target as HTMLElement;
-      if (!target.closest(".qa-interaction, .qa-recent")) {
-        setExpandedId(null);
-      }
-    }
-    document.addEventListener("mousedown", handlePointerDown);
-    return () => document.removeEventListener("mousedown", handlePointerDown);
-  }, []);
 
   const {
     mutate: askQuestion,
@@ -139,7 +125,7 @@ export default function QAPanel() {
   }
 
   // Only the explicitly selected interaction is shown; a null selection (e.g.
-  // after clicking outside) hides the answer entirely. Uses the same id ?? index
+  // via the Hide button) hides the answer entirely. Uses the same id ?? index
   // key as the recent list so ID-less entries can still be reopened.
   const activeInteraction =
     expandedId == null
