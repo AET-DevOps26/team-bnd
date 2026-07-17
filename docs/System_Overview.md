@@ -98,7 +98,9 @@ Team member responsible for this subsystem: Niklas Ladurner
 The system is containerised (one Dockerfile per component) and runs end-to-end via `docker-compose.yml` locally. It deploys to Kubernetes through a Helm chart (`infra/k8s/`), and an Azure VM option is provisioned with Terraform + Ansible (`infra/azure/`). GitHub Actions runs CI on every PR (build, test, lint, OpenAPI checks) and deploys on merge to main.
 
 Team member responsible for Kubernetes: Bjarne Hansen
+
 Team member responsible for Azure: Dominic Prinz
+
 Team member responsible for CI: Dominic Prinz
 
 ## UML Diagrams
@@ -114,4 +116,4 @@ Team member responsible for CI: Dominic Prinz
 
 ## 2. First Product Backlog
 
-See GitHub Project.
+See [GitHub Project](https://github.com/AET-DevOps26/team-bnd/projects).
