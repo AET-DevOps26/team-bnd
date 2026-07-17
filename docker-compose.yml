@@ -4,6 +4,11 @@ services:
     build:
       context: services/client/
       dockerfile: Dockerfile
+      args:
+        # Built istanbul-instrumented so the e2e profile always collects client
+        # coverage. The published ghcr image is built without this by CI, so the
+        # k8s and Azure deployments (which pull, never build) stay uninstrumented.
+        COVERAGE: "true"
     container_name: client
     restart: unless-stopped
     networks:

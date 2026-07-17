@@ -26,6 +26,8 @@ export default defineConfig({
   /* Global setup: obtain a Keycloak token for testuser and write the
    * browser storage-state file before any test runs. */
   globalSetup: './tests/globalSetup.ts',
+  /* After the run, remap and report the collected istanbul coverage. */
+  globalTeardown: './tests/globalTeardown.ts',
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
     /* Base URL to use in actions like `await page.goto('')`.

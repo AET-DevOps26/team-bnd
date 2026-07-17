@@ -27,6 +27,8 @@ yarn-error.log*
 
 # Coverage
 coverage/
+coverage-e2e/
+.nyc_output/
 
 # Misc
 .Dockerfile.dev

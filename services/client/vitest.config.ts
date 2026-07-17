@@ -8,6 +8,9 @@ export default defineConfig({
     environment: "jsdom",
     setupFiles: ["./src/test/setup.ts"],
     include: ["src/**/*.test.{ts,tsx}"],
+    // Give the api client an absolute base URL so openapi-fetch can build a
+    // valid Request under node (relative URLs only resolve in a real browser).
+    env: { VITE_API_URL: "http://localhost" },
     coverage: {
       provider: "v8",
       reporter: ["text", "cobertura", "html"],
@@ -18,6 +21,7 @@ export default defineConfig({
       exclude: [
         "src/**/*.test.{ts,tsx}",
         "src/test/**",
+        "src/**/__mocks__/**",
         "src/api/schema.d.ts",
         "src/vite-env.d.ts",
         "src/main.tsx",

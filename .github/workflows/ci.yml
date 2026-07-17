@@ -708,6 +708,8 @@ jobs:
       - name: Bring Stack Up
         # --wait gates on healthchecks; Keycloak's reports ready only once the
         # realm is imported, so no separate realm-polling step is needed.
+        # The compose client build is istanbul-instrumented, so this always
+        # collects client-side e2e coverage.
         run: docker compose --profile e2e up -d --build --wait --wait-timeout 360
 
       - name: Provision Test User via Keycloak Admin API
@@ -762,8 +764,18 @@ jobs:
         run: npm ci
 
       - name: Run Playwright Tests
+        # test:e2e runs Playwright and then writes the coverage report.
         working-directory: services/client
         run: npm run test:e2e
+
+      - name: Upload E2E Coverage Report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-client-e2e
+          path: services/client/coverage-e2e/cobertura-coverage.xml
+          if-no-files-found: ignore
+          retention-days: 7
 
       - name: Upload Playwright Report
         if: always()
@@ -790,7 +802,7 @@ jobs:
   # ---------------------------------------------------------------------
   coverage-badges:
     name: Publish Coverage Badges
-    needs: [build-spring, build-client, build-genai]
+    needs: [build-spring, build-client, build-genai, e2e]
     if: github.event_name == 'push' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
     runs-on: ubuntu-latest
     permissions:
@@ -821,6 +833,7 @@ jobs:
             [artifacts/coverage-qa-service/jacocoTestReport.xml]=team-bnd-qa-service-coverage.xml
             [artifacts/coverage-genai/coverage.xml]=team-bnd-genai-coverage.xml
             [artifacts/coverage-client/cobertura-coverage.xml]=team-bnd-client-coverage.xml
+            [artifacts/coverage-client-e2e/cobertura-coverage.xml]=team-bnd-client-e2e-coverage.xml
           )
           for report in "${!reports[@]}"; do
             gist_file="${reports[$report]}"
