@@ -40,6 +40,9 @@ function loadedDoc(overrides: Partial<Document> = {}) {
   api.setQuery("get", DOC, { data: baseDoc(overrides) });
 }
 
+const originalCreateObjectURL = URL.createObjectURL;
+const originalRevokeObjectURL = URL.revokeObjectURL;
+
 beforeEach(() => {
   api.resetApiMock();
   URL.createObjectURL = vi.fn(() => "blob:mock");
@@ -48,6 +51,10 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
+  // Direct global assignments aren't undone by restoreAllMocks; put the
+  // jsdom originals back so other suites see a clean URL.
+  URL.createObjectURL = originalCreateObjectURL;
+  URL.revokeObjectURL = originalRevokeObjectURL;
 });
 
 describe("DocumentDetail", () => {
