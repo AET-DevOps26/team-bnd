@@ -877,36 +877,39 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Setup SSH Key
+      - name: Install Ansible
+        run: pipx install ansible-core
+
+      - name: Write SSH Key
         env:
           AZURE_PRIVATE_KEY: ${{ secrets.AZURE_PRIVATE_KEY }}
         run: |
           install -m 700 -d ~/.ssh
           printf '%s\n' "$AZURE_PRIVATE_KEY" > ~/.ssh/azure_key
           chmod 600 ~/.ssh/azure_key
-          ssh-keyscan -H "$AZURE_PUBLIC_IP" >> ~/.ssh/known_hosts
 
-      - name: Prepare Remote Directory
+      - name: Write Ansible Inventory
         run: |
-          ssh -i ~/.ssh/azure_key "$AZURE_USER@$AZURE_PUBLIC_IP" \
-            "rm -rf ~/deploy/infra/prometheus ~/deploy/infra/grafana && mkdir -p ~/deploy/infra/oidc ~/deploy/infra/prometheus ~/deploy/infra/grafana"
+          cat > inventory.ini <<EOF
+          [azure]
+          ${AZURE_PUBLIC_IP}
 
-      - name: Copy Compose and Config
-        run: |
-          scp -i ~/.ssh/azure_key docker-compose.yml "$AZURE_USER@$AZURE_PUBLIC_IP:~/deploy/docker-compose.yml"
-          scp -i ~/.ssh/azure_key infra/oidc/realm.json "$AZURE_USER@$AZURE_PUBLIC_IP:~/deploy/infra/oidc/realm.json"
-          scp -r -i ~/.ssh/azure_key infra/prometheus/. "$AZURE_USER@$AZURE_PUBLIC_IP:~/deploy/infra/prometheus/"
-          scp -r -i ~/.ssh/azure_key infra/grafana/. "$AZURE_USER@$AZURE_PUBLIC_IP:~/deploy/infra/grafana/"
+          [azure:vars]
+          ansible_user=${AZURE_USER}
+          ansible_ssh_private_key_file=${HOME}/.ssh/azure_key
+          ansible_python_interpreter=/usr/bin/python3
+          EOF
 
-      - name: Deploy
-        # GITHUB_TOKEN and github.actor are passed through env so an
-        # attacker-controlled username can't escape into the remote shell.
+      # The one-time provisioning already installed Docker and placed the .env, so
+      # CI runs only the deploy role and passes no env_file, leaving the .env and any
+      # TLS override on the VM untouched.
+      - name: Deploy via Ansible
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          ACTOR: ${{ github.actor }}
+          ANSIBLE_CONFIG: infra/azure/ansible/ansible.cfg
         run: |
-          ssh -i ~/.ssh/azure_key "$AZURE_USER@$AZURE_PUBLIC_IP" \
-            "cd ~/deploy && printf '%s\n' \"$GH_TOKEN\" | docker login \"$REGISTRY\" -u \"$ACTOR\" --password-stdin && docker compose pull && docker compose up -d"
+          ansible-playbook -i inventory.ini infra/azure/ansible/playbook.yml \
+            --tags deploy \
+            -e "repo_root=${GITHUB_WORKSPACE}"
 
   # ---------------------------------------------------------------------
   # Deploy to stud cluster (Rancher/k8s)

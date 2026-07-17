@@ -1,0 +1,76 @@
+---
+- name: Deploy the compose stack
+  when: repo_root | length > 0
+  block:
+    - name: Ensure deploy directories exist
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: "0755"
+      loop:
+        - "{{ deploy_dir }}"
+        - "{{ deploy_dir }}/infra"
+
+    - name: Copy docker-compose.yml
+      ansible.builtin.copy:
+        src: "{{ repo_root }}/docker-compose.yml"
+        dest: "{{ deploy_dir }}/docker-compose.yml"
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: "0644"
+
+    # Overlay handling only runs while we own the .env (provisioning). Shipped as
+    # docker-compose.override.yml so a plain "docker compose up" merges it, removed
+    # when TLS is off. CI passes no env_file and leaves whatever is there untouched.
+    - name: Ship the Let's Encrypt overlay as the compose override
+      ansible.builtin.copy:
+        src: "{{ repo_root }}/docker-compose.letsencrypt.yml"
+        dest: "{{ deploy_dir }}/docker-compose.override.yml"
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: "0644"
+      when: (use_letsencrypt | bool) and (env_file | length > 0)
+
+    - name: Remove the compose override when TLS is off
+      ansible.builtin.file:
+        path: "{{ deploy_dir }}/docker-compose.override.yml"
+        state: absent
+      when: (not (use_letsencrypt | bool)) and (env_file | length > 0)
+
+    - name: Copy the runtime infra directories
+      ansible.builtin.copy:
+        src: "{{ repo_root }}/infra/{{ item }}/"
+        dest: "{{ deploy_dir }}/infra/{{ item }}/"
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: "0644"
+        directory_mode: "0755"
+      loop:
+        - oidc
+        - keycloak
+        - postgres
+        - prometheus
+        - grafana
+
+    - name: Copy the generated .env
+      ansible.builtin.copy:
+        src: "{{ env_file }}"
+        dest: "{{ deploy_dir }}/.env"
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: "0600"
+      when: env_file | length > 0
+
+    - name: Pull the images
+      ansible.builtin.command:
+        cmd: docker compose pull
+        chdir: "{{ deploy_dir }}"
+      changed_when: true
+
+    - name: Start the stack
+      ansible.builtin.command:
+        cmd: docker compose up -d --remove-orphans
+        chdir: "{{ deploy_dir }}"
+      changed_when: true

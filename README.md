@@ -2,6 +2,8 @@
 
 [![CI](https://github.com/AET-DevOps26/team-bnd/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/AET-DevOps26/team-bnd/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/AET-DevOps26/team-bnd/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/AET-DevOps26/team-bnd/actions/workflows/codeql.yml)
+[![Azure](https://img.shields.io/badge/Live%20on%20Azure-alexandria.ddnss.de-0078D4?logo=terraform&logoColor=white)](https://alexandria.ddnss.de)
+[![Kubernetes](https://img.shields.io/badge/Live%20on%20Kubernetes-alexandria.stud.k8s.aet.cit.tum.de-326CE5?logo=kubernetes&logoColor=white)](https://alexandria.stud.k8s.aet.cit.tum.de)
 
 ## Project summary
 

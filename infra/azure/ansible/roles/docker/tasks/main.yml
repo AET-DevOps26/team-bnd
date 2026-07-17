@@ -64,12 +64,3 @@
     groups: docker
     append: true
   loop: "{{ docker_users }}"
-
-- name: Copy env template when provided
-  ansible.builtin.copy:
-    src: "{{ env_template_path }}"
-    dest: "{{ env_target_path }}"
-    owner: "{{ ansible_user }}"
-    group: "{{ ansible_user }}"
-    mode: "0600"
-  when: env_template_path | length > 0
