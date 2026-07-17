@@ -307,18 +307,28 @@ test.describe("Interaction coverage", () => {
   test("lists recent searches, re-runs one, and clears them", async ({
     page,
   }) => {
+    let cleared = false;
     await page.route("/api/v1/knowledgebase/tags", (r) => json(r, { tags: [] }));
     await page.route("/api/v1/knowledgebase/documents", (r) => json(r, []));
-    await page.route(/\/knowledgebase\/history\/search/, (r) =>
-      json(r, [
-        {
-          id: "h1",
-          queryText: "prior query",
-          resultCount: 2,
-          timestamp: "2026-05-01T10:00:00Z",
-        },
-      ]),
-    );
+    await page.route(/\/knowledgebase\/history\/search/, (r) => {
+      if (r.request().method() === "DELETE") {
+        cleared = true;
+        return json(r, {});
+      }
+      return json(
+        r,
+        cleared
+          ? []
+          : [
+              {
+                id: "h1",
+                queryText: "prior query",
+                resultCount: 2,
+                timestamp: "2026-05-01T10:00:00Z",
+              },
+            ],
+      );
+    });
     await page.route(/\/knowledgebase\/search\/semantic/, (r) =>
       json(r, { results: [], fallbackUsed: false }),
     );
@@ -329,6 +339,9 @@ test.describe("Interaction coverage", () => {
     await recent.click();
     await expect(page.getByRole("searchbox")).toHaveValue("prior query");
     await page.getByRole("button", { name: "Clear" }).click();
+    await expect(
+      page.getByRole("button", { name: "prior query" }),
+    ).toHaveCount(0);
   });
 
   test("deletes a document from the sidebar", async ({ page }) => {
@@ -341,15 +354,25 @@ test.describe("Interaction coverage", () => {
       tags: [],
       extractedEntities: [],
     };
-    await routeDocument(page, doc, {
-      download: { body: "x", contentType: "text/plain" },
+    let deleted = false;
+    await page.route("/api/v1/knowledgebase/tags", (r) => json(r, { tags: [] }));
+    await page.route("/api/v1/knowledgebase/documents", (r) =>
+      r.request().method() === "GET"
+        ? json(r, deleted ? [] : [doc])
+        : json(r, doc),
+    );
+    await page.route(`/api/v1/knowledgebase/documents/${doc.id}`, (r) => {
+      if (r.request().method() === "DELETE") {
+        deleted = true;
+        return json(r, {});
+      }
+      return json(r, doc);
     });
     await page.goto("/documents");
+    await expect(page.getByText("delete-me.txt")).toBeVisible({ timeout: 5000 });
     await page
       .getByRole("button", { name: "Delete delete-me.txt" })
       .click();
-    await expect(
-      page.getByRole("navigation", { name: "Document list" }),
-    ).toBeVisible();
+    await expect(page.getByText("delete-me.txt")).toHaveCount(0);
   });
 });
