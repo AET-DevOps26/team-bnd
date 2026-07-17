@@ -20,6 +20,10 @@ Alexandria consists of three main subsystems orchestrated via Docker Compose and
 - **Server**: Three Spring Boot microservices (user-service, knowledgebase-service, qa-service) exposing REST APIs, backed by PostgreSQL with a schema per service.
 - **GenAI**: A Python/FastAPI service using LangChain to extract entities and summarize uploaded documents.
 
+## Team responsibilities
+
+Each subsystem lists its responsible team member in the [System Overview](docs/System_Overview.md).
+
 ## Test coverage
 
 | Service                      | Coverage                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
