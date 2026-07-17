@@ -1,105 +1,80 @@
-# Infrastructure provisioning (Terraform + Ansible)
+# Azure deployment (Terraform + Ansible)
 
-This folder automates Azure VM provisioning and configuration. Terraform creates the VM, network, and security rules. Ansible installs Docker and prepares the VM to run docker compose.
+This sets up a single VM on Azure and runs the whole stack on it with Docker Compose. Terraform creates the VM and networking, Ansible installs Docker and does the deploy, and a small script builds the `.env` so you are not copy-pasting secrets by hand.
 
-## Prerequisites and why they are needed
+## What you need
 
-- Terraform 1.x, use the latest 1.x release. It talks to Azure and creates resources from code.
-- Ansible, it runs configuration steps over SSH and keeps them idempotent.
-- Azure CLI login, it provides credentials for the Terraform provider.
-- ssh-keygen, used to create a VM SSH keypair that Azure accepts.
+- Terraform 1.x
+- Ansible (the `ansible-playbook` command)
+- Azure CLI, logged in with `az login`. A service principal works too, just set the usual `ARM_*` variables.
+- `ssh-keygen`. Azure only accepts RSA keys for Linux VMs, so we generate one.
 
-## Quick start
-
-1. Login to Azure. The login flow lets you pick the subscription, so no extra command is needed.
-   ```bash
-   az login
-   ```
-   If you use a service principal, set the ARM_* environment variables instead.
-2. Prepare defaults and keys:
-   ```bash
-   ./infra/azure/prepare.sh
-   ```
-3. Provision the VM and run Ansible:
-   ```bash
-   ./infra/azure/provision.sh
-   ```
-
-prepare.sh writes the SSH public key into terraform.tfvars and provision.sh uses the matching private key for Ansible, so you do not need to pass key paths manually.
-Ansible waits for SSH to become available before running tasks, which helps when the VM is still booting. The inventory sets ansible_python_interpreter explicitly so interpreter discovery does not change between runs.
-
-## Resource group reuse
-
-provision.sh checks if the resource group already exists and sets create_resource_group accordingly. This lets you re-run the script without Terraform trying to create the RG again. If you want to override the auto detection, set:
+## Deploy
 
 ```bash
-export INFRA_CREATE_RG=true
+az login
+./infra/azure/provision.sh
 ```
 
-or
+`provision.sh` does the following end to end:
 
-```bash
-export INFRA_CREATE_RG=false
-```
+1. Generates an SSH keypair and a `terraform.tfvars` if you do not have them yet (that part is `prepare.sh`, which provision.sh calls for you).
+2. Runs `terraform apply` to create the VM.
+3. Asks a few questions and writes the `.env` (see below).
+4. Pauses so you can review or edit the `.env` before anything is deployed.
+5. Runs the Ansible playbook: installs Docker, copies the compose files and infra config to the VM, and starts everything with `docker compose up -d`.
 
-## What prepare.sh does
+When it finishes, the site is up at the base URL you gave it.
 
-prepare.sh makes setup less manual and avoids mistakes:
+## The .env and secrets
 
-- Generates an RSA SSH keypair under infra/azure/.keys. Azure does not accept ed25519 for Linux VMs, so RSA is used.
-- Creates infra/azure/terraform/terraform.tfvars if it does not exist. It writes the location and SSH public key path and keeps defaults for everything else. The default location is swedencentral because of the subscription policy.
+`generate-env.sh` builds the `.env` (provision.sh calls it, or you can run it on its own). It asks for:
 
-Location is required. You can provide it in advance:
+- HTTP or Let's Encrypt,
+- the base URL, or the domain if you picked Let's Encrypt,
+- your LLM API key (leave it blank and add it later if you want).
 
-```bash
-export TF_VAR_location=swedencentral
-./infra/azure/prepare.sh
-```
+Every value that needs to be a random secret (the Postgres password, Keycloak admin password, the Grafana secrets, the internal HMAC secret, and so on) is generated for you. Which vars those are is read from `.env.example`: anything using the shared secret placeholder there gets a fresh value, so there is no hardcoded list in the script to keep in sync.
 
-You can also set AZURE_LOCATION, it is treated the same way.
+When running again, it keeps the existing file instead of rolling new secrets, otherwise the Postgres password would stop matching the data already on the disk. Force a clean regenerate with `OVERWRITE_ENV=true` and wipe the VM's Postgres volume if you do.
 
-If you want a different key location or name, set:
+## Base URL and TLS
 
-```bash
-export INFRA_KEYS_DIR=./infra/azure/.keys
-export INFRA_KEY_NAME=azure_vm_rsa
-```
+There is one variable for the public address: `PUBLIC_BASE_URL` (scheme + host, no trailing slash). Everything the browser touches (the OIDC issuer, Keycloak, Grafana, CORS) is derived from it in `docker-compose.yml`, so you set it once. Locally it defaults to `http://localhost`.
 
-## Terraform setup details
+For HTTPS, pick Let's Encrypt in generate-env.sh (or set `PUBLIC_DOMAIN` and `ACME_EMAIL`). provision.sh ships `docker-compose.letsencrypt.yml` to the VM as `docker-compose.override.yml`, so a plain `docker compose up` there merges it and Traefik serves HTTPS with a real cert and redirects port 80 to 443. Point the domain's DNS A record at the VM first, otherwise the ACME challenge cannot complete.
 
-terraform.tfvars is created with minimal required values. You can edit it to change names, sizing, the resource group, or the location. If you need to override the selected subscription, set TF_VAR_subscription_id or ARM_SUBSCRIPTION_ID before running prepare.sh.
+## Redeploys and CI
 
-## Manual provisioning (if needed)
+Once the VM is provisioned, pushes to `main` redeploy automatically when the `DEPLOY_AZURE` variable is set. The `Deploy to Azure VM` job runs the same Ansible deploy role with `--tags deploy`, so CI follows the exact same steps as provision.sh instead of its own copy commands. It assumes the one-time setup (Docker, the `.env`) is already done, so it never touches the `.env` or the TLS override on the VM. It just refreshes the compose files and infra config and re-deploys. It needs the `AZURE` environment with the `AZURE_PRIVATE_KEY` secret and the `AZURE_PUBLIC_IP` and `AZURE_USER` variables.
 
-```bash
-cd infra/azure/terraform
-terraform init
-terraform apply
-terraform output -raw public_ip_address
-```
+## Update a running deployment by hand
 
-Create infra/azure/ansible/inventory.ini from inventory.ini.example, fill in the public IP and key path, then run:
+If the VM is already up and you just want to push new compose or infra changes without touching Terraform or the `.env`, run the deploy role on its own (this is exactly what the CI also does).
+
+You need an inventory pointing at the VM. provision.sh already wrote one at `infra/azure/ansible/inventory.ini`. If it is not there, copy `inventory.ini.example` next to it and fill in the public IP and the key path.
+
+Then:
 
 ```bash
 cd infra/azure/ansible
-ansible-playbook -i inventory.ini playbook.yml
+ANSIBLE_CONFIG=ansible.cfg ansible-playbook -i inventory.ini playbook.yml \
+	--tags deploy \
+	-e repo_root="$(git rev-parse --show-toplevel)"
 ```
 
-## Cleanup
+`--tags deploy` skips the one-time Docker install. Leaving `env_file` unset (as above) is what tells the deploy role to keep the VM's own `.env` and TLS override instead of overwriting them.
+
+## Tear everything down again
 
 ```bash
 cd infra/azure/terraform
 terraform destroy
 ```
 
-## Azure VM deployment (docker compose)
+This removes the VM, its disk, the network, and the public IP. The resource group is only deleted if Terraform created it in the first place. The generated `.env` and the SSH keys stay on your machine. Delete `infra/azure/.env` and `infra/azure/.keys/` by hand if you want them gone too.
 
-Deployment uses the same `docker-compose.yml` as local dev. On the VM, `docker compose pull` fetches the pre-built GHCR images (the `build:` contexts are ignored since we never pass `--build`), and the secrets (Postgres and Keycloak) come from a `.env` file placed next to the compose file. Compose loads that `.env` automatically and substitutes it into the service definitions, so no separate production compose file is needed.
+## Handy overrides
 
-The deploy workflow uses the GitHub Environment `AZURE` and expects:
-
-- `AZURE_PRIVATE_KEY` secret (SSH private key for the VM)
-- `AZURE_PUBLIC_IP` variable
-- `AZURE_USER` variable (typically azureuser)
-
-When the workflow runs, it copies `docker-compose.yml` and `oidc/realm.json` to `~/deploy` on the VM, then runs `docker compose pull` followed by `docker compose up -d`.
+- Region defaults to `swedencentral` because of the subscription policy. Change it with `TF_VAR_location`.
+- provision.sh reuses an existing resource group if it finds one. Force the choice with `INFRA_CREATE_RG=true` or `INFRA_CREATE_RG=false`.
