@@ -1,5 +1,9 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 import { formatDateTime, formatDate, formatBytes } from "./format";
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
 describe("formatBytes", () => {
   it("returns the fallback when the byte count is nullish", () => {
@@ -33,10 +37,18 @@ describe("formatDate", () => {
     expect(formatDate("", "-")).toBe("-");
   });
 
-  it("renders a date without a time component", () => {
-    const out = formatDate("2024-06-15T12:00:00Z");
-    expect(out).toContain("2024");
-    expect(out).not.toMatch(/\d{1,2}:\d{2}/);
+  it("requests a date-only format and returns its result", () => {
+    // Assert the requested options (the contract), not the locale-rendered
+    // string, so the test doesn't depend on the runtime's default locale.
+    const spy = vi
+      .spyOn(Date.prototype, "toLocaleDateString")
+      .mockReturnValue("Jun 15, 2024");
+    expect(formatDate("2024-06-15T12:00:00Z")).toBe("Jun 15, 2024");
+    expect(spy).toHaveBeenCalledWith(undefined, {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
   });
 });
 
@@ -47,9 +59,19 @@ describe("formatDateTime", () => {
     expect(formatDateTime("", "-")).toBe("-");
   });
 
-  it("renders a date together with a time component", () => {
-    const out = formatDateTime("2024-06-15T12:00:00Z");
-    expect(out).toContain("2024");
-    expect(out).toMatch(/\d{1,2}:\d{2}/);
+  it("requests a date-and-time format and returns its result", () => {
+    const spy = vi
+      .spyOn(Date.prototype, "toLocaleString")
+      .mockReturnValue("Jun 15, 2024, 12:00 PM");
+    expect(formatDateTime("2024-06-15T12:00:00Z")).toBe(
+      "Jun 15, 2024, 12:00 PM",
+    );
+    expect(spy).toHaveBeenCalledWith(undefined, {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
   });
 });
