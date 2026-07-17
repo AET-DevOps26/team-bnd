@@ -43,6 +43,8 @@ RUN adduser -S -u 1000 -H genai
 WORKDIR /app
 COPY --from=builder --chown=genai:genai /app /app
 
+USER genai
+
 EXPOSE 8000
 
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
