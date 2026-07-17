@@ -46,7 +46,7 @@ For HTTPS, pick Let's Encrypt in generate-env.sh (or set `PUBLIC_DOMAIN` and `AC
 
 ## Redeploys and CI
 
-Once the VM is provisioned, pushes to `main` redeploy automatically when the `DEPLOY_AZURE` variable is set. The `Deploy to Azure VM` job runs the same Ansible deploy role with `--tags deploy`, so CI follows the exact same steps as provision.sh instead of its own copy commands. It assumes the one-time setup (Docker, the `.env`) is already done, so it never touches the `.env` or the TLS override on the VM. It just refreshes the compose files and infra config and re-deploys. It needs the `AZURE` environment with the `AZURE_PRIVATE_KEY` secret and the `AZURE_PUBLIC_IP` and `AZURE_USER` variables.
+Once the VM is provisioned, pushes to `main` redeploy automatically when the `DEPLOY_AZURE` variable is set. The `Deploy to Azure VM` job runs the same Ansible deploy role with `--tags deploy`, so CI shares the deploy path with provision.sh instead of using its own copy commands. It does not re-run the provisioning: it assumes Docker and the `.env` are already on the VM, skips the Docker install, and never generates or replaces the `.env` or the TLS override. The job only refreshes the compose files and infra config and re-deploys. It needs the `AZURE` environment with the `AZURE_PRIVATE_KEY` secret and the `AZURE_PUBLIC_IP` and `AZURE_USER` variables.
 
 ## Update a running deployment by hand
 
