@@ -36,7 +36,7 @@ When it finishes, the site is up at the base URL you gave it.
 
 Every value that needs to be a random secret (the Postgres password, Keycloak admin password, the Grafana secrets, the internal HMAC secret, and so on) is generated for you. Which vars those are is read from `.env.example`: anything using the shared secret placeholder there gets a fresh value, so there is no hardcoded list in the script to keep in sync.
 
-When running again, it keeps the existing file instead of rolling new secrets, otherwise the Postgres password would stop matching the data already on the disk. Force a clean regenerate with `OVERWRITE_ENV=true` and wipe the VM's Postgres volume if you do.
+When running again, it keeps the existing file instead of rolling new secrets, otherwise the Postgres password would stop matching the data already on the disk. Force a clean regenerate with `OVERWRITE_ENV=true`, but then also wipe the VM's `pgdata` and `grafana_data` volumes, since Postgres and Grafana bake their admin passwords in on the first start and ignore the env var afterwards.
 
 ## Base URL and TLS
 
