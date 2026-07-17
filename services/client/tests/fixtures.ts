@@ -11,19 +11,23 @@ const nycOutput = path.resolve(__dirname, "../.nyc_output");
 export const test = base.extend({
   page: async ({ page }, use, testInfo) => {
     await use(page);
+    let coverage: unknown;
     try {
-      const coverage = await page.evaluate(
+      coverage = await page.evaluate(
         () => (window as unknown as { __coverage__?: unknown }).__coverage__,
       );
-      if (coverage) {
-        fs.mkdirSync(nycOutput, { recursive: true });
-        fs.writeFileSync(
-          path.join(nycOutput, `coverage-${testInfo.testId}.json`),
-          JSON.stringify(coverage),
-        );
-      }
     } catch {
       // The page may already be closed, or the build isn't instrumented.
+      return;
+    }
+    // Writing must not be swallowed: a lost coverage file should surface, not
+    // silently pass.
+    if (coverage) {
+      fs.mkdirSync(nycOutput, { recursive: true });
+      fs.writeFileSync(
+        path.join(nycOutput, `coverage-${testInfo.testId}.json`),
+        JSON.stringify(coverage),
+      );
     }
   },
 });

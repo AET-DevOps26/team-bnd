@@ -21,9 +21,7 @@ export default function globalTeardown() {
     fs.writeFileSync(p, fs.readFileSync(p, "utf8").split("/app/").join(root));
   }
 
-  try {
-    execSync("npx nyc report", { cwd: clientDir, stdio: "inherit" });
-  } catch (err) {
-    console.error("[globalTeardown] nyc report failed:", err);
-  }
+  // Coverage is a deliverable, so a failed report should fail the run, not pass
+  // silently.
+  execSync("npx nyc report", { cwd: clientDir, stdio: "inherit" });
 }
