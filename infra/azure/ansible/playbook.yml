@@ -1,5 +1,5 @@
 ---
-- name: Configure Azure VM with Docker
+- name: Configure Azure VM with Docker and deploy the stack
   hosts: azure
   become: true
   gather_facts: false
@@ -8,12 +8,20 @@
       ansible.builtin.wait_for_connection:
         delay: 5
         timeout: 300
+      tags: [always]
     - name: Gather facts after SSH is ready
       ansible.builtin.setup:
+      tags: [provision]
   vars:
     docker_users:
       - "{{ ansible_user }}"
-    env_template_path: ""
-    env_target_path: "/home/{{ ansible_user }}/.env"
+    deploy_dir: "/home/{{ ansible_user }}/deploy"
+    repo_root: ""
+    env_file: ""
+    use_letsencrypt: false
   roles:
-    - docker
+    # provision.sh runs both; CI runs `--tags deploy` to skip the one-time Docker install.
+    - role: docker
+      tags: [provision]
+    - role: deploy
+      tags: [deploy]

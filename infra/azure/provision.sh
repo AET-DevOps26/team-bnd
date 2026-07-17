@@ -6,6 +6,7 @@ script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 terraform_dir="${script_dir}/terraform"
 ansible_dir="${script_dir}/ansible"
 prepare_script="${script_dir}/prepare.sh"
+generate_env_script="${script_dir}/generate-env.sh"
 runtime_tfvars="${terraform_dir}/runtime.auto.tfvars"
 
 if ! command -v terraform > /dev/null 2>&1; then
@@ -20,6 +21,11 @@ fi
 
 if [[ ! -x "${prepare_script}" ]]; then
 	echo "prepare.sh is missing or not executable." >&2
+	exit 1
+fi
+
+if [[ ! -x "${generate_env_script}" ]]; then
+	echo "generate-env.sh is missing or not executable." >&2
 	exit 1
 fi
 
@@ -95,13 +101,33 @@ ansible_ssh_private_key_file=${private_key_path}
 ansible_python_interpreter=/usr/bin/python3
 EOF
 
-extra_vars=()
-if [[ -n "${ENV_TEMPLATE_PATH:-}" ]]; then
-	extra_vars+=("-e" "env_template_path=${ENV_TEMPLATE_PATH}")
+repo_root="$(cd "${script_dir}/../.." && pwd)"
+env_file="${ENV_OUTPUT_PATH:-${script_dir}/.env}"
+
+echo "Preparing the deployment .env..."
+ENV_OUTPUT_PATH="${env_file}" DEFAULT_BASE_URL="http://${public_ip}" "${generate_env_script}"
+
+if [[ ! -f "${env_file}" ]]; then
+	echo "Expected ${env_file} after generate-env.sh, but it is missing. Aborting." >&2
+	exit 1
 fi
-if [[ -n "${ENV_TARGET_PATH:-}" ]]; then
-	extra_vars+=("-e" "env_target_path=${ENV_TARGET_PATH}")
+
+if [[ -t 0 ]]; then
+	echo ""
+	echo "The deployment environment file is ready at ${env_file}."
+	echo "Edit it now if you want to change anything (base URL, secrets, LLM key)."
+	read -r -p "Press Enter to start the deployment..." _ || true
+fi
+
+if grep -qE '^PUBLIC_DOMAIN=' "${env_file}"; then
+	use_letsencrypt="true"
+else
+	use_letsencrypt="false"
 fi
 
 echo "Running Ansible playbook..."
-ANSIBLE_CONFIG="${ansible_dir}/ansible.cfg" ansible-playbook -i "${inventory_file}" "${ansible_dir}/playbook.yml" "${extra_vars[@]}"
+ANSIBLE_CONFIG="${ansible_dir}/ansible.cfg" ansible-playbook \
+	-i "${inventory_file}" "${ansible_dir}/playbook.yml" \
+	-e "repo_root=${repo_root}" \
+	-e "env_file=${env_file}" \
+	-e "use_letsencrypt=${use_letsencrypt}"
