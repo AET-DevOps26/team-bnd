@@ -19,13 +19,15 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   /* Retry on CI only */
   retries: process.env.CI ? 2 : 0,
-  /* Opt out of parallel tests on CI. */
-  workers: process.env.CI ? 1 : undefined,
+  /* Run tests in parallel on CI (4 workers) to speed the suite up. */
+  workers: process.env.CI ? 4 : undefined,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: 'html',
   /* Global setup: obtain a Keycloak token for testuser and write the
    * browser storage-state file before any test runs. */
   globalSetup: './tests/globalSetup.ts',
+  /* After the run, remap and report the collected istanbul coverage. */
+  globalTeardown: './tests/globalTeardown.ts',
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
     /* Base URL to use in actions like `await page.goto('')`.

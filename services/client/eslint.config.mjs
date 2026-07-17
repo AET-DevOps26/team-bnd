@@ -4,8 +4,8 @@ import reactHooks from "eslint-plugin-react-hooks";
 import globals from "globals";
 
 export default tseslint.config(
-  // schema.d.ts is generated from the OpenAPI spec; dist is build output.
-  { ignores: ["dist/**", "src/api/schema.d.ts"] },
+  // schema.d.ts is generated from the OpenAPI spec; dist and coverage are build output.
+  { ignores: ["dist/**", "coverage/**", "coverage-e2e/**", ".nyc_output/**", "src/api/schema.d.ts"] },
 
   // Application source: strict TypeScript rules plus the core hooks checks.
   {

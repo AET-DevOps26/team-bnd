@@ -12,6 +12,12 @@ import path from "path";
  * where `authority` is derived from `window.location.origin` at runtime.
  */
 export default async function globalSetup() {
+  // Start each run with a clean coverage dir so nyc merges only this run's data.
+  fs.rmSync(path.resolve(__dirname, "../.nyc_output"), {
+    recursive: true,
+    force: true,
+  });
+
   // Fetch tokens from Keycloak via the Resource Owner Password grant
   const tokenUrl =
     "http://localhost/auth/realms/alexandria/protocol/openid-connect/token";

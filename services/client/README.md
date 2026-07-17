@@ -91,19 +91,53 @@ docker compose up -d client --build
 
 ## Testing
 
-Playwright is used for end-to-end tests. The tests run against a remote browser served by a Playwright Docker container.
-
-Include the Playwright server when starting services:
+Install dependencies once, from `services/client`:
 
 ```bash
-docker compose --profile e2e up
+npm ci
 ```
 
-Run the tests:
+### Unit tests (Vitest)
+
+Component and utility tests run in jsdom with Vitest and React Testing Library,
+no backend required:
 
 ```bash
-cd services/client
-npm run test:e2e
+npm run test:unit               # run once
+npm run test:unit -- --watch    # re-run on change while developing
+npm run test:coverage           # with a coverage report -> coverage/index.html
+```
+
+### End-to-end tests (Playwright)
+
+The e2e suite drives the real built client in a browser. The browser runs inside
+a Playwright container (the `e2e` compose profile) and the test process connects
+to it from the host. The `client` image is built istanbul-instrumented, so an
+e2e run always collects and reports client coverage.
+
+From the repo root, bring the stack up with the `e2e` profile. Build the client
+(`--build`) so it is the instrumented image:
+
+```bash
+docker compose --profile e2e up -d --build --wait
+```
+
+Then run the suite from `services/client`:
+
+```bash
+npm run test:e2e                        # runs Playwright, then writes the coverage report
+npm run test:e2e -- --project=chromium  # one browser only (faster)
+```
+
+`test:e2e` reports coverage automatically once the run finishes. Outputs:
+
+- `playwright-report/` -- Playwright HTML report (`npx playwright show-report`)
+- `coverage-e2e/index.html` -- e2e coverage report (plus a cobertura XML for CI)
+
+Tear the stack down when finished:
+
+```bash
+docker compose --profile e2e down -v
 ```
 
 ## Notes
