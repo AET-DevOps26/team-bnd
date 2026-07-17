@@ -147,6 +147,19 @@ describe("DocumentTree", () => {
     expect(onToggleEntity).toHaveBeenCalledOnce();
   });
 
+  it("keeps the entity filter visible when there are no entities", async () => {
+    const user = userEvent.setup();
+    renderTree({ documents: [], entityGroups: [] });
+    const toggle = screen.getByRole("button", { name: /Filter by entity/ });
+    expect(toggle).toBeInTheDocument();
+    await user.click(toggle);
+    expect(
+      screen.getByText(
+        "Entity filtering becomes available once entities are extracted.",
+      ),
+    ).toBeInTheDocument();
+  });
+
   it("expands a long tag list on demand", async () => {
     const user = userEvent.setup();
     const allTags = Array.from({ length: 7 }, (_, i) => ({

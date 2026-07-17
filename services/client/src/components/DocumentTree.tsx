@@ -181,23 +181,27 @@ export default function DocumentTree({
           ))}
       </div>
 
-      {entityGroups.length > 0 && (
-        <div className="tag-filter" aria-label="Filter by entity">
-          <div className="tag-filter__header">
-            <button
-              type="button"
-              className="tag-filter__toggle-head"
-              onClick={() => setEntityFilterOpen((v) => !v)}
-              aria-expanded={entityFilterOpen}
-            >
-              <span
-                className={`tag-filter__caret${entityFilterOpen ? " tag-filter__caret--open" : ""}`}
-                aria-hidden="true"
-              />
-              <span className="tag-filter__label">Filter by entity</span>
-            </button>
-          </div>
-          {entityFilterOpen &&
+      <div className="tag-filter" aria-label="Filter by entity">
+        <div className="tag-filter__header">
+          <button
+            type="button"
+            className="tag-filter__toggle-head"
+            onClick={() => setEntityFilterOpen((v) => !v)}
+            aria-expanded={entityFilterOpen}
+          >
+            <span
+              className={`tag-filter__caret${entityFilterOpen ? " tag-filter__caret--open" : ""}`}
+              aria-hidden="true"
+            />
+            <span className="tag-filter__label">Filter by entity</span>
+          </button>
+        </div>
+        {entityFilterOpen &&
+          (entityGroups.length === 0 ? (
+            <p className="tag-filter__empty">
+              Entity filtering becomes available once entities are extracted.
+            </p>
+          ) : (
             entityGroups.map((group) => (
               <div key={group.type} className="entity-filter__group">
                 <span className="entity-filter__group-label">
@@ -225,9 +229,9 @@ export default function DocumentTree({
                   })}
                 </ul>
               </div>
-            ))}
-        </div>
-      )}
+            ))
+          ))}
+      </div>
 
       {isLoading && <p className="tree-status">Loading…</p>}
       {!!error && (
