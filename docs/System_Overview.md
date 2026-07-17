@@ -116,4 +116,4 @@ Team member responsible for CI: Dominic Prinz
 
 ## 2. First Product Backlog
 
-See GitHub Project.
+See [GitHub Project](https://github.com/AET-DevOps26/team-bnd/projects).
