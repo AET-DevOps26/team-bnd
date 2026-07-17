@@ -1606,7 +1606,7 @@ test.describe("Alexandria client", () => {
     test("renders the tag filter chips", async ({ page }) => {
       await page.goto("/documents");
 
-      const filterSection = page.locator(".tag-filter");
+      const filterSection = page.getByLabel("Filter by tags");
       await expect(filterSection).toBeVisible({ timeout: 5000 });
 
       const chips = filterSection.locator(".tag-filter__chip");
