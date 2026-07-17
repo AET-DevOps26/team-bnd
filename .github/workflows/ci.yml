@@ -397,6 +397,19 @@ jobs:
         working-directory: services/client
         run: npm run lint
 
+      - name: Run Unit Tests
+        working-directory: services/client
+        run: npm run test:coverage
+
+      - name: Upload Coverage Report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-client
+          path: services/client/coverage/cobertura-coverage.xml
+          if-no-files-found: ignore
+          retention-days: 7
+
       - name: Build
         working-directory: services/client
         run: npm run build
@@ -777,7 +790,7 @@ jobs:
   # ---------------------------------------------------------------------
   coverage-badges:
     name: Publish Coverage Badges
-    needs: [build-spring, build-genai]
+    needs: [build-spring, build-client, build-genai]
     if: github.event_name == 'push' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
     runs-on: ubuntu-latest
     permissions:
@@ -807,6 +820,7 @@ jobs:
             [artifacts/coverage-knowledgebase-service/jacocoTestReport.xml]=team-bnd-knowledgebase-service-coverage.xml
             [artifacts/coverage-qa-service/jacocoTestReport.xml]=team-bnd-qa-service-coverage.xml
             [artifacts/coverage-genai/coverage.xml]=team-bnd-genai-coverage.xml
+            [artifacts/coverage-client/cobertura-coverage.xml]=team-bnd-client-coverage.xml
           )
           for report in "${!reports[@]}"; do
             gist_file="${reports[$report]}"
