@@ -34,7 +34,10 @@ public class GenAiClient {
     public GenAiClient(@Value("${genai.base-url:http://localhost:8000}") String baseUrl, MeterRegistry meterRegistry) {
         HttpClient httpClient = HttpClient.newBuilder().version(HttpClient.Version.HTTP_1_1).connectTimeout(Duration.ofSeconds(5)).build();
         JdkClientHttpRequestFactory factory = new JdkClientHttpRequestFactory(httpClient);
-        factory.setReadTimeout(Duration.ofSeconds(30));
+        // Long-document LLM calls are slow by design. This must sit above the GenAI service's
+        // worst-case budget for a single call (LLM_TIMEOUT_SECONDS * (1 + LLM_MAX_RETRIES) =
+        // 60s * 3 = 180s), so Spring doesn't abandon a request GenAI is still working on.
+        factory.setReadTimeout(Duration.ofSeconds(200));
         RestClient restClient = ApiClient.buildRestClientBuilder().requestFactory(factory).build();
         ApiClient apiClient = new ApiClient(restClient).setBasePath(baseUrl);
         this.genaiClient = new AiApi(apiClient);
