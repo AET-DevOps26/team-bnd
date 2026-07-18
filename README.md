@@ -45,9 +45,11 @@ Our `docker-compose.yml` includes both pre-built image references and local buil
 **Build and Run (For Development):**
 To build the images from your local source: `docker compose up --build --force-recreate`
 
+The stack boots with working defaults, but the GenAI features (document summaries, tag and entity extraction, semantic search, and Q&A) call an external LLM and need an API key. Without one the app still runs and everything else works; only the AI calls return an error. Set `LLM_API_KEY` in a `.env` file before using those features. See [GenAI configuration](services/genai/README.md#llm-configuration) for the provider options and `.env.example` for the variable.
+
 ### Environment Files
 
-For local development, `docker compose up` works out of the box; safe defaults are embedded in `docker-compose.yml`. For production or CI, copy `.env.example` to `.env` and set the values as needed.
+For local development, `docker compose up` works out of the box; safe defaults are embedded in `docker-compose.yml`. The one exception is `LLM_API_KEY` (see above): it has no usable default, so the GenAI features stay disabled until you set it. For production or CI, copy `.env.example` to `.env` and set the values as needed.
 
 #### Troubleshooting
 
@@ -85,6 +87,16 @@ All services are accessed through Traefik as the reverse proxy. See [`docs/Traef
 
 - **Azure VM (Terraform + Ansible)**: Provisioning details live under [`infra/azure/README.md`](infra/azure/README.md).
 - **Kubernetes (Helm)**: Cluster deployment and troubleshooting details live under [`infra/k8s/README.md`](infra/k8s/README.md).
+
+### CI/CD
+
+GitHub Actions runs both CI and CD. The workflows live in [`.github/workflows/`](.github/workflows/).
+
+On every pull request, [`ci.yml`](.github/workflows/ci.yml) runs the jobs whose paths changed: it builds each service (Spring, client, GenAI), runs their tests with coverage, lints everything (Spotless, SpotBugs, ESLint, Hadolint, yamllint), checks the committed OpenAPI spec is still in sync, builds the Docker images and scans them with Trivy, then brings the whole stack up with `docker compose` for a smoke test and the Playwright E2E suite. [`codeql.yml`](.github/workflows/codeql.yml) adds the CodeQL security scan. A failing pipeline blocks the merge.
+
+On a push to `main`, the same [`ci.yml`](.github/workflows/ci.yml) pushes the images to GHCR tagged with the short commit SHA (and `latest`), then deploys: the `deploy-stud` job runs `helm upgrade` against the Rancher/Kubernetes and the `deploy` job runs the Ansible deploy role for the Azure VM. [`deploy-api-docs.yml`](.github/workflows/deploy-api-docs.yml) publishes the Redoc API docs to GitHub Pages when the spec changes.
+
+Per-environment specifics are in [`infra/k8s/README.md`](infra/k8s/README.md) and [`infra/azure/README.md`](infra/azure/README.md).
 
 ### Git Repository
 
