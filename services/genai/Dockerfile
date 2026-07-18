@@ -1,4 +1,4 @@
-FROM ghcr.io/astral-sh/uv:python3.14-alpine AS builder
+FROM ghcr.io/astral-sh/uv:python3.14-alpine@sha256:7a6d8c4ff34812917124c77a8559458488f09d5e52e7646c04599f007956966c AS builder
 
 ENV PYTHONFAULTHANDLER=1 \
     PYTHONUNBUFFERED=1 \
@@ -24,11 +24,7 @@ RUN --mount=type=cache,target=$UV_CACHE_DIR \
     --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
     uv sync --frozen --no-dev
 
-FROM python:3.14-alpine AS runtime
-
-ARG RELEASE_TYPE=staging
-ARG APP_VERSION=dev
-ARG IMAGE_TAG=unknown
+FROM python:3.14-alpine@sha256:26730869004e2b9c4b9ad09cab8625e81d256d1ce97e72df5520e806b1709f92 AS runtime
 
 ENV PYTHONFAULTHANDLER=1 \
     PYTHONUNBUFFERED=1 \
@@ -40,7 +36,6 @@ ENV PYTHONFAULTHANDLER=1 \
 WORKDIR /app
 
 RUN adduser -S -u 1000 -H genai
-WORKDIR /app
 COPY --from=builder --chown=genai:genai /app /app
 
 USER genai
@@ -51,4 +46,3 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/genai/health').read()" || exit 1
 
 ENTRYPOINT ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
-# ENTRYPOINT ["sleep", "600"]
