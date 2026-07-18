@@ -1,6 +1,6 @@
 services:
   client:
-    image: ghcr.io/aet-devops26/team-bnd/client:latest
+    image: ghcr.io/aet-devops26/team-bnd/client:${IMAGE_TAG:-latest}
     build:
       context: services/client/
       dockerfile: Dockerfile
@@ -55,7 +55,7 @@ services:
       - /app/node_modules
 
   user-service:
-    image: ghcr.io/aet-devops26/team-bnd/user-service:latest
+    image: ghcr.io/aet-devops26/team-bnd/user-service:${IMAGE_TAG:-latest}
     build:
       context: services/spring/
       dockerfile: Dockerfile
@@ -109,7 +109,7 @@ services:
         condition: service_started
 
   knowledgebase-service:
-    image: ghcr.io/aet-devops26/team-bnd/knowledgebase-service:latest
+    image: ghcr.io/aet-devops26/team-bnd/knowledgebase-service:${IMAGE_TAG:-latest}
     build:
       context: services/spring/
       dockerfile: Dockerfile
@@ -170,7 +170,7 @@ services:
         condition: service_started
 
   qa-service:
-    image: ghcr.io/aet-devops26/team-bnd/qa-service:latest
+    image: ghcr.io/aet-devops26/team-bnd/qa-service:${IMAGE_TAG:-latest}
     build:
       context: services/spring/
       dockerfile: Dockerfile
@@ -224,7 +224,7 @@ services:
         condition: service_started
 
   genai:
-    image: ghcr.io/aet-devops26/team-bnd/genai:latest
+    image: ghcr.io/aet-devops26/team-bnd/genai:${IMAGE_TAG:-latest}
     build: services/genai/
     container_name: genai
     # kics-scan ignore-block

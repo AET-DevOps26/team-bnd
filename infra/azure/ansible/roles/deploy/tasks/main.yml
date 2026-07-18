@@ -63,14 +63,29 @@
         mode: "0600"
       when: env_file | length > 0
 
+    # CI passes the commit SHA as image_tag so the VM runs exactly what was built
+    # for this commit (traceable, precisely rollback-able).
     - name: Pull the images
       ansible.builtin.command:
         cmd: docker compose pull
         chdir: "{{ deploy_dir }}"
+      environment:
+        IMAGE_TAG: "{{ image_tag | default('latest', true) }}"
       changed_when: true
 
     - name: Start the stack
       ansible.builtin.command:
         cmd: docker compose up -d --remove-orphans
+        chdir: "{{ deploy_dir }}"
+      environment:
+        IMAGE_TAG: "{{ image_tag | default('latest', true) }}"
+      changed_when: true
+
+    # Every merge to main pulls fresh SHA-tagged images. Keep only the last
+    # week so a recent rollback still has its image locally, drop
+    # anything older that no container is using.
+    - name: Prune unused images older than a week
+      ansible.builtin.command:
+        cmd: docker image prune -af --filter until=168h
         chdir: "{{ deploy_dir }}"
       changed_when: true
