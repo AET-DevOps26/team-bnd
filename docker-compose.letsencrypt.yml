@@ -31,5 +31,14 @@ services:
     volumes:
       - letsencrypt:/letsencrypt
 
+  prometheus:
+    # On a public deployment Prometheus is not exposed through Traefik, only
+    # Grafana is (behind Keycloak). Disable its router and publish the port on
+    # loopback instead, so you reach it with an SSH tunnel the same way you would port-forward it on k8s.
+    labels:
+      - "traefik.enable=false"
+    ports:
+      - "127.0.0.1:9090:9090"
+
 volumes:
   letsencrypt:

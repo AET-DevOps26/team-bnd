@@ -48,6 +48,17 @@ For HTTPS, pick Let's Encrypt in generate-env.sh (or set `PUBLIC_DOMAIN` and `AC
 
 Once the VM is provisioned, pushes to `main` redeploy automatically when the `DEPLOY_AZURE` variable is set. The `Deploy to Azure VM` job runs the same Ansible deploy role with `--tags deploy`, so CI shares the deploy path with provision.sh instead of using its own copy commands. It does not re-run the provisioning: it assumes Docker and the `.env` are already on the VM, skips the Docker install, and never generates or replaces the `.env` or the TLS override. The job only refreshes the compose files and infra config and re-deploys. It needs the `AZURE` environment with the `AZURE_PRIVATE_KEY` secret and the `AZURE_PUBLIC_IP` and `AZURE_USER` variables.
 
+CI passes the built commit's short SHA as `image_tag`, so the VM runs exactly the images built for that commit. This keeps a deploy traceable to a commit and precisely rollback-able, matching the Kubernetes path. After each deploy the role also prunes unused images older than a week so old SHA-tagged layers don't slowly fill the VM disk.
+
+## Monitoring access
+
+Grafana is reachable at `<base-url>/grafana/` (login through Keycloak). Prometheus is deliberately not exposed on a public deployment. Reach it with an SSH tunnel (same idea as with `kubectl port-forward` on the Kubernetes cluster):
+
+```bash
+ssh -L 9090:localhost:9090 <user>@<vm-ip>
+# then open http://localhost:9090/prometheus/
+```
+
 ## Update a running deployment by hand
 
 If the VM is already up and you just want to push new compose or infra changes without touching Terraform or the `.env`, run the deploy role on its own (this is exactly what the CI also does).

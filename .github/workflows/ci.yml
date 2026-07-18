@@ -933,10 +933,12 @@ jobs:
       - name: Deploy via Ansible
         env:
           ANSIBLE_CONFIG: infra/azure/ansible/ansible.cfg
+          IMAGE_TAG: ${{ needs.build-image.outputs.image-tag }}
         run: |
           ansible-playbook -i inventory.ini infra/azure/ansible/playbook.yml \
             --tags deploy \
-            -e "repo_root=${GITHUB_WORKSPACE}"
+            -e "repo_root=${GITHUB_WORKSPACE}" \
+            -e "image_tag=${IMAGE_TAG}"
 
   # ---------------------------------------------------------------------
   # Deploy to stud cluster (Rancher/k8s)
