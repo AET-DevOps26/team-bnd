@@ -20,7 +20,7 @@ from app.tracing import setup_tracing
 from app.vectorstore import close_client, delete_document, index_chunks
 
 SERVICE_NAME = "alexandria-genai"
-SERVICE_VERSION = "5.0.0"
+SERVICE_VERSION = "6.0.0"
 
 
 @asynccontextmanager
